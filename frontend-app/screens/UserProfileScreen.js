@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fetchUserById } from '../utils/ProfileInfo';
+import UserPostList from '../components/UserPostList';
 import FollowButton from '../components/FollowButton';
 
 const UserProfileScreen = ({ route }) => {
@@ -73,6 +74,7 @@ const UserProfileScreen = ({ route }) => {
           }}
         />
       )}
+      <UserPostList userId={user._id} />
     </View>
   );
 };

@@ -54,3 +54,15 @@ exports.getFeedPosts = async (req, res) => {
     res.status(500).json({ message: 'Failed to load feed', error: err.message });
   }
 };
+
+exports.getPostsByUserId = async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    const posts = await Post.find({ userId })
+      .populate('userId', 'firstName lastName')
+      .sort({ createdAt: -1 });
+    res.status(200).json(posts);
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to fetch user posts', error: err.message });
+  }
+}

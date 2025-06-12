@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, StyleSheet } from 'react-native';
+import React, { useEffect, useState, useCallback } from 'react';
+import { View, Text, FlatList, StyleSheet, RefreshControl } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_BASE_URL } from '../config';
 
 const FeedList = ({ refreshTrigger }) => {
   const [ posts, setPosts ] = useState([]);
+  const [ refreshing, setRefreshing ] = useState(false);
 
   const fetchPosts = async () => {
     try {
@@ -31,6 +32,12 @@ const FeedList = ({ refreshTrigger }) => {
     }
   };
 
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await fetchPosts();
+    setRefreshing(false);
+  }, []);
+
   useEffect(() => {
     fetchPosts();
   }, [refreshTrigger]);
@@ -51,6 +58,9 @@ const FeedList = ({ refreshTrigger }) => {
       renderItem={renderItem}
       contentContainerStyle={{ marginTop: 10 }}
       ListEmptyComponent={<Text>No Posts Yet</Text>}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+      }
     />
   );
 };
