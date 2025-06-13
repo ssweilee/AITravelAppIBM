@@ -5,6 +5,8 @@ const authRoutes = require('./routes/authRoutes.js');
 const postRoutes = require('./routes/postRoutes.js');
 const searchRoutes = require('./routes/searchRoutes');
 const userRoutes = require('./routes/userRoutes.js');
+const messageRoutes = require('./routes/messageRoutes.js');
+const chatRoutes = require('./routes/chatRoutes.js');
 
 const app = express();
 
@@ -25,6 +27,8 @@ app.use('/api', authRoutes);
 app.use('/api/posts', postRoutes);
 app.use('/api/search', searchRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/messages', authenticateToken, messageRoutes);
+app.use('/api/chats', authenticateToken, chatRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ message: 'Route not found' });

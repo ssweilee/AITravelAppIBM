@@ -26,3 +26,4 @@ exports.search = async (req, res) => {
     res.status(500).json({ message: 'Search failed', error: err.message });
   }
 };
+

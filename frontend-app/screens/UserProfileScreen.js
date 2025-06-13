@@ -1,19 +1,18 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useEffect, useState, useLayoutEffect } from 'react';
+import { View, Text, StyleSheet, Button } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fetchUserById } from '../utils/ProfileInfo';
 import UserPostList from '../components/UserPostList';
 import FollowButton from '../components/FollowButton';
+import { API_BASE_URL } from '../config';
 
-const UserProfileScreen = ({ route }) => {
+const UserProfileScreen = ({ route, navigation }) => {
   const { userId } = route.params;
 
   const [user, setUser] = useState(null);
   const [currentUserId, setCurrentUserId] = useState(null);
-  const [isFollowing, setIsFollowing] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Fetch the current user ID from JWT
   const decodeUserIdFromToken = async () => {
     const token = await AsyncStorage.getItem('token');
     if (token) {
@@ -36,9 +35,6 @@ const UserProfileScreen = ({ route }) => {
       const result = await fetchUserById(userId);
       if (result.success) {
         setUser(result.user);
-        if (decodedUserId) {
-          setIsFollowing(result.user.followers?.includes(decodedUserId));
-        }
       } else {
         console.error('Failed to fetch user:', result.error);
       }
@@ -47,6 +43,44 @@ const UserProfileScreen = ({ route }) => {
 
     loadProfileData();
   }, [userId]);
+
+  // 🧠 SET UP CHAT BUTTON
+  useLayoutEffect(() => {
+    if (user && currentUserId && currentUserId !== user._id) {
+      navigation.setOptions({
+        headerRight: () => (
+          <Button
+            title="Chat"
+            onPress={async () => {
+              try {
+                const token = await AsyncStorage.getItem('token');
+                const response = await fetch(`${API_BASE_URL}/api/chats`, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`
+                  },
+                  body: JSON.stringify({ otherUserId: user._id })
+                });
+
+                const data = await response.json();
+                if (response.ok && data.chat) {
+                  navigation.navigate('Chat', {
+                    chatId: data.chat._id,
+                    otherUserName: `${user.firstName} ${user.lastName}`
+                  });
+                } else {
+                  console.error('Failed to create chat:', data);
+                }
+              } catch (err) {
+                console.error('Error creating chat:', err);
+              }
+            }}
+          />
+        ),
+      });
+    }
+  }, [navigation, user, currentUserId]);
 
   if (loading || !user || !currentUserId) return <Text>Loading...</Text>;
 
