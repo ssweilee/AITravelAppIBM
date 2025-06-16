@@ -4,7 +4,9 @@ import moment from 'moment';
 
 const MessageItem = ({ message, currentUserId }) => {
   const [showTimestamp, setShowTimestamp] = useState(false);
-  const isCurrentUser = message.senderId?._id === currentUserId;
+ const isCurrentUser =
+  (message.senderId && message.senderId._id === currentUserId) ||
+  message.senderId === currentUserId;
 
   const handlePress = () => {
     setShowTimestamp((prev) => !prev);
@@ -20,7 +22,9 @@ const MessageItem = ({ message, currentUserId }) => {
       <TouchableOpacity onPress={handlePress} activeOpacity={0.7}>
         <View style={styles.bubble}>
           <Text style={styles.senderName}>
-            {message.senderId?.firstName || 'User'}
+            {message.senderId?.firstName
+              ? `${message.senderId.firstName} ${message.senderId.lastName ?? ''}`
+              : 'User'}
           </Text>
           <Text>{message.text}</Text>
         </View>
