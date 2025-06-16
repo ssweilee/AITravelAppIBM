@@ -1,0 +1,8 @@
+{
+  "android": {
+    "package": "com.anonymous.usermanagementsystem"
+  },
+  "ios": {
+    "bundleIdentifier": "com.anonymous.usermanagementsystem"
+  }
+}
