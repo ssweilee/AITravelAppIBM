@@ -6,9 +6,13 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "concurrently --raw -k -n BACKEND,FRONTEND -c green,blue \"npm run server --prefix backend\" \"npm run start:expo\"",
+<<<<<<< profileEdit
     "start:expo": "cd frontend-app && npx expo start",
     "android": "expo run:android",
     "ios": "expo run:ios"
+=======
+    "start:expo": "cd frontend-app && npx expo start --tunnel"
+>>>>>>> dev
   },
   "keywords": [],
   "author": "",
@@ -46,3 +50,4 @@
     "socket.io-client": "^4.8.1"
   }
 }
+ 

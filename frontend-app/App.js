@@ -9,7 +9,14 @@ import HomeScreen from './screens/HomeScreen';
 import SearchScreen from './screens/SearchScreen';
 import UserProfileScreen from './screens/UserProfileScreen';
 import ChatScreen from './screens/ChatScreen';
+<<<<<<< profileEdit
 import EditProfileScreen from './screens/EditProfileScreen';
+=======
+import MessagesScreen from './screens/MessagesScreen';
+import CreateGroupChatScreen from './screens/CreateGroupChatScreen';
+import ChatSettingScreen from './screens/ChatSettingScreen';
+import GroupChatMembersScreen from './screens/GroupChatMembersScreen';
+>>>>>>> dev
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -31,10 +38,40 @@ export default function App() {
         <Stack.Screen name="Signup" component={SignupScreen} />
         <Stack.Screen name="SignupDetails" component={SignupDetailsScreen} />
         <Stack.Screen name="Login" component={LoginScreen} />
-        <Stack.Screen name="Main" component={MainAppTabs} options={{ headerShown: false }}/>
+        <Stack.Screen 
+          name="Main" 
+          component={MainAppTabs} 
+          options={({ route }) => ({
+            headerShown: false,
+            gestureEnabled: false,
+            animation: route?.params?.fromMessages ? 'slide_from_left' : 'default',
+          })}
+        />
         <Stack.Screen name="UserProfile" component={UserProfileScreen} />
+<<<<<<< profileEdit
         <Stack.Screen name="Chat" component={ChatScreen} />
         <Stack.Screen name="EditProfile" component={EditProfileScreen} />
+=======
+        <Stack.Screen
+          name="Chat"
+          component={ChatScreen}
+          options={({ route }) => ({
+            animation: route?.params?.fromGroupCreation ? 'slide_from_right' : 'default',
+          })}
+        />
+        <Stack.Screen
+          name="Messages"
+          component={MessagesScreen}
+          options={({ route }) => ({
+            animation: route?.params?.fromSettings ? 'slide_from_left' : 'default',
+          })}
+        />
+        <Stack.Screen name="Create New Group" component={CreateGroupChatScreen} />
+        <Stack.Screen name="Chat Settings" component={ChatSettingScreen} />
+        <Stack.Screen name="Members" component={GroupChatMembersScreen} />
+       
+      
+>>>>>>> dev
       </Stack.Navigator>
     </NavigationContainer>
   );

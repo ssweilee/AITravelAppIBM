@@ -73,6 +73,12 @@ const ProfileScreen = () => {
     }
   };
 
+  console.log('Followers:', userInfo?.followers);
+  console.log('Followings:', userInfo?.followings);
+  console.log('Trips:', userInfo?.trips);
+  console.log('Posts:', userInfo?.posts);
+  console.log('Reviews:', userInfo?.reviews);
+
   return (
     <View style={styles.container}>
       {loading ? (
