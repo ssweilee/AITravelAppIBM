@@ -11,23 +11,67 @@ const ProfileScreen = () => {
   const [userInfo, setUserInfo] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [showDropdown, setShowDropdown] = useState(false);
-
   const [selectedTab, setSelectedTab] = useState('Post');
 
   const triggerRefresh = () => setRefreshKey(prev => prev + 1);
 
-  const loadUser = async () => {
-    const result = await fetchUserProfile();
-    if (result.success) {
-      setUserInfo(result.user);
+  const loadUser = useCallback(() => {
+    // Synchronous function for useFocusEffect
+    async function fetchUserData() {
+      try {
+        setLoading(true);
+        const token = await AsyncStorage.getItem('token'); // Changed from authToken to token
+        console.log('ProfileScreen - AuthToken:', token);
+        if (!token) {
+          Alert.alert('Error', 'Authentication token missing. Please log in again.');
+          setUserInfo(null);
+          return;
+        }
+
+        const userData = await fetchUserProfile();
+        console.log('ProfileScreen - Fetched user data:', JSON.stringify(userData, null, 2));
+        if (userData && userData.success && userData.user && userData.user._id) {
+          setUserInfo(userData.user);
+        } else {
+          console.error('ProfileScreen - Invalid user data:', userData);
+          const errorMsg = userData?.error?.message || JSON.stringify(userData?.error) || 'Invalid user data';
+          Alert.alert('Error', `Failed to load user data: ${errorMsg}`);
+          setUserInfo(null);
+        }
+      } catch (error) {
+        console.error('ProfileScreen - Error loading user data:', error.message);
+        Alert.alert('Error', `An unexpected error occurred: ${error.message}`);
+        setUserInfo(null);
+      } finally {
+        setLoading(false);
+        console.log('ProfileScreen - Loading complete, userInfo:', userInfo);
+      }
+    }
+
+    fetchUserData();
+  }, []);
+
+  useFocusEffect(loadUser);
+
+  const handleEditProfile = () => {
+    if (loading) {
+      Alert.alert('Error', 'User profile is still loading. Please wait.');
+      return;
+    }
+
+    if (!userInfo || !userInfo._id) {
+      Alert.alert('Error', 'User information is not available.');
+      return;
+    }
+
+    try {
+      console.log('ProfileScreen - Navigating to EditProfileScreen with userId:', userInfo._id);
+      navigation.navigate('EditProfile', { userId: userInfo._id });
+    } catch (error) {
+      console.error('ProfileScreen - Navigation error:', error.message);
+      Alert.alert('Error', 'Navigation failed: ' + error.message);
     }
   };
-
-  useFocusEffect(
-    useCallback(() => {
-      loadUser();
-    }, [])
-  );
 
   return (
     <View style={[styles.container, { paddingTop: Platform.OS === 'android' ? RNStatusBar.currentHeight : 30 }]}>
@@ -127,7 +171,6 @@ const ProfileScreen = () => {
       </TouchableOpacity>
     ))}
   </View>
-
       {selectedTab === 'Post' && (
         <>
           <AddPost onPostCreated={triggerRefresh} />
@@ -135,6 +178,7 @@ const ProfileScreen = () => {
           <PostList refreshTrigger={refreshKey} />
         </>
       )}
+
     </View>
   );
 };

@@ -74,5 +74,36 @@ exports.getSingleUser = async (req, res) => {
   } catch (err) {
     res.status(500).json({ message: 'Failed to load user', error: err.message });
   }
-};
+}
 
+exports.updateUserProfile = async (userId, updatedData) => {
+  try {
+    const allowedFields = ['firstName', 'lastName', 'bio', 'profilePicture', 'isPublic', 'country', 'travelStyle', 'dob'];
+    const updates = {};
+    for (const field of allowedFields) {
+      if (updatedData[field] !== undefined) {
+        updates[field] = updatedData[field];
+      }
+    }
+
+    console.log('updateUserProfile - Updating user:', userId, 'with data:', updates);
+
+    // Update user in MongoDB using Mongoose
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { $set: updates },
+      { new: true, runValidators: true, select: '-password' } // Return updated document, validate, exclude password
+    );
+
+    if (!user) {
+      console.log('updateUserProfile - User not found:', userId);
+      return null;
+    }
+
+    console.log('updateUserProfile - Updated user:', user);
+    return user;
+  } catch (error) {
+    console.error('updateUserProfile - Database error:', error.message);
+    throw new Error(error.message);
+  }
+};
