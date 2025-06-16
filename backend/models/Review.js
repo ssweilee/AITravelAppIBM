@@ -9,7 +9,7 @@ const reviewSchema = new mongoose.Schema({
   targetId: {
     type: mongoose.Schema.Types.ObjectId,
     refPath: 'targetModel',
-    required: True
+    required: true
   },
   targetModel: {
     type: String,
