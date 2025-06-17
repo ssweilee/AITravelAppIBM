@@ -45,7 +45,7 @@ const HomeScreen = ({ navigation }) => {
               </View>
             )}
           </View>
-          <TouchableOpacity style={styles.iconButton}>
+          <TouchableOpacity style={styles.iconButton} onPress={() => navigation.navigate('Messages')}>
             <Ionicons name="chatbubble-outline" size={28} color="black" />
           </TouchableOpacity>
         </View>
