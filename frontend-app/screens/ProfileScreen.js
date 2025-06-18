@@ -133,7 +133,7 @@ const ProfileScreen = () => {
           <Text style={styles.locationText}>{userInfo?.location || ''}</Text>
           <Text style={styles.bioText}>{userInfo?.bio || ''}</Text>
         </View>
-        <TouchableOpacity style={styles.editButton} onPress={() => alert('Dummy edit action')}>
+        <TouchableOpacity style={styles.editButton} onPress={() => navigation.navigate('EditProfile', { userId: userInfo?._id })}>
           <Text style={styles.editButtonText}>Edit</Text>
         </TouchableOpacity>
       </View>

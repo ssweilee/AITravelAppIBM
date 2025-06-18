@@ -25,7 +25,7 @@ const userSchema = new mongoose.Schema({
   dob: {
     type: Date
   },
-  country: {
+  location: {
     type: String
   },
   travelStyle: {
