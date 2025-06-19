@@ -9,6 +9,7 @@ import HomeScreen from './screens/HomeScreen';
 import SearchScreen from './screens/SearchScreen';
 import UserProfileScreen from './screens/UserProfileScreen';
 import ChatScreen from './screens/ChatScreen';
+import PostDetailScreen from './screens/PostDetailScreen';
 import EditProfileScreen from './screens/EditProfileScreen';
 import MessagesScreen from './screens/MessagesScreen';
 import CreateGroupChatScreen from './screens/CreateGroupChatScreen';
@@ -19,6 +20,7 @@ import CreateThreadScreen from './screens/CreateThreadScreen';
 import ControlPanelScreen from './screens/ControlPanelScreen';
 import BookingsScreen from './screens/BookingsScreen';
 import { Ionicons, MaterialIcons, FontAwesome } from '@expo/vector-icons';
+
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -69,14 +71,10 @@ export default function App() {
           })}
         />
         <Stack.Screen name="UserProfile" component={UserProfileScreen} />
+
+        <Stack.Screen name="Chat" component={ChatScreen} />
+        <Stack.Screen name="PostDetail" component={PostDetailScreen} />
         <Stack.Screen name="EditProfile" component={EditProfileScreen} />
-        <Stack.Screen
-          name="Chat"
-          component={ChatScreen}
-          options={({ route }) => ({
-            animation: route?.params?.fromGroupCreation ? 'slide_from_right' : 'default',
-          })}
-        />
         <Stack.Screen
           name="Messages"
           component={MessagesScreen}
@@ -89,6 +87,7 @@ export default function App() {
         <Stack.Screen name="Members" component={GroupChatMembersScreen} />
         <Stack.Screen name="CreateItinerary" component={CreateItineraryScreen} options={{ headerShown: false }}/>
         <Stack.Screen name="CreateThread" component={CreateThreadScreen} options={{ headerShown: false }}/>
+
       </Stack.Navigator>
     </NavigationContainer>
   );
