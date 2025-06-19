@@ -90,7 +90,7 @@ const UserProfileScreen = ({ route, navigation }) => {
         {user.firstName} {user.lastName}
       </Text>
       <Text style={styles.info}>
-        Followers: {user.followers?.length || 0} | Following: {user.followings?.length || 0}
+        Followers: {user?.followers?.length || 0} | Trips: {user?.trips?.length || 0} | Reviews: {user?.reviews?.length || 0}
       </Text>
 
       {currentUserId && currentUserId !== user._id && (

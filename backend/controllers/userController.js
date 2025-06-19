@@ -1,4 +1,6 @@
 const User = require('../models/User');
+const Trip = require('../models/Trip');
+const Review = require('../models/Review');
 
 exports.followUser = async (req, res) => {
   try {
@@ -48,7 +50,9 @@ exports.followUser = async (req, res) => {
 exports.getUserProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user.userId)
-      .populate('followers followings', 'firstName lastName');
+      .populate('followers', 'firstName lastName')
+      .populate('trips')
+      .populate('reviews');
     res.json({ user });
   } catch (err) {
     res.status(500).json({ message: 'Failed to fecth profile', error: err.message });
@@ -59,15 +63,47 @@ exports.getSingleUser = async (req, res) => {
   try {
     const user = await User.findById(req.params.id)
       .populate('followers', 'firstName lastName')
-      .populate('followings', 'firstName lastName');
+      .populate('trips')
+      .populate('reviews');
     
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    res.json({ user });
+    res.json({ success: true, user });
   } catch (err) {
     res.status(500).json({ message: 'Failed to load user', error: err.message });
   }
-};
+}
 
+exports.updateUserProfile = async (userId, updatedData) => {
+  try {
+    const allowedFields = ['firstName', 'lastName', 'bio', 'profilePicture', 'isPublic', 'country', 'travelStyle', 'dob'];
+    const updates = {};
+    for (const field of allowedFields) {
+      if (updatedData[field] !== undefined) {
+        updates[field] = updatedData[field];
+      }
+    }
+
+    console.log('updateUserProfile - Updating user:', userId, 'with data:', updates);
+
+    // Update user in MongoDB using Mongoose
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { $set: updates },
+      { new: true, runValidators: true, select: '-password' } // Return updated document, validate, exclude password
+    );
+
+    if (!user) {
+      console.log('updateUserProfile - User not found:', userId);
+      return null;
+    }
+
+    console.log('updateUserProfile - Updated user:', user);
+    return user;
+  } catch (error) {
+    console.error('updateUserProfile - Database error:', error.message);
+    throw new Error(error.message);
+  }
+};
