@@ -29,11 +29,8 @@ router.put(
        .matches(/^[a-zA-Z\s]+$/)
        .withMessage('Last name must contain only letters and spaces'),
      body('bio')
-       .optional()
-       .trim()
-       .isLength({ max: 100 })
-       .withMessage('Bio must be 100 characters or less'),
-     body('country').optional(),//make scroll down
+       .optional(),
+     body('location').optional(),//make scroll down
      body('profilePicture').optional(),
      body('isPublic').optional().isBoolean().withMessage('isPublic must be a boolean'),
    ],

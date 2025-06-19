@@ -6,6 +6,7 @@ import Autocomplete from 'react-native-autocomplete-input';
 import debounce from 'lodash.debounce';
 import Constants from 'expo-constants';
 
+
 const EditProfileScreen = ({ route, navigation }) => {
   const { userId } = route.params;
   const [firstName, setFirstName] = useState('');
@@ -67,23 +68,75 @@ const EditProfileScreen = ({ route, navigation }) => {
 
   const fetchLocations = debounce(async (query) => {
     console.log(`[Step 1] fetchLocations called with query: "${query}"`);
-    if (query.length <= 2) {
+    if (query.length <= 3) {
       setFilteredLocations([]);
       return;
     }
     try {
+    const url = `${API_BASE_URL}/api/location/autocomplete?q=${encodeURIComponent(query)}`;
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`LocationIQ API error: Status ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log('[DEBUG] LocationIQ raw response:', JSON.stringify(data, null, 2));
+
+
+    const locations = data.map(item => ({
+      display: item.display || 'Unknown',
+      value: item.value || '',
+    }));
+
+
+      {/*
+        const GOOGLE_API_KEY = Constants.manifest?.extra?.googlePlacesApiKey || Constants.expoConfig?.extra?.googlePlacesApiKey;
+
+    if (!GOOGLE_API_KEY) {
+      console.error('Google Places API Key is missing. Check your config.');
+      return;
+    }
+
+    const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(query)}&types=(cities)&components=country:gb&key=${GOOGLE_API_KEY}`;
+
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      throw new Error(`Google Places API Error: Status ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    if (data.status !== 'OK') {
+      console.error('Google Places API returned error:', data.status, data.error_message);
+      setFilteredLocations([]);
+      return;
+    }
+
+    const locations = data.predictions.map(prediction => ({
+      display: prediction.description,
+      value: prediction.description, 
+    }));
+        
+        */}
+      
+
+{/*
       //1. Safely access the API key from Constants
-const GEOAPIFY_API_KEY =
-  Constants.manifest?.extra?.geoapifyApiKey || // for older versions
-  Constants.expoConfig?.extra?.geoapifyApiKey || // for SDK 49+
-  null;
+      
+        const GEOAPIFY_API_KEY =
+        Constants.manifest?.extra?.geoapifyApiKey || // for older versions
+        Constants.expoConfig?.extra?.geoapifyApiKey || // for SDK 49+
+        null;
+        
 
 
       //2. Check if the API key is available
       if (!GEOAPIFY_API_KEY) {
         console.error('Geoapify API Key is missing. Check your .env and app.config.js setup.');
         return;
-    }
+      }
+        
     //3. Construct the API URL with the query
     const url = `https://api.geoapify.com/v1/geocode/autocomplete?text=${encodeURIComponent(query)}&apiKey=${GEOAPIFY_API_KEY}`;
     //4. Send the request to Geoapify API
@@ -105,6 +158,9 @@ const GEOAPIFY_API_KEY =
          };
       });
     } 
+      */}
+
+
     //7. Update the state with the filtered locations
     setFilteredLocations(locations);
     } catch (error) {
@@ -216,19 +272,13 @@ const GEOAPIFY_API_KEY =
         placeholder="Enter last name"
         maxLength={50}
       />
-      <Text style={styles.label}>Location:</Text>
-      {/* make it scroll down selection, not input */}
-      <View style={styles.autocompleteContainer}>
-
-      </View>
-      </View>
-      
+      <Text style={styles.label}>Location:</Text>      
       <View style={styles.autocompleteContainer}>
   <Autocomplete
     data={filteredLocations}
     value={location}
     onChangeText={handleLocationChange}
-    placeholder="Input City or Country (eg. Bristol, UK)"
+    placeholder="Type a city name (e.g., Bristol)"
     flatListProps={{
       keyboardShouldPersistTaps: 'always',
       renderItem: ({ item }) => (
@@ -240,7 +290,7 @@ const GEOAPIFY_API_KEY =
         </TouchableOpacity>
       ),
     }}
-    inputContainerStyle={styles.input}
+    inputContainerStyle={{ borderWidth: 0, padding: 0, margin: 0 }}
     listContainerStyle={styles.listContainer}
   />
 </View>
@@ -256,6 +306,7 @@ const GEOAPIFY_API_KEY =
       />
       <Button title="Save" onPress={handleSave} disabled={loading} />
       {loading && <ActivityIndicator size="small" color="#0000ff" />}
+      </View>
       </KeyboardAvoidingView>
   );
 };
