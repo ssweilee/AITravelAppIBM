@@ -76,13 +76,6 @@ export default function App() {
         <Stack.Screen name="PostDetail" component={PostDetailScreen} />
         <Stack.Screen name="EditProfile" component={EditProfileScreen} />
         <Stack.Screen
-          name="Chat"
-          component={ChatScreen}
-          options={({ route }) => ({
-            animation: route?.params?.fromGroupCreation ? 'slide_from_right' : 'default',
-          })}
-        />
-        <Stack.Screen
           name="Messages"
           component={MessagesScreen}
           options={({ route }) => ({
