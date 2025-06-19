@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Platform, StatusBar as RNStatusBar } from 'react-native';
-import { Ionicons, MaterialIcons, FontAwesome } from '@expo/vector-icons';
+import { View, Text, StyleSheet, TouchableOpacity, Platform, StatusBar as RNStatusBar, Image } from 'react-native';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import FeedList from '../components/FeedList';
 
@@ -11,14 +11,12 @@ const HomeScreen = ({ navigation }) => {
   const triggerRefresh = () => setRefreshKey(prev => prev + 1);
 
   return (
-    <View style={[styles.container, { paddingTop: Platform.OS === 'android' ? RNStatusBar.currentHeight : 40 }]}> 
+    <View style={[styles.container, { paddingTop: RNStatusBar.currentHeight}]}> 
       <StatusBar style="dark" />
       <View style={styles.topBar}>
         <View style={styles.logoContainer}>
-          {/* Dummy logo replacement */}
-          <View style={{ width: 50, height: 40, backgroundColor: '#007bff', borderRadius: 8, marginRight: 8, justifyContent: 'center', alignItems: 'center' }}>
-            <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 18 }}>AwayAway</Text>
-          </View>
+          <Image source={require('../assets/icon.png')} style={styles.logo} />
+          <Text style={styles.logoText}>AwayAway</Text>
         </View>
         <View style={styles.iconRow}>
           <TouchableOpacity style={styles.iconButton}>
@@ -29,7 +27,7 @@ const HomeScreen = ({ navigation }) => {
               <MaterialIcons name="add-circle-outline" size={28} color="black" />
             </TouchableOpacity>
             {showDropdown && (
-              <View style={[styles.dropdown, { top: 38, right: -10 }]}>
+              <View style={[styles.dropdown, { top: 38, right: -10 }]}> 
                 <TouchableOpacity style={styles.dropdownItem} onPress={() => { setShowDropdown(false); navigation.navigate('CreateThread'); }}>
                   <MaterialIcons name="forum" size={22} color="#222" style={{ marginRight: 10 }} />
                   <Text>Thread</Text>
@@ -50,22 +48,20 @@ const HomeScreen = ({ navigation }) => {
           </TouchableOpacity>
         </View>
       </View>
-      <Text style={styles.header}>Home Feed</Text>
+      {/* Feed below header, full width, no extra padding */}
       <FeedList refreshTrigger={refreshKey} />
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, alignItems: 'center', backgroundColor: '#fff' },
-  topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%', padding: 10, borderBottomWidth: 1, borderColor: '#eee' },
+  container: { flex: 1, backgroundColor: '#fff' },
+  topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%', paddingHorizontal: 10, paddingVertical: 8, borderBottomWidth: 1, borderColor: '#eee', backgroundColor: '#fff' },
   logoContainer: { flexDirection: 'row', alignItems: 'center' },
-  logo: { width: 50, height: 40, resizeMode: 'contain', marginRight: 8 },
-  logoText: { fontSize: 12, fontWeight: 'bold' },
+  logo: { width: 36, height: 36, resizeMode: 'contain', marginRight: 8 },
+  logoText: { fontSize: 18, fontWeight: 'bold', color: '#222' },
   iconRow: { flexDirection: 'row', alignItems: 'center' },
-  iconButton: { marginHorizontal: 6 },
-  header: { fontSize: 22, fontWeight: 'bold', marginVertical: 10 },
-  text: { fontSize: 20 },
+  iconButton: { marginLeft: 12 },
   dropdown: {
     position: 'absolute',
     backgroundColor: '#fff',
