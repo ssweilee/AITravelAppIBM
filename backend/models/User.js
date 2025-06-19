@@ -55,6 +55,8 @@ const userSchema = new mongoose.Schema({
     type: Number, // Leave as Number for now, but will have to change to Object later when we create reviewSchema Model!
     default: 0
   },
+  savedPosts: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Post' }],
+  savedTrips: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Trip' }],
 });
 
 module.exports = mongoose.model('User', userSchema);

@@ -9,7 +9,7 @@ import HomeScreen from './screens/HomeScreen';
 import SearchScreen from './screens/SearchScreen';
 import UserProfileScreen from './screens/UserProfileScreen';
 import ChatScreen from './screens/ChatScreen';
-
+import PostDetailScreen from './screens/PostDetailScreen';
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
@@ -33,6 +33,7 @@ export default function App() {
         <Stack.Screen name="Main" component={MainAppTabs} options={{ headerShown: false }}/>
         <Stack.Screen name="UserProfile" component={UserProfileScreen} />
         <Stack.Screen name="Chat" component={ChatScreen} />
+        <Stack.Screen name="PostDetail" component={PostDetailScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

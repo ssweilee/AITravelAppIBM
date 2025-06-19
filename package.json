@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "concurrently --raw -k -n BACKEND,FRONTEND -c green,blue \"npm run server --prefix backend\" \"npm run start:expo\"",
+    "dev": "concurrently \"npm run server --prefix backend\" \"npm run start:expo\"",
     "start:expo": "cd frontend-app && npx expo start"
   },
   "keywords": [],
