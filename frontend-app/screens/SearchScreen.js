@@ -166,7 +166,7 @@ const SearchScreen = () => {
   const renderPostItem = ({ item }) => (
     <TouchableOpacity
       style={styles.resultItem}
-      onPress={() => navigation.navigate('PostDetail', { postId: item._id })}
+      onPress={() => navigation.navigate('PostDetail', { post: item })}
     >
       <Text style={styles.postContent} numberOfLines={2}>
         {item.content}
