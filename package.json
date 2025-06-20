@@ -5,8 +5,9 @@
   "main": "frontend-app/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
+
     "dev": "concurrently --raw -k -n BACKEND,FRONTEND -c green,blue \"npm run server --prefix backend\" \"npm run start:expo\"",
-    "start:expo": "cd frontend-app && npx expo start --tunnel"
+    "start:expo": "cd frontend-app && npx expo start --tunnel --clear"
   },
   "keywords": [],
   "author": "",
@@ -31,10 +32,13 @@
     "expo-status-bar": "~2.2.3",
     "express-validator": "^7.2.1",
     "jsonwebtoken": "^9.0.2",
+    "lodash": "^4.17.21",
     "moment": "^2.30.1",
+    "node": "^24.2.0",
     "react": "19.0.0",
     "react-dom": "19.0.0",
     "react-native": "0.79.3",
+    "react-native-autocomplete-input": "^5.5.6",
     "react-native-elements": "^3.4.3",
     "react-native-gesture-handler": "~2.24.0",
     "react-native-reanimated": "~3.17.4",

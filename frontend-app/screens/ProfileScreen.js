@@ -48,6 +48,14 @@ const ProfileScreen = () => {
     fetchUserData();
   }, []);
 
+  const formatLocation = (locationString) => {
+    if (!locationString || !locationString.includes('|')) {
+        return locationString || ''; 
+    }
+    const [countryCode, city] = locationString.split('|');
+    return `${city}, ${countryCode}`;
+  };
+
   useFocusEffect(loadUser);
 
   // 👇 Place name and buttons in header
@@ -130,8 +138,8 @@ const ProfileScreen = () => {
 
       <View style={styles.profileInfoRow}>
         <View style={styles.profileTextBlock}>
-          <Text style={styles.locationText}>{userInfo?.location || ''}</Text>
-          <Text style={styles.bioText}>{userInfo?.bio || ''}</Text>
+        <Text style={styles.locationText}>{formatLocation(userInfo?.location)}</Text>
+        <Text style={styles.bioText}>{userInfo?.bio || ''}</Text>
         </View>
         <TouchableOpacity style={styles.editButton} onPress={() => navigation.navigate('EditProfile', { userId: userInfo?._id })}>
           <Text style={styles.editButtonText}>Edit</Text>
