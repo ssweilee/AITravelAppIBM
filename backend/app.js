@@ -7,7 +7,9 @@ const searchRoutes = require('./routes/searchRoutes');
 const userRoutes = require('./routes/userRoutes.js');
 const messageRoutes = require('./routes/messageRoutes.js');
 const chatRoutes = require('./routes/chatRoutes.js');
+const locationRouter = require('./routes/locationRoutes.js');
 const userInteractionRoutes = require('./routes/userInteractionRoutes.js');
+
 
 const app = express();
 
@@ -30,6 +32,7 @@ app.use('/api/search', searchRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/messages', authenticateToken, messageRoutes);
 app.use('/api/chats', authenticateToken, chatRoutes);
+app.use('/api/location', locationRouter);
 app.use('/api/interactions',authenticateToken,userInteractionRoutes);
 
 app.use((req, res) => {
