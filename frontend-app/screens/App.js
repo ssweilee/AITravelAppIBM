@@ -16,7 +16,7 @@ import ChatSettingScreen from './screens/ChatSettingScreen';
 import GroupChatMembersScreen from './screens/GroupChatMembersScreen';
 import ControlPanelScreen from './screens/ControlPanelScreen';
 import BookingsScreen from './screens/BookingsScreen';
-import CreateThreadScreen from './screens/CreateThreadScreen';
+import CreatePostScreen from './screens/CreatePostScreen';
 import { Ionicons, MaterialIcons, FontAwesome } from '@expo/vector-icons';
 
 const Stack = createNativeStackNavigator();
@@ -86,7 +86,7 @@ export default function App() {
         <Stack.Screen name="Create New Group" component={CreateGroupChatScreen} />
         <Stack.Screen name="Chat Settings" component={ChatSettingScreen} />
         <Stack.Screen name="Members" component={GroupChatMembersScreen} />
-        <Stack.Screen name="CreateThread" component={CreateThreadScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="CreatePost" component={CreatePostScreen} options={{ headerShown: false }} />
         <Stack.Screen name="CreateItinerary" component={require('./screens/CreateItineraryScreen').default} options={{ headerShown: false }} />
       </Stack.Navigator>
     </NavigationContainer>

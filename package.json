@@ -5,7 +5,6 @@
   "main": "frontend-app/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-
     "dev": "concurrently --raw -k -n BACKEND,FRONTEND -c green,blue \"npm run server --prefix backend\" \"npm run start:expo\"",
     "start:expo": "cd frontend-app && npx expo start --tunnel --clear"
   },
@@ -46,6 +45,7 @@
     "react-native-screens": "~4.11.1",
     "react-native-svg": "^15.11.2",
     "react-native-web": "^0.20.0",
-    "socket.io-client": "^4.8.1"
+    "socket.io-client": "^4.8.1",
+    "expo-image-picker": "~16.1.4"
   }
 }
