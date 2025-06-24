@@ -1,67 +1,144 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Platform, StatusBar as RNStatusBar, Image } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Image,
+} from 'react-native';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
+import { SafeAreaView } from 'react-native-safe-area-context'; // ✅ SafeAreaView for both platforms
 import FeedList from '../components/FeedList';
 
 const HomeScreen = ({ navigation }) => {
-  const [refreshKey, setRefreshKey ] = useState(0);
+  const [refreshKey, setRefreshKey] = useState(0);
   const [showDropdown, setShowDropdown] = useState(false);
 
   const triggerRefresh = () => setRefreshKey(prev => prev + 1);
 
   return (
-    <View style={[styles.container, { paddingTop: RNStatusBar.currentHeight}]}> 
+    <SafeAreaView style={styles.container} edges={['top']}>
       <StatusBar style="dark" />
+      
       <View style={styles.topBar}>
         <View style={styles.logoContainer}>
           <Image source={require('../assets/icon.png')} style={styles.logo} />
           <Text style={styles.logoText}>AwayAway</Text>
         </View>
+
         <View style={styles.iconRow}>
           <TouchableOpacity style={styles.iconButton}>
             <Ionicons name="notifications-outline" size={28} color="black" />
           </TouchableOpacity>
+
           <View style={{ position: 'relative' }}>
-            <TouchableOpacity style={styles.iconButton} onPress={() => setShowDropdown(v => !v)}>
+            <TouchableOpacity
+              style={styles.iconButton}
+              onPress={() => setShowDropdown(v => !v)}
+            >
               <MaterialIcons name="add-circle-outline" size={28} color="black" />
             </TouchableOpacity>
+
             {showDropdown && (
-              <View style={[styles.dropdown, { top: 38, right: -10 }]}> 
-                <TouchableOpacity style={styles.dropdownItem} onPress={() => { setShowDropdown(false); navigation.navigate('CreateThread'); }}>
-                  <MaterialIcons name="forum" size={22} color="#222" style={{ marginRight: 10 }} />
+              <View style={[styles.dropdown, { top: 38, right: -10 }]}>
+                <TouchableOpacity
+                  style={styles.dropdownItem}
+                  onPress={() => {
+                    setShowDropdown(false);
+                    navigation.navigate('CreateThread');
+                  }}
+                >
+                  <MaterialIcons
+                    name="forum"
+                    size={22}
+                    color="#222"
+                    style={{ marginRight: 10 }}
+                  />
                   <Text>Thread</Text>
                 </TouchableOpacity>
+
                 <TouchableOpacity style={styles.dropdownItem}>
-                  <MaterialIcons name="post-add" size={22} color="#222" style={{ marginRight: 10 }} />
+                  <MaterialIcons
+                    name="post-add"
+                    size={22}
+                    color="#222"
+                    style={{ marginRight: 10 }}
+                  />
                   <Text>Post</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.dropdownItem} onPress={() => { setShowDropdown(false); navigation.navigate('CreateItinerary'); }}>
-                  <MaterialIcons name="event-note" size={22} color="#222" style={{ marginRight: 10 }} />
+
+                <TouchableOpacity
+                  style={styles.dropdownItem}
+                  onPress={() => {
+                    setShowDropdown(false);
+                    navigation.navigate('CreateItinerary');
+                  }}
+                >
+                  <MaterialIcons
+                    name="event-note"
+                    size={22}
+                    color="#222"
+                    style={{ marginRight: 10 }}
+                  />
                   <Text>Itinerary</Text>
                 </TouchableOpacity>
               </View>
             )}
           </View>
-          <TouchableOpacity style={styles.iconButton} onPress={() => navigation.navigate('Messages')}>
+
+          <TouchableOpacity
+            style={styles.iconButton}
+            onPress={() => navigation.navigate('Messages')}
+          >
             <Ionicons name="chatbubble-outline" size={28} color="black" />
           </TouchableOpacity>
         </View>
       </View>
-      {/* Feed below header, full width, no extra padding */}
+
       <FeedList refreshTrigger={refreshKey} />
-    </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
-  topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%', paddingHorizontal: 10, paddingVertical: 8, borderBottomWidth: 1, borderColor: '#eee', backgroundColor: '#fff' },
-  logoContainer: { flexDirection: 'row', alignItems: 'center' },
-  logo: { width: 36, height: 36, resizeMode: 'contain', marginRight: 8 },
-  logoText: { fontSize: 18, fontWeight: 'bold', color: '#222' },
-  iconRow: { flexDirection: 'row', alignItems: 'center' },
-  iconButton: { marginLeft: 12 },
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderColor: '#eee',
+    backgroundColor: '#fff',
+  },
+  logoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  logo: {
+    width: 36,
+    height: 36,
+    resizeMode: 'contain',
+    marginRight: 8,
+  },
+  logoText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#222',
+  },
+  iconRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  iconButton: {
+    marginLeft: 12,
+  },
   dropdown: {
     position: 'absolute',
     backgroundColor: '#fff',

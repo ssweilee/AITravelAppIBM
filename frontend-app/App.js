@@ -19,6 +19,7 @@ import CreateItineraryScreen from './screens/CreateItineraryScreen';
 import CreateThreadScreen from './screens/CreateThreadScreen';
 import ControlPanelScreen from './screens/ControlPanelScreen';
 import BookingsScreen from './screens/BookingsScreen';
+import ItineraryDetailScreen from './screens/ItineraryDetailScreen';
 import { Ionicons, MaterialIcons, FontAwesome } from '@expo/vector-icons';
 
 
@@ -87,6 +88,7 @@ export default function App() {
         <Stack.Screen name="Members" component={GroupChatMembersScreen} />
         <Stack.Screen name="CreateItinerary" component={CreateItineraryScreen} options={{ headerShown: false }}/>
         <Stack.Screen name="CreateThread" component={CreateThreadScreen} options={{ headerShown: false }}/>
+        <Stack.Screen name="ItineraryDetail" component={ItineraryDetailScreen} options={{ headerShown: false }} />
 
       </Stack.Navigator>
     </NavigationContainer>

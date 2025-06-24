@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import moment from 'moment';
+import ShareItineraryCard from '../ItineraryComponents/ShareItineraryCard.js'
 
 const MessageItem = ({ message, currentUserId }) => {
   const [showTimestamp, setShowTimestamp] = useState(false);
@@ -28,6 +29,11 @@ const MessageItem = ({ message, currentUserId }) => {
           </Text>
           <Text>{message.text}</Text>
         </View>
+
+        {message.sharedItinerary && (
+          <ShareItineraryCard itinerary={message.sharedItinerary} />
+        )}
+
       </TouchableOpacity>
 
       {showTimestamp && (
