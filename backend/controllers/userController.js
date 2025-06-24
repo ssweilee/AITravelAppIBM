@@ -78,10 +78,10 @@ exports.getSingleUser = async (req, res) => {
 
 exports.updateUserProfile = async (userId, updatedData) => {
   try {
-    const allowedFields = ['firstName', 'lastName', 'bio', 'profilePicture', 'isPublic', 'location', 'travelStyle', 'dob'];
+    const allowedFields = ['firstName', 'lastName', 'bio', 'isPublic', 'location', 'travelStyle', 'dob', 'profilePicture'];
     const updates = {};
     for (const field of allowedFields) {
-      if (updatedData[field] !== undefined) {
+      if (updatedData.hasOwnProperty(field)) {
         updates[field] = updatedData[field];
       }
     }
@@ -97,14 +97,12 @@ exports.updateUserProfile = async (userId, updatedData) => {
     );
 
     if (!user) {
-      console.log('updateUserProfile - User not found:', userId);
-      return null;
+      console.error('[ERROR] userController - User not found during update:', userId);      return null;
     }
 
     console.log('updateUserProfile - Updated user:', user);
     return user;
   } catch (error) {
-    console.error('updateUserProfile - Database error:', error.message);
-    throw new Error(error.message);
+    console.error('[ERROR] userController - Database update error:', error.message);
   }
 };

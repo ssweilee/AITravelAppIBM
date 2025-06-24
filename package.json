@@ -5,7 +5,6 @@
   "main": "frontend-app/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-
     "dev": "concurrently --raw -k -n BACKEND,FRONTEND -c green,blue \"npm run server --prefix backend\" \"npm run start:expo\"",
     "start:expo": "cd frontend-app && npx expo start --tunnel --clear"
   },
@@ -28,6 +27,9 @@
     "dotenv": "^16.5.0",
     "expo": "^53.0.11",
     "expo-dev-client": "~5.2.0",
+    "expo-image": "~2.3.0",
+    "expo-image-picker": "~16.1.4",
+    "expo-linking": "^7.1.5",
     "expo-status-bar": "~2.2.3",
     "express-validator": "^7.2.1",
     "jsonwebtoken": "^9.0.2",

@@ -1,6 +1,7 @@
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { AuthProvider } from './contexts/AuthContext';
 import LoginScreen from './screens/LoginScreen';
 import SignupScreen from './screens/SignupScreen';
 import SignupDetailsScreen from './screens/SignupDetailsScreen';
@@ -56,39 +57,42 @@ function MainAppTabs() {
 
 export default function App() {
   return (
-    <NavigationContainer>
-      <Stack.Navigator initialRouteName="Signup">
-        <Stack.Screen name="Signup" component={SignupScreen} />
-        <Stack.Screen name="SignupDetails" component={SignupDetailsScreen} />
-        <Stack.Screen name="Login" component={LoginScreen} />
-        <Stack.Screen 
-          name="Main" 
-          component={MainAppTabs} 
-          options={({ route }) => ({
-            headerShown: false,
-            gestureEnabled: false,
-            animation: route?.params?.fromMessages ? 'slide_from_left' : 'default',
-          })}
-        />
-        <Stack.Screen name="UserProfile" component={UserProfileScreen} />
+    <AuthProvider>
+      <NavigationContainer>
+        <Stack.Navigator initialRouteName="Signup">
+          <Stack.Screen name="Signup" component={SignupScreen} />
+          <Stack.Screen name="SignupDetails" component={SignupDetailsScreen} />
+          <Stack.Screen name="Login" component={LoginScreen} />
+          <Stack.Screen 
+            name="Main" 
+            component={MainAppTabs} 
+            options={({ route }) => ({
+              headerShown: false,
+              gestureEnabled: false,
+              animation: route?.params?.fromMessages ? 'slide_from_left' : 'default',
+            })}
+          />
+          <Stack.Screen name="UserProfile" component={UserProfileScreen} />
+          <Stack.Screen name="Profile" component={ProfileScreen} />
+          <Stack.Screen name="Chat" component={ChatScreen} />
+          <Stack.Screen name="PostDetail" component={PostDetailScreen} />
+          <Stack.Screen name="EditProfile" component={EditProfileScreen} />
+          <Stack.Screen
+            name="Messages"
+            component={MessagesScreen}
+            options={({ route }) => ({
+              animation: route?.params?.fromSettings ? 'slide_from_left' : 'default',
+            })}
+          />
+          <Stack.Screen name="Create New Group" component={CreateGroupChatScreen} />
+          <Stack.Screen name="Chat Settings" component={ChatSettingScreen} />
+          <Stack.Screen name="Members" component={GroupChatMembersScreen} />
+          <Stack.Screen name="CreateItinerary" component={CreateItineraryScreen} options={{ headerShown: false }}/>
+          <Stack.Screen name="CreateThread" component={CreateThreadScreen} options={{ headerShown: false }}/>
 
-        <Stack.Screen name="Chat" component={ChatScreen} />
-        <Stack.Screen name="PostDetail" component={PostDetailScreen} />
-        <Stack.Screen name="EditProfile" component={EditProfileScreen} />
-        <Stack.Screen
-          name="Messages"
-          component={MessagesScreen}
-          options={({ route }) => ({
-            animation: route?.params?.fromSettings ? 'slide_from_left' : 'default',
-          })}
-        />
-        <Stack.Screen name="Create New Group" component={CreateGroupChatScreen} />
-        <Stack.Screen name="Chat Settings" component={ChatSettingScreen} />
-        <Stack.Screen name="Members" component={GroupChatMembersScreen} />
-        <Stack.Screen name="CreateItinerary" component={CreateItineraryScreen} options={{ headerShown: false }}/>
-        <Stack.Screen name="CreateThread" component={CreateThreadScreen} options={{ headerShown: false }}/>
-
-      </Stack.Navigator>
-    </NavigationContainer>
+        </Stack.Navigator>
+      </NavigationContainer>
+    </AuthProvider>
+    
   );
 }
