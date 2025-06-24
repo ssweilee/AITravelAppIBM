@@ -108,3 +108,14 @@ exports.updateUserProfile = async (userId, updatedData) => {
     throw new Error(error.message);
   }
 };
+
+exports.getUserFollowings = async (req, res) => {
+  try {
+    const user = await require('../models/User').findById(req.user.userId)
+      .populate('followings', '_id firstName lastName profilePicture');
+    res.status(200).json(user.followings);
+  } catch (error) {
+    console.error('Error fetching followings:', error);
+    res.status(500).json({ message: 'Failed to fetch followings' });
+  }
+};

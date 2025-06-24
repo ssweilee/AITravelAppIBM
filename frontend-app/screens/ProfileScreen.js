@@ -7,6 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fetchUserProfile } from '../utils/ProfileInfo';
 import AddPost from '../components/AddPost';
 import PostList from '../components/PostList';
+import ItineraryList from '../components/profileComponents/ItineraryList';
 
 const ProfileScreen = () => {
   const [userInfo, setUserInfo] = useState(null);
@@ -160,9 +161,16 @@ const ProfileScreen = () => {
 
       {selectedTab === 'Post' && (
         <>
-          <AddPost onPostCreated={triggerRefresh} />
-          <Text style={styles.subHeader}>Recent Posts:</Text>
           <PostList refreshTrigger={refreshKey} />
+        </>
+      )}
+
+      {selectedTab === 'Itinerary' && (
+        <>
+          <ItineraryList 
+            refreshTrigger={refreshKey}
+            onPress={() => navigation.navigate('ItineraryDetail', { itinerary: item })}
+          />
         </>
       )}
     </View>

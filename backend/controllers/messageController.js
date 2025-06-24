@@ -10,7 +10,9 @@ exports.getMessagesForChat = async (req, res) => {
     // Fetch all messages in the chat
     const messages = await Message.find({ chatId })
       .populate('senderId', 'firstName lastName')
+      .populate('sharedItinerary')
       .sort('createdAt');
+
 
     // Filter messages that are unread and sent by someone else
     const unreadMessages = messages.filter(
@@ -37,7 +39,7 @@ exports.getMessagesForChat = async (req, res) => {
 // Send a new message and update chat's lastMessage
 exports.sendMessage = async (req, res) => {
   const { chatId } = req.params;
-  const { text } = req.body;
+  const { text, sharedItinerary} = req.body;
   const senderId = req.user.userId;
 
   if (!text || !chatId || !senderId) {
@@ -51,10 +53,13 @@ exports.sendMessage = async (req, res) => {
       chatId,
       senderId,
       text,
+      sharedItinerary,
       readBy: [senderId], // sender has read their own message
     });
 
-    const message = await Message.findById(createdMessage._id).populate('senderId', 'firstName lastName');
+    const message = await Message.findById(createdMessage._id)
+      .populate('senderId', 'firstName lastName')
+      .populate('sharedItinerary');
 
     // Update the chat's last message reference
     await Chat.findByIdAndUpdate(chatId, { lastMessage: message._id });
