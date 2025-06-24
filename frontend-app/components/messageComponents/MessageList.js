@@ -53,6 +53,8 @@ const MessageList = ({ searchQuery }) => {
   // Listen for real-time messages
   useEffect(() => {
     const handleNewMessage = (message) => {
+
+      console.log("Incoming message via socket:", message);
       setChats((prevChats) => {
         const chatIndex = prevChats.findIndex(c => c._id === message.chatId);
         if (chatIndex === -1) return prevChats;
@@ -60,10 +62,10 @@ const MessageList = ({ searchQuery }) => {
         const updatedChats = [...prevChats];
         const chatToUpdate = { ...updatedChats[chatIndex] };
         chatToUpdate.lastMessage = message;
-        chatToUpdate.updatedAt = new Date();
+        chatToUpdate.updatedAt = message.createdAt; // ✅ REAL server time
 
-        updatedChats.splice(chatIndex, 1); // Remove old
-        return [chatToUpdate, ...updatedChats]; // Push to top
+        updatedChats.splice(chatIndex, 1);
+        return [chatToUpdate, ...updatedChats];
       });
     };
 

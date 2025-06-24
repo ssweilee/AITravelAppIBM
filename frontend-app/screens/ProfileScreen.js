@@ -9,6 +9,7 @@ import { useAuth } from '../contexts/AuthContext';
 import AddPost from '../components/AddPost';
 import PostList from '../components/PostList';
 import debounce from 'lodash.debounce';
+import ItineraryList from '../components/profileComponents/ItineraryList';
 
 const ProfileScreen = () => {
   const { user: userInfo, isLoading, refreshUser } = useAuth();
@@ -173,9 +174,16 @@ const ProfileScreen = () => {
 
       {selectedTab === 'Post' && (
         <>
-          <AddPost onPostCreated={triggerRefresh} />
-          <Text style={styles.subHeader}>Recent Posts:</Text>
           <PostList refreshTrigger={refreshKey} />
+        </>
+      )}
+
+      {selectedTab === 'Itinerary' && (
+        <>
+          <ItineraryList 
+            refreshTrigger={refreshKey}
+            onPress={() => navigation.navigate('ItineraryDetail', { itinerary: item })}
+          />
         </>
       )}
     </View>

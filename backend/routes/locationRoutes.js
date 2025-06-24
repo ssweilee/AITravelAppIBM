@@ -2,7 +2,6 @@ console.log('[DEBUG] API_KEY in location.js:', process.env.LOCATIONIQ_API_KEY);
 
 const express = require('express');
 const router = express.Router();
-const fetch = require('node-fetch'); 
 
 const LOCATIONIQ_API_KEY = process.env.LOCATIONIQ_API_KEY; 
 console.log('Loaded LOCATIONIQ_API_KEY:', LOCATIONIQ_API_KEY);
