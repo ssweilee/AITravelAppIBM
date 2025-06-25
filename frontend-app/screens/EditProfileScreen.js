@@ -153,118 +153,68 @@ const EditProfileScreen = ({ route, navigation }) => {
     setSelectedLocationObject(item);
     setFilteredLocations([]);
   };
-
-  const isFocused = useIsFocused();
-  useEffect(() => {
-    console.log('[DEBUG] EditProfileScreen isFocused:', isFocused);
-    getPermission(); 
-  }, [isFocused]);
-
-  const getPermission = async () => {
-    const { status, accessPrivileges, canAskAgain } = await ImagePicker.getMediaLibraryPermissionsAsync();
-    console.log('Permission:', { status, accessPrivileges, canAskAgain });
   
-    const hasShownLimitedAlertStored = await AsyncStorage.getItem('hasShownLimitedAccessAlert');
-  
-    if (accessPrivileges === 'limited' && hasShownLimitedAlertStored !== 'true') {
-      Alert.alert(
-        "Limited Access",
-        "You’ve granted limited photo access. To select more photos, please allow full access in Settings.",
-        [
-          { text: "Cancel", style: "cancel" },
-          { text: "Open Settings", onPress: () => Linking.openSettings() }
-        ]
-      );
-      setHasShownLimitedAlert(true);
-      await AsyncStorage.setItem('hasShownLimitedAccessAlert', 'true');
-    }
-  
-    if (status !== 'granted' && canAskAgain) {
-      const { status: newStatus } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      setHasPermission(newStatus === 'granted');
-    } else {
-      setHasPermission(true);
-    }
-  };
   
 
   const pickImage = useCallback(async () => {
-    const { status, accessPrivileges } = await ImagePicker.getMediaLibraryPermissionsAsync();
-    if (accessPrivileges === 'limited' && !hasShownLimitedAlert) {
-      Alert.alert(
-        "Limited Access",
-        "You’ve granted limited photo access. To select more photos, please allow full access in Settings.",
-        [
-          { text: "Cancel", style: "cancel" },
-          { text: "Open Settings", onPress: () => Linking.openSettings() }
-        ]
-      );
-      await AsyncStorage.setItem('hasShownLimitedAccessAlert', 'true');
-    }
-  if (status !== 'granted') {
-    if (status === 'denied') {
-      Alert.alert(
-        "Access Required",
-        "To select photos, please allow photo access in Settings.",
-        [
-          { text: "Cancel", style: "cancel" },
-          { text: "Open Settings", onPress: () => Linking.openSettings() }
-        ]
-      );
-      return;
-    }
-    const { status: newStatus } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (newStatus !== 'granted') {
-      Alert.alert(
-        "Access Required",
-        "To select photos, please allow photo access in Settings.",
-        [
-          { text: "Cancel", style: "cancel" },
-          { text: "Open Settings", onPress: () => Linking.openSettings() }
-        ]
-      );
-      return;
-    }
-  }
-
-    if (isPickingRef.current || isPicking) {
+     if (isPickingRef.current) {
       console.log("Picking process is already active. Ignoring.");
       return;
-  }
-  isPickingRef.current = true;
-    setIsPicking(true); 
+    }
+    isPickingRef.current = true;
+    setIsPicking(true);
 
     try {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: 'Images',
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.7,
-    });
-    console.log("[DEBUG] pickImage: Image picker result:", JSON.stringify(result, null, 2));
-  
-    if (!result.canceled && result.assets?.length > 0) {
-      const asset = result.assets[0];
-      setAvatarUri(asset.uri);
-      setAvatarFile({
-        uri: asset.uri,
-        name: asset.fileName || asset.uri.split('/').pop(),
-        type: asset.type || 'image/jpeg',
+      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+      if (permissionResult.granted === false) {
+        Alert.alert(
+          "Access Required",
+          "To select photos, please allow photo access in your device Settings.",
+          [
+            { text: "Cancel", style: "cancel" },
+            { text: "Open Settings", onPress: () => Linking.openSettings() }
+          ]
+        );
+        isPickingRef.current = false;
+        setIsPicking(false);
+        return;
+      }
+      
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: 'Images',
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.7,
       });
-      setRemoveAvatar(false);
-  }
-} catch (error) {
-  console.error("[DEBUG] pickImage: An unexpected error occurred.", error);
-  Alert.alert('Error', 'An unexpected error occurred while trying to open the image library.');
-} finally {
-  isPickingRef.current = false;
-  setIsPicking(false);
-  }
-}, [isPicking, hasShownLimitedAlert]);
+
+      console.log("[DEBUG] pickImage: Image picker result:", JSON.stringify(result, null, 2));
+
+      if (!result.canceled && result.assets?.length > 0) {
+        const asset = result.assets[0];
+        setAvatarUri(asset.uri);
+        setAvatarFile({
+          uri: asset.uri,
+          name: asset.fileName || asset.uri.split('/').pop(),
+          type: asset.type || 'image/jpeg',
+        });
+        setRemoveAvatar(false);
+      }
+    } catch (error) {
+      console.error("[DEBUG] pickImage: An unexpected error occurred.", error);
+      Alert.alert('Error', 'An unexpected error occurred while trying to open the image library.');
+    } finally {
+      isPickingRef.current = false;
+      setIsPicking(false);
+    }
+  }, []); 
+
+
 
   const uploadAvatar = async (token) => {
     setUploadingAvatar(true);
     try {
+      const startTime = Date.now();
       const formData = new FormData();
       formData.append('avatar', {
         uri: avatarFile.uri,
@@ -290,7 +240,7 @@ const EditProfileScreen = ({ route, navigation }) => {
       }
       return `${uploadResult.profilePicture}?t=${Date.now()}`;
     } catch (err) {
-      console.error('[DEBUG] uploadAvatar: Error:', error.message);
+      console.error('[DEBUG] uploadAvatar: Error:', err.message);
       Alert.alert('Upload Error', err.message);
       return null;
     } finally {
@@ -310,16 +260,21 @@ const EditProfileScreen = ({ route, navigation }) => {
     }
 
     setLoading(true);
-    const originalAvatarUri = avatarUri;
     try {
       const token = await AsyncStorage.getItem('token');
       console.log('EditProfileScreen - Save Token:', token);
+      if (!token) {
+        Alert.alert('Authentication Error', 'Token not found. Please log in again.');
+        setLoading(false);
+        return;
+      }
+
       let locationField = '';
       if (selectedLocationObject) {
         locationField = selectedLocationObject.value;
       } else if (location.trim() !== '') {
         const parts = location.split(',').map(p => p.trim());
-        if (parts.length === 2) {
+        if (parts.length >= 2) {
             locationField = `${parts[1]}|${parts[0]}`; 
         } else {
             Alert.alert('Invalid Location', 'Please select a location from the list or use the "City, Country" format.');
@@ -327,20 +282,24 @@ const EditProfileScreen = ({ route, navigation }) => {
             return;
         }
       }
-      let profilePicture = null;
+
+      let finalProfilePictureUrl = currentUserInfo?.profilePicture;
+      console.log('handleSave: Uploading new avatar...');
       if (avatarFile) {
-        profilePicture = await uploadAvatar(token);
-      if (!profilePicture) {
+      finalProfilePictureUrl = await uploadAvatar(token);
+      if (!finalProfilePictureUrl) { 
         setLoading(false);
         return; 
       }
-      setAvatarUri(profilePicture);
+      await Image.prefetch(finalProfilePictureUrl);
     } else if (removeAvatar) {
-      profilePicture = ''; // Clear avatar in database
-      setAvatarUri(profilePicture);
+      console.log('handleSave: Removing avatar...');
+      finalProfilePictureUrl = null; 
     }
       const payload = { firstName, lastName, location: locationField, bio };
-      if (profilePicture) payload.profilePicture = profilePicture;
+      if (finalProfilePictureUrl !== currentUserInfo.profilePicture) {
+        payload.profilePicture = finalProfilePictureUrl;
+      }
       console.log('EditProfileScreen - Save Payload:', JSON.stringify(payload));
       const url = `${API_BASE_URL}/api/users/edit/${userId}`;
     const response = await fetch(url, {

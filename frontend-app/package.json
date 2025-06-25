@@ -31,6 +31,7 @@
     "react-native-autocomplete-input": "^5.5.6",
     "react-native-elements": "^3.4.3",
     "react-native-gesture-handler": "^2.26.0",
+    "react-native-image-crop-picker": "^0.50.1",
     "react-native-reanimated": "^3.18.0",
     "react-native-safe-area-context": "^5.4.1",
     "react-native-screens": "~4.11.1",
@@ -38,6 +39,7 @@
     "react-native-swipe-list-view": "^3.2.9",
     "react-native-ui-datepicker": "^3.1.2",
     "react-native-vector-icons": "^10.2.0",
+    "sharp": "^0.34.2",
     "socket.io-client": "^4.8.1"
   },
   "devDependencies": {
