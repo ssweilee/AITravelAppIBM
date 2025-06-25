@@ -87,7 +87,7 @@ export default function App() {
         <Stack.Screen name="Chat Settings" component={ChatSettingScreen} />
         <Stack.Screen name="Members" component={GroupChatMembersScreen} />
         <Stack.Screen name="CreateItinerary" component={CreateItineraryScreen} options={{ headerShown: false }}/>
-        <Stack.Screen name="CreatePost" component={CreateThreadScreen} options={{ headerShown: false }}/>
+        <Stack.Screen name="CreatePost" component={CreatePostScreen} options={{ headerShown: false }}/>
         <Stack.Screen name="ItineraryDetail" component={ItineraryDetailScreen} options={{ headerShown: false }} />
 
       </Stack.Navigator>

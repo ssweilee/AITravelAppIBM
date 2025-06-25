@@ -6,7 +6,7 @@ import { decode as atob } from 'base-64';
 import { API_BASE_URL } from '../config';
 import RepostItineraryCard from '../components/ItineraryComponents/RepostItineraryCard';
 import * as ImagePicker from 'expo-image-picker';
-const CreateThreadScreen = ({ navigation, route }) => {
+const CreatePostScreen = ({ navigation, route }) => {
   const [content, setContent] = useState('');
   const [username, setUsername] = useState('');
   const [followings, setFollowings] = useState([]); // List of users current user follows
@@ -88,10 +88,9 @@ const CreateThreadScreen = ({ navigation, route }) => {
         },
         body: JSON.stringify({ 
           content,
-          taggedUsers: taggedUserObjects.map(u => u._id),
+          taggedUsers: taggedUserObjects.filter(u => u && u._id).map(u => u._id),
           images: uploadedImageURL,
-          bindItinerary: itinerary._id,
-          taggedUsers: taggedUserObjects.map(u => u._id) })
+          bindItinerary: itinerary?. _id || null, })
       });
 
       const data = await response.json();
