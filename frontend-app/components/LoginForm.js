@@ -34,7 +34,7 @@ function LoginForm() {
 
   return (
     <View>
-      <Text style={styles.header}> Login </Text>
+      <Text style={[styles.header, { fontSize: 24, color: "white" }]}>Login</Text>
       <TextInput placeholder='Email' value={email} onChangeText={setEmail} style={styles.input} />
       <TextInput placeholder="Password" secureTextEntry value={password} onChangeText={setPassword} style={styles.input} />
       <Button title='Login' onPress={handleLogin} />
@@ -43,8 +43,8 @@ function LoginForm() {
 }
 
 const styles = StyleSheet.create({
-  header: { fontSize: 20, marginBottom: 10 },
-  input: { borderWidth: 1, padding: 10, marginBottom: 10, borderRadius: 5 }
+  header: { fontSize: 20, marginBottom: 10, color: "white"},
+  input: { width: 200, borderWidth: 1, padding: 10, marginBottom: 10, borderRadius: 5, borderColor: "white" }
 });
 
 export default LoginForm;
