@@ -2,9 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, StyleSheet } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_BASE_URL } from '../config';
+import PostCard from './PostCard';
+import { useNavigation } from '@react-navigation/native';
 
 const PostList = ({ refreshTrigger }) => {
   const [posts, setPosts] = useState([]);
+  const navigation = useNavigation();
 
   const fetchPosts = async () => {
     try {
@@ -33,12 +36,10 @@ const PostList = ({ refreshTrigger }) => {
   }, [refreshTrigger]);
 
   const renderItem = ({ item }) => (
-    <View style={styles.postItem}>
-      <Text style={styles.postAuthor}>
-        {item.userId?.firstName || 'Unknown'} {item.userId?.lastName || ''}
-      </Text>
-      <Text>{item.content}</Text>
-    </View>
+    <PostCard
+      post={item}
+      onPress={(post) => navigation.navigate('PostDetail', { post })}
+    />
   );
 
   return (

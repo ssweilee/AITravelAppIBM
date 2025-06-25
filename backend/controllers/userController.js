@@ -78,7 +78,7 @@ exports.getSingleUser = async (req, res) => {
 
 exports.updateUserProfile = async (userId, updatedData) => {
   try {
-    const allowedFields = ['firstName', 'lastName', 'bio', 'profilePicture', 'isPublic', 'country', 'travelStyle', 'dob'];
+    const allowedFields = ['firstName', 'lastName', 'bio', 'profilePicture', 'isPublic', 'location', 'travelStyle', 'dob'];
     const updates = {};
     for (const field of allowedFields) {
       if (updatedData[field] !== undefined) {
@@ -87,7 +87,8 @@ exports.updateUserProfile = async (userId, updatedData) => {
     }
 
     console.log('updateUserProfile - Updating user:', userId, 'with data:', updates);
-
+    console.log('User Controller: Received data to update:', updatedData);
+    console.log('User Controller: Filtered updates to be saved:', updates);
     // Update user in MongoDB using Mongoose
     const user = await User.findByIdAndUpdate(
       userId,
@@ -105,5 +106,16 @@ exports.updateUserProfile = async (userId, updatedData) => {
   } catch (error) {
     console.error('updateUserProfile - Database error:', error.message);
     throw new Error(error.message);
+  }
+};
+
+exports.getUserFollowings = async (req, res) => {
+  try {
+    const user = await require('../models/User').findById(req.user.userId)
+      .populate('followings', '_id firstName lastName profilePicture');
+    res.status(200).json(user.followings);
+  } catch (error) {
+    console.error('Error fetching followings:', error);
+    res.status(500).json({ message: 'Failed to fetch followings' });
   }
 };

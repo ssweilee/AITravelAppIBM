@@ -5,8 +5,15 @@ const userController = require('../controllers/userController');
 const { body, validationResult } = require('express-validator');
 
 router.get('/profile', authenticateToken, userController.getUserProfile);
+router.get('/followings', authenticateToken, userController.getUserFollowings)
 router.put('/:id/follow', authenticateToken, userController.followUser);
 router.get('/:id', authenticateToken, userController.getSingleUser);
+// get the saved posts of the user
+router.get('/savedPosts', authenticateToken, async (req, res) => {
+  const user = await User.findById(req.user.userId)
+    .populate('savedPosts', 'content userId createdAt');
+  res.json(user.savedPosts);
+});
 
 // Edit user profile route
 //names, location, trips, reviews, bio, years on travel?,  picture?
@@ -29,11 +36,8 @@ router.put(
        .matches(/^[a-zA-Z\s]+$/)
        .withMessage('Last name must contain only letters and spaces'),
      body('bio')
-       .optional()
-       .trim()
-       .isLength({ max: 100 })
-       .withMessage('Bio must be 100 characters or less'),
-     body('country').optional(),//make scroll down
+       .optional(),
+     body('location').optional(),//make scroll down
      body('profilePicture').optional(),
      body('isPublic').optional().isBoolean().withMessage('isPublic must be a boolean'),
    ],

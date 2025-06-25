@@ -7,6 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fetchUserProfile } from '../utils/ProfileInfo';
 import AddPost from '../components/AddPost';
 import PostList from '../components/PostList';
+import ItineraryList from '../components/profileComponents/ItineraryList';
 
 const ProfileScreen = () => {
   const [userInfo, setUserInfo] = useState(null);
@@ -47,6 +48,14 @@ const ProfileScreen = () => {
 
     fetchUserData();
   }, []);
+
+  const formatLocation = (locationString) => {
+    if (!locationString || !locationString.includes('|')) {
+        return locationString || ''; 
+    }
+    const [countryCode, city] = locationString.split('|');
+    return `${city}, ${countryCode}`;
+  };
 
   useFocusEffect(loadUser);
 
@@ -130,8 +139,8 @@ const ProfileScreen = () => {
 
       <View style={styles.profileInfoRow}>
         <View style={styles.profileTextBlock}>
-          <Text style={styles.locationText}>{userInfo?.location || ''}</Text>
-          <Text style={styles.bioText}>{userInfo?.bio || ''}</Text>
+        <Text style={styles.locationText}>{formatLocation(userInfo?.location)}</Text>
+        <Text style={styles.bioText}>{userInfo?.bio || ''}</Text>
         </View>
         <TouchableOpacity style={styles.editButton} onPress={() => navigation.navigate('EditProfile', { userId: userInfo?._id })}>
           <Text style={styles.editButtonText}>Edit</Text>
@@ -152,9 +161,16 @@ const ProfileScreen = () => {
 
       {selectedTab === 'Post' && (
         <>
-          <AddPost onPostCreated={triggerRefresh} />
-          <Text style={styles.subHeader}>Recent Posts:</Text>
           <PostList refreshTrigger={refreshKey} />
+        </>
+      )}
+
+      {selectedTab === 'Itinerary' && (
+        <>
+          <ItineraryList 
+            refreshTrigger={refreshKey}
+            onPress={() => navigation.navigate('ItineraryDetail', { itinerary: item })}
+          />
         </>
       )}
     </View>

@@ -2,6 +2,8 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, FlatList, StyleSheet, RefreshControl } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_BASE_URL } from '../config';
+import PostCard from './PostCard'; 
+import { useNavigation } from '@react-navigation/native';
 
 const FeedList = ({ refreshTrigger }) => {
   const [ posts, setPosts ] = useState([]);
@@ -42,14 +44,13 @@ const FeedList = ({ refreshTrigger }) => {
     fetchPosts();
   }, [refreshTrigger]);
 
-  const renderItem = ({ item }) => (
-      <View style={styles.postItem}>
-        <Text style={styles.postAuthor}>
-          {item.userId?.firstName || 'Unknown'} {item.userId?.lastName || ''}
-        </Text>
-        <Text>{item.content}</Text>
-      </View>
-    );
+const navigation = useNavigation();
+const renderItem = ({item}) => (
+  <PostCard
+    post={item}
+    onPress={p => navigation.navigate('PostDetail', {post: p})}
+  />
+);
   
   return (
     <FlatList
