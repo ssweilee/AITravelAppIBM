@@ -80,8 +80,11 @@ exports.updateUserProfile = async (userId, updatedData) => {
   try {
     const allowedFields = ['firstName', 'lastName', 'bio', 'isPublic', 'location', 'travelStyle', 'dob', 'profilePicture'];
     const updates = {};
+    const unsets = {}; 
     for (const field of allowedFields) {
-      if (updatedData.hasOwnProperty(field)) {
+      if (updatedData[field] === null) {
+        unsets[field] = 1;
+      } else if (updatedData[field] !== undefined) {
         updates[field] = updatedData[field];
       }
     }
@@ -89,10 +92,24 @@ exports.updateUserProfile = async (userId, updatedData) => {
     console.log('updateUserProfile - Updating user:', userId, 'with data:', updates);
     console.log('User Controller: Received data to update:', updatedData);
     console.log('User Controller: Filtered updates to be saved:', updates);
+
+    const operations = {};
+    if (Object.keys(updates).length > 0) {
+      operations.$set = updates;
+    }
+    if (Object.keys(unsets).length > 0) {
+      operations.$unset = unsets;
+    }
+
+    if (Object.keys(operations).length === 0) {
+        const user = await User.findById(userId).select('-password');
+        return user;
+    }
+
     // Update user in MongoDB using Mongoose
     const user = await User.findByIdAndUpdate(
       userId,
-      { $set: updates },
+      operations,
       { new: true, runValidators: true, select: '-password' } // Return updated document, validate, exclude password
     );
 
