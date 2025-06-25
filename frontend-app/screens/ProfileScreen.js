@@ -22,6 +22,15 @@ const ProfileScreen = () => {
   const route = useRoute();
   const triggerRefresh = () => setRefreshKey(prev => prev + 1);
 
+  useFocusEffect(
+    useCallback(() => {
+      if (route.params?.profileUpdated) {
+        console.log('[ProfileScreen] Refreshing user data from context...');
+        refreshUser();
+        navigation.setParams({ profileUpdated: false }); 
+      }
+    }, [route.params?.profileUpdated, refreshUser, navigation])
+  );
 
   const formatLocation = (locationString) => {
     if (!locationString || !locationString.includes('|')) {
@@ -39,15 +48,7 @@ const ProfileScreen = () => {
     return <View style={styles.loadingContainer}><Text>Please log in to view your profile.</Text></View>;
   }
 
-  useFocusEffect(
-    useCallback(() => {
-      if (route.params?.refresh) {
-        console.log('[ProfileScreen] Refreshing user data from context...');
-        refreshUser();
-        navigation.setParams({ refresh: false }); 
-      }
-    }, [route.params?.refresh, refreshUser, navigation])
-  );
+  
 
   // 👇 Place name and buttons in header
   useLayoutEffect(() => {
@@ -78,6 +79,19 @@ const ProfileScreen = () => {
       },
     });
   }, [navigation, userInfo]);
+
+  if (isLoading) {
+    return <View style={styles.loadingContainer}><ActivityIndicator size="large" color="#007bff" /></View>;
+  }
+
+  if (!userInfo) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Text>Please log in to view your profile.</Text>
+        {/* 可以加一個登入按鈕 */}
+      </View>
+    );
+  }
 
   const navigateToEdit = () => {
     if (!userInfo) {

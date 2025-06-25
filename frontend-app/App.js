@@ -1,7 +1,9 @@
+import React, { useEffect } from 'react'; 
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { AuthProvider } from './contexts/AuthContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { View, ActivityIndicator } from 'react-native';
 import LoginScreen from './screens/LoginScreen';
 import SignupScreen from './screens/SignupScreen';
 import SignupDetailsScreen from './screens/SignupDetailsScreen';
@@ -90,22 +92,6 @@ export default function App() {
           <Stack.Screen name="Members" component={GroupChatMembersScreen} />
           <Stack.Screen name="CreateItinerary" component={CreateItineraryScreen} options={{ headerShown: false }}/>
           <Stack.Screen name="CreateThread" component={CreateThreadScreen} options={{ headerShown: false }}/>
-
-          <Stack.Screen name="Chat" component={ChatScreen} />
-        <Stack.Screen name="PostDetail" component={PostDetailScreen} />
-        <Stack.Screen name="EditProfile" component={EditProfileScreen} />
-        <Stack.Screen
-          name="Messages"
-          component={MessagesScreen}
-          options={({ route }) => ({
-            animation: route?.params?.fromSettings ? 'slide_from_left' : 'default',
-          })}
-        />
-        <Stack.Screen name="Create New Group" component={CreateGroupChatScreen} />
-        <Stack.Screen name="Chat Settings" component={ChatSettingScreen} />
-        <Stack.Screen name="Members" component={GroupChatMembersScreen} />
-        <Stack.Screen name="CreateItinerary" component={CreateItineraryScreen} options={{ headerShown: false }}/>
-        <Stack.Screen name="CreateThread" component={CreateThreadScreen} options={{ headerShown: false }}/>
         <Stack.Screen name="ItineraryDetail" component={ItineraryDetailScreen} options={{ headerShown: false }} />
         </Stack.Navigator>
       </NavigationContainer>

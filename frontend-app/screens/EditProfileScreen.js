@@ -357,7 +357,8 @@ const EditProfileScreen = ({ route, navigation }) => {
       console.log('EditProfileScreen - Save response:', JSON.stringify(result, null, 2));
       if (response.ok) {
         Alert.alert('Success', 'Profile updated successfully');
-        navigation.navigate('Profile', { refresh: true });
+        await refreshUser(); 
+        navigation.navigate('Profile', { profileUpdated: true });
       } else {
         Alert.alert('Error', result.message || 'Failed to update profile');
       }

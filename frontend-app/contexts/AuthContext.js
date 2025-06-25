@@ -24,7 +24,12 @@ export const AuthProvider = ({ children }) => {
         return userData.user;
       } else {
         console.error("Failed to refresh user:", userData.error);
+        if (userData.error?.message === 'Invalid token' || userData.error?.message === 'No auth token found') {
+          console.log("Invalid token detected, logging out.");
+          await logout();
+        } else {
         setUser(null);
+        }
         return null;
       }
     } catch (error) {
@@ -32,19 +37,18 @@ export const AuthProvider = ({ children }) => {
       setUser(null);
       return null;
     }
-  }, []);
+  }, [logout]);
 
   useEffect(() => {
     const initializeApp = async () => {
-      setIsLoading(true);
       try {
-        const cachedUser = await AsyncStorage.getItem('userInfoCache');
-        if (cachedUser) {
-          setUser(JSON.parse(cachedUser));
-        }
-        await refreshUser();
+         const currentToken = await AsyncStorage.getItem('token');
+         if (currentToken) {
+           await refreshUser();
+         }
       } catch (e) {
         console.error("Failed to initialize app state:", e);
+        setUser(null);
       } finally {
         setIsLoading(false);
       }
@@ -63,12 +67,12 @@ export const AuthProvider = ({ children }) => {
     setToken(newToken);
   };
   
-  const logout = async () => {
-    await AsyncStorage.removeItem('token');
-    await AsyncStorage.removeItem('userInfoCache');
-    setToken(null);
-    setUser(null);
-  };
+  const logout = useCallback(async () => { 
+   await AsyncStorage.removeItem('token');
+   await AsyncStorage.removeItem('userInfoCache');
+   setToken(null);
+   setUser(null);
+ }, []);
 
   const value = { user, token, isLoading, login, logout, refreshUser };
 
