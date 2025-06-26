@@ -69,5 +69,7 @@ router.put(
        }
     }
   );
+router.put('/change-email', authenticateToken, userController.changeEmail);
+router.put('/change-password', authenticateToken, userController.changePassword);
 
 module.exports = router;

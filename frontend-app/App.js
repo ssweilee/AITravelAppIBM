@@ -21,6 +21,7 @@ import CreateThreadScreen from './screens/CreateThreadScreen';
 import ControlPanelScreen from './screens/ControlPanelScreen';
 import BookingsScreen from './screens/BookingsScreen';
 import ItineraryDetailScreen from './screens/ItineraryDetailScreen';
+import AccountSettingsScreen from './screens/AccountSettingsScreen';
 import { Ionicons, MaterialIcons, FontAwesome } from '@expo/vector-icons';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -118,7 +119,7 @@ export default function App() {
           <Stack.Screen name="CreateItinerary" component={CreateItineraryScreen} options={{ headerShown: false }}/>
           <Stack.Screen name="CreateThread" component={CreateThreadScreen} options={{ headerShown: false }}/>
           <Stack.Screen name="ItineraryDetail" component={ItineraryDetailScreen} options={{ headerShown: false }} />
-
+          <Stack.Screen name="AccountSettings" component={AccountSettingsScreen} />
         </Stack.Navigator>
       </NavigationContainer>
     </SafeAreaProvider>
