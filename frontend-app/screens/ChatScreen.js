@@ -1,11 +1,13 @@
 import React, { useEffect, useState, useRef, useLayoutEffect } from 'react';
-import { View, Text, FlatList, StyleSheet, KeyboardAvoidingView, Platform, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Platform, TouchableOpacity, KeyboardAvoidingView } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { API_BASE_URL } from '../config';
 import MessageItem from '../components/messageComponents/MessageItem';
 import MessageInput from '../components/messageComponents/MessageInput';
 import socket from '../utils/socket';
+import { KeyboardAwareFlatList } from 'react-native-keyboard-aware-scroll-view';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const ChatScreen = () => {
   const navigation = useNavigation();
@@ -16,6 +18,7 @@ const ChatScreen = () => {
   const [text, setText] = useState('');
   const [currentUserId, setCurrentUserId] = useState(null);
   const flatListRef = useRef(null);
+  const insets = useSafeAreaInsets();
 
   // 🧠 Header Setup with Touchable Title
   useLayoutEffect(() => {
@@ -120,21 +123,31 @@ const ChatScreen = () => {
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       style={{ flex: 1 }}
-      keyboardVerticalOffset={90}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? insets.bottom : 80}
     >
-      <FlatList
-        ref={flatListRef}
-        data={[...messages].reverse()} // latest messages at the bottom
-        keyExtractor={(item) => item._id}
-        renderItem={({ item }) => (
-          <MessageItem message={item} currentUserId={currentUserId} />
-        )}
-        inverted={true}
-        contentContainerStyle={{ padding: 10 }}
-      />
-      <MessageInput text={text} setText={setText} onSend={handleSend} />
+      <View style={{ flex: 1, flexDirection: 'column' }}>
+        <KeyboardAwareFlatList
+          ref={flatListRef}
+          data={messages}
+          keyExtractor={(item) => item._id}
+          renderItem={({ item }) => (
+            <MessageItem message={item} currentUserId={currentUserId} isGroup={route.params?.isGroup} />
+          )}
+          contentContainerStyle={{ padding: 10, paddingBottom: 16, flexGrow: 1 }}
+          style={{ flex: 1 }}
+          keyboardShouldPersistTaps="handled"
+          extraHeight={0}
+          enableOnAndroid={true}
+          showsVerticalScrollIndicator={false}
+          onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
+          keyboardOpeningTime={0}
+        />
+        <View style={{ backgroundColor: '#fff', paddingBottom: insets.bottom }}>
+          <MessageInput text={text} setText={setText} onSend={handleSend} />
+        </View>
+      </View>
     </KeyboardAvoidingView>
   );
 };

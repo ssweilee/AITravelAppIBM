@@ -83,7 +83,7 @@ export default function App() {
           })}
         />
         <Stack.Screen name="Create New Group" component={CreateGroupChatScreen} />
-        <Stack.Screen name="Chat Settings" component={ChatSettingScreen} />
+        <Stack.Screen name="Chat Settings" component={ChatSettingScreen} options={{ headerShown: false }}/>
         <Stack.Screen name="Members" component={GroupChatMembersScreen} />
         <Stack.Screen name="CreateItinerary" component={CreateItineraryScreen} options={{ headerShown: false }}/>
         <Stack.Screen name="CreateThread" component={CreateThreadScreen} options={{ headerShown: false }}/>
