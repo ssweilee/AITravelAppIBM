@@ -4,14 +4,16 @@ import { Ionicons, MaterialIcons, FontAwesome } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { decode as atob } from 'base-64';
 import { API_BASE_URL } from '../config';
+import RepostItineraryCard from '../components/ItineraryComponents/RepostItineraryCard';
 
-const CreateThreadScreen = ({ navigation }) => {
+const CreateThreadScreen = ({ navigation, route }) => {
   const [content, setContent] = useState('');
   const [username, setUsername] = useState('');
   const [followings, setFollowings] = useState([]); // List of users current user follows
   const [taggedUsers, setTaggedUsers] = useState([]); // Selected users to tag
   const [modalVisible, setModalVisible] = useState(false);
   const [search, setSearch] = useState(''); // For search bar in modal
+  const itinerary = route?.params?.itinerary;
 
   React.useEffect(() => {
     const fetchUsernameAndFollowings = async () => {
@@ -72,6 +74,7 @@ const CreateThreadScreen = ({ navigation }) => {
         alert('You are not logged in.');
         return;
       }
+
       // Prepare tagged user objects for display and send their IDs to backend
       const taggedUserObjects = followings.filter(u => taggedUsers.includes(u._id));
       const response = await fetch(`${API_BASE_URL}/api/posts`, {
@@ -80,8 +83,12 @@ const CreateThreadScreen = ({ navigation }) => {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({ content, taggedUsers: taggedUserObjects.map(u => u._id) })
+        body: JSON.stringify({ 
+          content, 
+          bindItinerary: itinerary._id,
+          taggedUsers: taggedUserObjects.map(u => u._id) })
       });
+
       const data = await response.json();
       if (!response.ok) {
         console.log('Server error:', data);
@@ -125,6 +132,7 @@ const CreateThreadScreen = ({ navigation }) => {
     );
   };
 
+
   return (
     <View style={[styles.container, { paddingTop: Platform.OS === 'android' ? RNStatusBar.currentHeight : 40 }]}>
       {/* Header */}
@@ -155,6 +163,14 @@ const CreateThreadScreen = ({ navigation }) => {
         multiline
       />
 
+    {/* repost itinerary card */}
+      {itinerary && (
+        <RepostItineraryCard
+          itinerary={itinerary}
+          onPress={() => navigation.navigate('ItineraryDetail', { itinerary: itinerary })}
+        />
+      )}
+
       {/* Show tagged users */}
       {taggedUsers.length > 0 && (
         <View style={styles.taggedUsersRow}>
@@ -179,7 +195,11 @@ const CreateThreadScreen = ({ navigation }) => {
         </TouchableOpacity>
         <TouchableOpacity style={styles.optionRow}>
           <MaterialIcons name="link" size={24} color="#00b894" style={{ marginRight: 12 }} />
-          <Text style={styles.optionText}>Bind Itinerary</Text>
+          <Text style={styles.bindLabel}>
+            {itinerary?.createdBy
+              ? `Sharing ${itinerary.createdBy.firstName} ${itinerary.createdBy.lastName}’s Itinerary`
+              : 'Share Itinerary'}
+          </Text>
         </TouchableOpacity>
       </ScrollView>
 

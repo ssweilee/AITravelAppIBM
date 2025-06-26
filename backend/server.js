@@ -1,5 +1,7 @@
 const dotenv = require('dotenv');
 dotenv.config();
+console.log('[DEBUG] LOCATIONIQ_API_KEY =', process.env.LOCATIONIQ_API_KEY);
+
 
 const mongoose = require('mongoose');
 const app = require('./app.js'); // Import the app from app.js

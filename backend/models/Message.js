@@ -15,6 +15,11 @@ const messageSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  sharedItinerary: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Itinerary',
+    default: null
+  },
   createdAt: {
     type: Date,
     default: Date.now
