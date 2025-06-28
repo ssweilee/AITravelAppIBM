@@ -27,7 +27,6 @@ import AccountSettingsScreen from './screens/AccountSettingsScreen';
 import { Ionicons, MaterialIcons, FontAwesome } from '@expo/vector-icons';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { ActivityIndicator, View } from 'react-native';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -88,7 +87,7 @@ export default function App() {
   }
 
   return (
-    <SafeAreaProvider>
+    <AuthProvider>
       <NavigationContainer>
         <Stack.Navigator initialRouteName={initialRoute}>
           <Stack.Screen name="Signup" component={SignupScreen} />
@@ -124,6 +123,6 @@ export default function App() {
           <Stack.Screen name="AccountSettings" component={AccountSettingsScreen} />
         </Stack.Navigator>
       </NavigationContainer>
-    </SafeAreaProvider>
+    </AuthProvider>
   );
 }
