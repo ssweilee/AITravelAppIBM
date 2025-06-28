@@ -49,8 +49,13 @@ function LoginForm() {
 }
 
 const styles = StyleSheet.create({
+<<<<<<< HEAD
   header: { fontSize: 20, marginBottom: 10, color: "white"},
   input: { width: 200, borderWidth: 1, padding: 10, marginBottom: 10, borderRadius: 5, borderColor: "white" }
+=======
+  header: { fontSize: 20, marginBottom: 10, color: "white" },
+  input: { borderWidth: 1, padding: 10, marginBottom: 10, borderRadius: 5, width: 300, borderColor: "white" }
+>>>>>>> dev
 });
 
 export default LoginForm;
