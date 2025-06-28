@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'; 
+import React, { useEffect, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -23,8 +23,11 @@ import CreateThreadScreen from './screens/CreateThreadScreen';
 import ControlPanelScreen from './screens/ControlPanelScreen';
 import BookingsScreen from './screens/BookingsScreen';
 import ItineraryDetailScreen from './screens/ItineraryDetailScreen';
+import AccountSettingsScreen from './screens/AccountSettingsScreen';
 import { Ionicons, MaterialIcons, FontAwesome } from '@expo/vector-icons';
-
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { ActivityIndicator, View } from 'react-native';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -59,10 +62,35 @@ function MainAppTabs() {
 }
 
 export default function App() {
+  const [initialRoute, setInitialRoute] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const checkToken = async () => {
+      try {
+        const token = await AsyncStorage.getItem('token');
+        setInitialRoute(token ? 'Main' : 'Signup');
+      } catch (err) {
+        setInitialRoute('Signup');
+      } finally {
+        setLoading(false);
+      }
+    };
+    checkToken();
+  }, []);
+
+  if (loading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color="#007AFF" />
+      </View>
+    );
+  }
+
   return (
-    <AuthProvider>
+    <SafeAreaProvider>
       <NavigationContainer>
-        <Stack.Navigator initialRouteName="Signup">
+        <Stack.Navigator initialRouteName={initialRoute}>
           <Stack.Screen name="Signup" component={SignupScreen} />
           <Stack.Screen name="SignupDetails" component={SignupDetailsScreen} />
           <Stack.Screen name="Login" component={LoginScreen} />
@@ -88,13 +116,14 @@ export default function App() {
             })}
           />
           <Stack.Screen name="Create New Group" component={CreateGroupChatScreen} />
-          <Stack.Screen name="Chat Settings" component={ChatSettingScreen} />
+          <Stack.Screen name="Chat Settings" component={ChatSettingScreen} options={{ headerShown: false }}/>
           <Stack.Screen name="Members" component={GroupChatMembersScreen} />
           <Stack.Screen name="CreateItinerary" component={CreateItineraryScreen} options={{ headerShown: false }}/>
           <Stack.Screen name="CreateThread" component={CreateThreadScreen} options={{ headerShown: false }}/>
-        <Stack.Screen name="ItineraryDetail" component={ItineraryDetailScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="ItineraryDetail" component={ItineraryDetailScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="AccountSettings" component={AccountSettingsScreen} />
         </Stack.Navigator>
       </NavigationContainer>
-    </AuthProvider>
+    </SafeAreaProvider>
   );
 }

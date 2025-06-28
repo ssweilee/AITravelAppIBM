@@ -21,6 +21,8 @@ const ControlPanelScreen = () => {
   return (
     <View style={styles.container}>
       <Text style={styles.text}>Control Panel</Text>
+      <Button title="Account Settings" onPress={() => navigation.navigate('AccountSettings')} color="#007AFF" />
+      <View style={{ height: 20 }} />
       <Button title="Logout" onPress={handleLogout} color="#d9534f" />
     </View>
   );
