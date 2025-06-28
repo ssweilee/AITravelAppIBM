@@ -94,6 +94,7 @@ export default function App() {
           <Stack.Screen name="Signup" component={SignupScreen} />
           <Stack.Screen name="SignupDetails" component={SignupDetailsScreen} />
           <Stack.Screen name="Login" component={LoginScreen} />
+          <Stack.Screen name="Interest" component={InterestScreen} />
           <Stack.Screen 
             name="Main" 
             component={MainAppTabs} 
