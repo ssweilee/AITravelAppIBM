@@ -23,7 +23,13 @@ function LoginForm() {
       const data = await reponse.json();
       if (reponse.ok) {
         await AsyncStorage.setItem('token', data.token);
-        navigation.navigate('Main', { screen: 'Home' });
+
+        const alreadySelected = await AsyncStorage.getItem('hasSelectedInterests');
+        if (alreadySelected === 'true') {
+          navigation.navigate('Main', { screen: 'Home' });
+        } else {
+          navigation.navigate('Interest');
+        }
       } else {
         Alert.alert('Login failed: ' + data.message);
       }
