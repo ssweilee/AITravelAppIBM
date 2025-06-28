@@ -1,14 +1,15 @@
 import React, { useEffect, useState, useLayoutEffect } from 'react';
-import { View, Text, StyleSheet, Button } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Button } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fetchUserById } from '../utils/ProfileInfo';
 import UserPostList from '../components/UserPostList';
 import FollowButton from '../components/FollowButton';
 import { API_BASE_URL } from '../config';
+import ItineraryList from '../components/profileComponents/ItineraryList';
 
 const UserProfileScreen = ({ route, navigation }) => {
   const { userId } = route.params;
-
+  const [selectedTab, setSelectedTab] = useState('Post');
   const [user, setUser] = useState(null);
   const [currentUserId, setCurrentUserId] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -90,7 +91,7 @@ const UserProfileScreen = ({ route, navigation }) => {
         {user.firstName} {user.lastName}
       </Text>
       <Text style={styles.info}>
-        Followers: {user.followers?.length || 0} | Following: {user.followings?.length || 0}
+        Followers: {user?.followers?.length || 0} | Trips: {user?.trips?.length || 0} | Reviews: {user?.reviews?.length || 0}
       </Text>
 
       {currentUserId && currentUserId !== user._id && (
@@ -108,7 +109,37 @@ const UserProfileScreen = ({ route, navigation }) => {
           }}
         />
       )}
-      <UserPostList userId={user._id} />
+
+      <View style={styles.tabRow}>
+        {['Post', 'Itinerary', 'Trip', 'Review'].map(tab => (
+          <TouchableOpacity
+            key={tab}
+            onPress={() => setSelectedTab(tab)}
+            style={[styles.tabItem, selectedTab === tab && styles.tabItemActive]}
+          >
+            <Text style={[styles.tabText, selectedTab === tab && styles.tabTextActive]}>{tab}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      {selectedTab === 'Post' && (
+        <>
+          <Text style={styles.subHeader}>Recent Posts:</Text>
+          <UserPostList userId={user._id} />
+        </>
+      )}
+
+      {selectedTab === 'Itinerary' && (
+        <>
+          <Text style={styles.subHeader}>Your Itineraries:</Text>
+          <ItineraryList 
+            userId={user._id} 
+            onPress={() => navigation.navigate('ItineraryDetail', { itinerary: item })}
+          />
+        </>
+      )}
+
+      
     </View>
   );
 };
@@ -117,6 +148,15 @@ const styles = StyleSheet.create({
   container: { padding: 20, flex: 1 },
   name: { fontSize: 24, fontWeight: 'bold', marginBottom: 10 },
   info: { fontSize: 18, marginBottom: 5 },
+  tabRow: {
+    flexDirection: 'row', justifyContent: 'space-around',
+    marginTop: 20, borderBottomWidth: 1, borderColor: '#eee'
+  },
+  tabItem: { paddingVertical: 10, paddingHorizontal: 12, borderBottomWidth: 2, borderColor: 'transparent' },
+  tabItemActive: { borderBottomColor: '#007bff' },
+  tabText: { color: '#777', fontSize: 16 },
+  tabTextActive: { color: '#007bff', fontWeight: 'bold' },
+  subHeader: { fontSize: 20, marginTop: 20, marginBottom: 10 },
 });
 
 export default UserProfileScreen;

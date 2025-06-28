@@ -9,13 +9,20 @@ module.exports = (io, socket) => {
 
   socket.on('sendMessage', async ({ chatId, message }) => {
     try {
+      if (!message || !message.senderId || !message.text) {
+        console.error("🚨 Invalid message payload:", message);
+        return;
+      }
+
       const newMessage = await Message.create({
         chatId,
         senderId: message.senderId,
         text: message.text,
+        readBy: [message.senderId], // Optional: mimic REST controller
       });
 
-      const populatedMessage = await newMessage.populate('senderId', 'firstName lastName');
+      const populatedMessage = await Message.findById(newMessage._id)
+        .populate('senderId', 'firstName lastName');
 
       await Chat.findByIdAndUpdate(chatId, {
         lastMessage: newMessage._id,
@@ -24,9 +31,9 @@ module.exports = (io, socket) => {
 
       io.to(chatId).emit('receiveMessage', populatedMessage);
 
-      console.log(`Message saved abd broadcasted in chat ${chatId}`);
+      console.log(`✅ Message saved and broadcasted in chat ${chatId}`);
     } catch (err) {
-      console.log('Error saving message:', err.message);
+      console.error('❌ Full socket error stack:', err);
     }
   });
 
