@@ -15,3 +15,20 @@ export const createGroupChat = async (memberIds, chatName) => {
   const data = await response.json();
   return data;
 };
+
+export async function shareToChat(chatId, contentType, itemId) {
+  const token = await AsyncStorage.getItem('token');
+  const res = await fetch(
+    `${API_BASE_URL}/api/messages/${chatId}/share`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ contentType, itemId }),
+    }
+  );
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}

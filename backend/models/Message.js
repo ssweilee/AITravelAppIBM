@@ -15,6 +15,21 @@ const messageSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  type: {
+    type: String,
+    enum: ['text','share'],
+    default: 'text'
+  },
+  sharedContent: {
+    contentType: {
+      type: String,
+      enum: ['Post','Trip','Itinerary']
+    },
+    itemId: {
+      type: mongoose.Schema.Types.ObjectId,
+      refPath: 'sharedContent.contentType'
+    }
+  },
   createdAt: {
     type: Date,
     default: Date.now

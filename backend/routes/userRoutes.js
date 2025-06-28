@@ -3,16 +3,18 @@ const router = express.Router();
 const { authenticateToken } = require('../middleware/authMiddleware');
 const userController = require('../controllers/userController');
 const { body, validationResult } = require('express-validator');
+const User = require('../models/User');
+
 
 router.get('/profile', authenticateToken, userController.getUserProfile);
+router.get('/savedPosts', authenticateToken, userController.getSavedPosts);
+router.get('/followers', authenticateToken, userController.getFollowers);
+router.get('/savedTrips',authenticateToken,userController.getSavedTrips);
 router.put('/:id/follow', authenticateToken, userController.followUser);
 router.get('/:id', authenticateToken, userController.getSingleUser);
-// get the saved posts of the user
-router.get('/savedPosts', authenticateToken, async (req, res) => {
-  const user = await User.findById(req.user.userId)
-    .populate('savedPosts', 'content userId createdAt');
-  res.json(user.savedPosts);
-});
+
+
+
 
 // Edit user profile route
 //names, location, trips, reviews, bio, years on travel?,  picture?

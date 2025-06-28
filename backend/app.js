@@ -8,6 +8,7 @@ const userRoutes = require('./routes/userRoutes.js');
 const messageRoutes = require('./routes/messageRoutes.js');
 const chatRoutes = require('./routes/chatRoutes.js');
 const userInteractionRoutes = require('./routes/userInteractionRoutes.js');
+const tripRoutes = require('./routes/tripRoutes.js');
 
 const app = express();
 
@@ -31,6 +32,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/messages', authenticateToken, messageRoutes);
 app.use('/api/chats', authenticateToken, chatRoutes);
 app.use('/api/interactions',authenticateToken,userInteractionRoutes);
+app.use('/api/trips', authenticateToken, tripRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ message: 'Route not found' });

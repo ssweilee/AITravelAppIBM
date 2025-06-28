@@ -107,3 +107,68 @@ exports.updateUserProfile = async (userId, updatedData) => {
     throw new Error(error.message);
   }
 };
+exports.getSavedPosts = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    // find the user and populate savedPosts with full Post docs
+    const user = await User.findById(userId)
+      .populate({
+        path: 'savedPosts',
+        populate: { path: 'userId', select: 'firstName lastName' } //include author info
+      });
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    res.json(user.savedPosts);
+  } catch (err) {
+    console.error('Error fetching saved posts:', err);
+    res.status(500).json({ message: 'Failed to load saved posts', error: err.message });
+  }
+};
+ exports.getFollowers = async (req, res) => {
+   const currentUserId = req.user.userId;
+   // default to empty string => returns all followers
+   const { search = '' } = req.query;
+   try {
+     // 1) fetch just the array of follower IDs
+     const currentUser = await User.findById(currentUserId).select('followings');
+     const followerIds = currentUser.followings || [];
+
+     // 2) query the User collection for those IDs + matching the search term
+     const users = await User.find({
+       _id: { $in: followerIds },
+       $or: [
+         { username:  { $regex: search, $options: 'i' } },
+         { firstName: { $regex: search, $options: 'i' } },
+         { lastName:  { $regex: search, $options: 'i' } }
+       ]
+     })
+     .select('username firstName lastName');
+
+     // 3) respond
+     return res.json({ users });
+   } catch (err) {
+     console.error('Error fetching followers:', err);
+     return res.status(500).json({
+       message: 'Failed to fetch followers',
+       error: err.message
+     });
+   }
+ };
+ // controllers/userController.js
+
+
+exports.getSavedTrips = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    // Find all trips that this user has saved
+    const trips = await Trip.find({ savedBy: userId })
+      .populate('userId', 'firstName lastName')  // pull in the author’s name
+      .sort({ updatedAt: -1 });                 // most-recently saved first
+
+    return res.json(trips);
+  } catch (err) {
+    console.error('Error fetching saved trips:', err);
+    return res
+      .status(500)
+      .json({ message: 'Failed to load saved trips', error: err.message });
+  }
+};

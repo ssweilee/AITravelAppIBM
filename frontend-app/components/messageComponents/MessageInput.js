@@ -8,7 +8,8 @@ const MessageInput = ({ text, setText, onSend }) => {
         value={text}
         onChangeText={setText}
         placeholder="Type your message..."
-        style={styles.textInput}
+        style={styles.textInput}    
+      
       />
       <Button title="Send" onPress={onSend} />
     </View>
@@ -20,6 +21,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingBottom: Platform.OS === 'ios' ? 10 : 0,
+    paddingHorizontal: 8,
+    marginBottom: 40
   },
   textInput: {
     flex: 1,

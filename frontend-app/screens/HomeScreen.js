@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Platform, StatusBar as RNStat
 import { Ionicons, MaterialIcons, FontAwesome } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import FeedList from '../components/FeedList';
+import TripList from '../components/TripList';
 
 const HomeScreen = ({ navigation }) => {
   const [refreshKey, setRefreshKey ] = useState(0);
@@ -42,6 +43,10 @@ const HomeScreen = ({ navigation }) => {
                   <MaterialIcons name="event-note" size={22} color="#222" style={{ marginRight: 10 }} />
                   <Text>Itinerary</Text>
                 </TouchableOpacity>
+                <TouchableOpacity style={styles.dropdownItem} onPress={() => { setShowDropdown(false); navigation.navigate('CreateTrip'); }}>
+                  <MaterialIcons name="event-note"size={22} color="#222" style={{ marginRight: 10 }} />
+                  <Text>Trip</Text>
+                </TouchableOpacity>
               </View>
             )}
           </View>
@@ -52,6 +57,8 @@ const HomeScreen = ({ navigation }) => {
       </View>
       <Text style={styles.header}>Home Feed</Text>
       <FeedList refreshTrigger={refreshKey} />
+
+      
     </View>
   );
 };

@@ -7,6 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fetchUserProfile } from '../utils/ProfileInfo';
 import AddPost from '../components/AddPost';
 import PostList from '../components/PostList';
+import TripList from '../components/TripList';
 
 const ProfileScreen = () => {
   const [userInfo, setUserInfo] = useState(null);
@@ -155,6 +156,12 @@ const ProfileScreen = () => {
           <AddPost onPostCreated={triggerRefresh} />
           <Text style={styles.subHeader}>Recent Posts:</Text>
           <PostList refreshTrigger={refreshKey} />
+        </>
+      )}
+      {selectedTab === 'Trip' && (
+        <>
+          <Text style={styles.subHeader}>Your Trips</Text>
+          <TripList userId={userInfo._id} refreshTrigger={refreshKey} />
         </>
       )}
     </View>

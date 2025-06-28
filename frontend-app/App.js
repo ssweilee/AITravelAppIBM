@@ -20,7 +20,9 @@ import CreateThreadScreen from './screens/CreateThreadScreen';
 import ControlPanelScreen from './screens/ControlPanelScreen';
 import BookingsScreen from './screens/BookingsScreen';
 import { Ionicons, MaterialIcons, FontAwesome } from '@expo/vector-icons';
-
+import SavedPostScreen from './screens/SavedPostScreen';
+import CreateTripScreen from './screens/CreateTripScreen';
+import TripScreen from './screens/TripScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -71,8 +73,6 @@ export default function App() {
           })}
         />
         <Stack.Screen name="UserProfile" component={UserProfileScreen} />
-
-        <Stack.Screen name="Chat" component={ChatScreen} />
         <Stack.Screen name="PostDetail" component={PostDetailScreen} />
         <Stack.Screen name="EditProfile" component={EditProfileScreen} />
         <Stack.Screen
@@ -94,6 +94,12 @@ export default function App() {
         <Stack.Screen name="Members" component={GroupChatMembersScreen} />
         <Stack.Screen name="CreateItinerary" component={CreateItineraryScreen} options={{ headerShown: false }}/>
         <Stack.Screen name="CreateThread" component={CreateThreadScreen} options={{ headerShown: false }}/>
+        <Stack.Screen name="CreateTrip" component={CreateTripScreen} options={{ title: 'New Trip' }}
+/>
+        <Stack.Screen name="SavedPosts" component={SavedPostScreen} options={{ title: 'Your Saved Posts' }}
+/>
+        <Stack.Screen name="Trip" component={TripScreen} options={{ title: 'Trip Details' }} />
+         
 
       </Stack.Navigator>
     </NavigationContainer>

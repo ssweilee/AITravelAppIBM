@@ -82,7 +82,11 @@ const fetchComments = async () => {
           keyExtractor={(item) => item._id}
           renderItem={({ item }) => (
             <View style={styles.commentBox}>
-              <Text style={styles.commentAuthor}>{item.userId?.firstName || 'User'}:</Text>
+              <Text style={styles.commentAuthor}>
+                 {item.userId?.firstName || 'User'}
+                 {' '}
+                 {item.userId?.lastName || ''}
+              </Text>
               <Text>{item.content}</Text>
             </View>
           )}

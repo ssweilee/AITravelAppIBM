@@ -5,6 +5,7 @@ const messageController = require('../controllers/messageController');
 
 router.get('/:chatId', authenticateToken, messageController.getMessagesForChat);
 router.post('/:chatId', authenticateToken, messageController.sendMessage);
+router.post('/:chatId/share', authenticateToken, messageController.shareContent);
 
 
 

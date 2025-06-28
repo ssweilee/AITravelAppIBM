@@ -22,7 +22,7 @@ exports.getOrCreateChat = async (req, res) => {
     }
 
     await chat.populate('members', 'firstName lastName');
-    res.status(200).json({chat});
+    res.status(200).json({ chat });
   } catch (err) {
     console.log('Failed to get/create chat:', err);
     res.status(500).json({ message: 'Internal server error', error: err.message });
@@ -40,6 +40,7 @@ exports.getUserChats = async (req, res) => {
       })
       .sort('-updatedAt');
 
+    
     res.status(200).json(chats);
   } catch (err) {
     console.error("Failed to fetch user chats:", err);

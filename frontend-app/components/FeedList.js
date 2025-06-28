@@ -1,82 +1,110 @@
+// components/FeedList.js
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, FlatList, StyleSheet, RefreshControl } from 'react-native';
+import {
+  Text,
+  FlatList,
+  RefreshControl,
+  StyleSheet,
+  View
+} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_BASE_URL } from '../config';
-import PostCard from './PostCard'; 
+import PostCard from './PostCard';
+import TripCard from './TripCard';
 import { useNavigation } from '@react-navigation/native';
 
 const FeedList = ({ refreshTrigger }) => {
-  const [ posts, setPosts ] = useState([]);
-  const [ refreshing, setRefreshing ] = useState(false);
+  const [items, setItems] = useState([]);
+  const [refreshing, setRefreshing] = useState(false);
+  const navigation = useNavigation();
 
-  const fetchPosts = async () => {
+  const fetchFeed = async () => {
     try {
       const token = await AsyncStorage.getItem('token');
-      if (!token) {
-        console.warn('User is not authenticated');
-        return;
-      }
+      if (!token) return;
 
-      const response = await fetch(`${API_BASE_URL}/api/posts/feed`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
+      // 1) Fetch posts
+      const postsRes = await fetch(`${API_BASE_URL}/api/posts/feed`, {
+        headers: { Authorization: `Bearer ${token}` }
       });
+      const postsData = postsRes.ok ? await postsRes.json() : [];
 
-      const data = await response.json();
-      if (response.ok) {
-        setPosts(data);
-      } else {
-        console.log('Failed to fetch posts: ', data);
-      }
+      // 2) Fetch trips
+      const tripsRes = await fetch(`${API_BASE_URL}/api/trips`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const tripsData = tripsRes.ok ? await tripsRes.json() : [];
+
+      // 3) Tag each item with its type
+      const taggedPosts = postsData.map(p => ({ ...p, type: 'post' }));
+      const taggedTrips = tripsData.map(t => ({ ...t, type: 'trip' }));
+
+      // 4) Merge & sort by createdAt descending
+      const merged = [...taggedPosts, ...taggedTrips].sort(
+        (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+      );
+
+      setItems(merged);
     } catch (err) {
-      console.log('Error fetching posts: ', err);
+      console.error('Error fetching feed:', err);
     }
   };
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
-    await fetchPosts();
+    await fetchFeed();
     setRefreshing(false);
   }, []);
 
   useEffect(() => {
-    fetchPosts();
+    fetchFeed();
   }, [refreshTrigger]);
 
-const navigation = useNavigation();
-const renderItem = ({item}) => (
-  <PostCard
-    post={item}
-    onPress={p => navigation.navigate('PostDetail', {post: p})}
-  />
-);
-  
+  const renderItem = ({ item }) => {
+    if (item.type === 'post') {
+      return (
+        <PostCard
+          post={item}
+          onPress={p => navigation.navigate('PostDetail', { post: p })}
+        />
+      );
+    }
+    return (
+      <TripCard
+        trip={item}
+        onPress={() => navigation.navigate('Trip', { tripId: item._id })}
+      />
+    );
+  };
+
   return (
     <FlatList
-      data={posts}
-      keyExtractor={(item) => item._id}
+      data={items}
+      keyExtractor={item => `${item.type}-${item._id}`}
       renderItem={renderItem}
-      contentContainerStyle={{ marginTop: 10 }}
-      ListEmptyComponent={<Text>No Posts Yet</Text>}
+      contentContainerStyle={styles.list}
+      ListEmptyComponent={
+        <View style={styles.empty}>
+          <Text>No items yet.</Text>
+        </View>
+      }
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
       }
     />
   );
 };
-  
+
 const styles = StyleSheet.create({
-  postItem: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    padding: 10,
-    marginBottom: 10,
-    borderRadius: 5
+  list: {
+    marginTop: 10,
+    paddingHorizontal: 16
   },
-  postAuthor: {
-    fontWeight: 'bold',
-    marginBottom: 5
+  empty: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20
   }
 });
 

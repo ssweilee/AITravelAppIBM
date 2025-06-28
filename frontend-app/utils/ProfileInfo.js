@@ -35,7 +35,7 @@ export const fetchUserProfile = async () => {
   }
 };
 
-// 👇 NEW: fetch any user by ID
+//  NEW: fetch any user by ID
 export const fetchUserById = async (userId) => {
   try {
     const token = await AsyncStorage.getItem('token');
