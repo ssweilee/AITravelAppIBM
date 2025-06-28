@@ -4,11 +4,13 @@ const Comment = require('../models/Comment');
 const Itinerary = require('../models/Itinerary');
 
 exports.createPost = async (req, res) => {
-  const { content, bindItinerary } = req.body;
+  const { content, images, taggedUsers, bindItinerary} = req.body;
   const userId = req.user.userId;
 
   console.log("Authenticated user:", req.user);
   console.log("Post content:", req.body.content);
+  console.log("Images:", images);
+  console.log("Tagged Users:", taggedUsers);
 
   if (!content && !bindItinerary) {
     return res.status(400).json({ message: 'Post must contain text or itineraries' });
@@ -17,7 +19,7 @@ exports.createPost = async (req, res) => {
   console.log('Parsed bindItinerary:', req.body.bindItinerary);
 
   try {
-    const post = await Post.create({ userId, content, bindItinerary });
+    const post = await Post.create({ userId, content, bindItinerary, taggedUsers: taggedUsers || [], images: Array.isArray(images) ? images : [] });
 
     if (bindItinerary) {
     // Push user to 'repostedBy' array only if not already included

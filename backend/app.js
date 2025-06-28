@@ -10,13 +10,15 @@ const messageRoutes = require('./routes/messageRoutes.js');
 const chatRoutes = require('./routes/chatRoutes.js');
 const locationRouter = require('./routes/locationRoutes.js');
 const userInteractionRoutes = require('./routes/userInteractionRoutes.js');
+const uploadRoutes = require('./routes/uploadRoutes');
+const path = require('path');
 const avatarUploadRouter = require('./routes/avatarUploadRoutes.js'); 
 const itineraryRoutes = require('./routes/itineraryRoutes.js');
 
 const app = express();
 
 app.use((req, res, next) => {
-  console.log(`➡️ Incoming ${req.method} request to ${req.url}`);
+  console.log(`Incoming ${req.method} request to ${req.url}`);
   next();
 });
 
@@ -36,6 +38,7 @@ app.use('/api/messages', authenticateToken, messageRoutes);
 app.use('/api/chats', authenticateToken, chatRoutes);
 app.use('/api/location', locationRouter);
 app.use('/api/interactions',authenticateToken,userInteractionRoutes);
+app.use('/upload', uploadRoutes);
 app.use('/api/users', avatarUploadRouter); 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/api/itineraries', authenticateToken, itineraryRoutes);
@@ -48,5 +51,8 @@ app.use((err, req, res, next) => {
   console.error('Unhandled server error:', err);
   res.status(500).json({ message: 'Internal server error' });
 });
+
+
+
 
 module.exports = app;

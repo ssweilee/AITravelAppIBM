@@ -12,6 +12,7 @@ import TripDateModal from '../components/ItineraryComponents/TripDateModal';
 import ShareModal from '../components/ItineraryComponents/ShareModal';
 import DaySection from '../components/ItineraryComponents/DaySection';
 
+
 const CreateItineraryScreen = ({ navigation }) => {
   const [title, setTitle] = useState('');
   const [destination, setDestination] = useState('');

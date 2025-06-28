@@ -19,7 +19,7 @@ import CreateGroupChatScreen from './screens/CreateGroupChatScreen';
 import ChatSettingScreen from './screens/ChatSettingScreen';
 import GroupChatMembersScreen from './screens/GroupChatMembersScreen';
 import CreateItineraryScreen from './screens/CreateItineraryScreen';
-import CreateThreadScreen from './screens/CreateThreadScreen';
+import CreatePostScreen from './screens/CreatePostScreen';
 import ControlPanelScreen from './screens/ControlPanelScreen';
 import BookingsScreen from './screens/BookingsScreen';
 import ItineraryDetailScreen from './screens/ItineraryDetailScreen';
@@ -118,7 +118,7 @@ export default function App() {
           <Stack.Screen name="Chat Settings" component={ChatSettingScreen} options={{ headerShown: false }}/>
           <Stack.Screen name="Members" component={GroupChatMembersScreen} />
           <Stack.Screen name="CreateItinerary" component={CreateItineraryScreen} options={{ headerShown: false }}/>
-          <Stack.Screen name="CreateThread" component={CreateThreadScreen} options={{ headerShown: false }}/>
+          <Stack.Screen name="CreatePost" component={CreatePostScreen} options={{ headerShown: false }}/>
           <Stack.Screen name="ItineraryDetail" component={ItineraryDetailScreen} options={{ headerShown: false }} />
           <Stack.Screen name="AccountSettings" component={AccountSettingsScreen} />
         </Stack.Navigator>
