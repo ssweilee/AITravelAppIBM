@@ -134,7 +134,7 @@ const ItineraryCard = ({ item }) => {
 
           <TouchableOpacity
             style={styles.actionButton}
-            onPress={() => navigation.navigate('CreateThread', { itinerary: item })}
+            onPress={() => navigation.navigate('CreatePost', { itinerary: item })}
           >
             <Ionicons name="repeat-outline" size={20} color="#555" />
             <Text style={styles.repostMeta}>

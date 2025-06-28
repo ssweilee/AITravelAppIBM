@@ -1,11 +1,12 @@
 // components/PostCard.js
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Image } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import { API_BASE_URL } from '../config';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import BindItineraryCard from './ItineraryComponents/BindItineraryCard';
+
 
 const PostCard = ({ post, onPress }) => {
   const navigation = useNavigation();
@@ -126,6 +127,23 @@ const PostCard = ({ post, onPress }) => {
       </View>
       <TouchableOpacity onPress={() => onPress?.(post) ?? goToComments()}>
         <Text style={styles.content}>{post.content}</Text>
+        {post.images && post.images.length > 0 && (
+          <ScrollView horizontal style={{ marginTop: 8 }}>
+          {post.images.map((img, index) => {
+            console.log('Post image url:', img.url); 
+
+            return (
+              <Image
+                key={index}
+                source={{ uri: `${API_BASE_URL}${img.url}` }}
+                style={{ width: 200, height: 200, borderRadius: 8, marginRight: 10 }}
+                onError={() => console.log(`Failed to load image: ${img.url}`)}
+              />
+            );
+          })}
+  </ScrollView>
+)}
+
       </TouchableOpacity>
 
       {post.bindItinerary && (
