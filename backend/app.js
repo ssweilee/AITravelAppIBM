@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 const { authenticateToken } = require('./middleware/authMiddleware.js');
 const authRoutes = require('./routes/authRoutes.js');
 const postRoutes = require('./routes/postRoutes.js');
@@ -9,6 +10,7 @@ const messageRoutes = require('./routes/messageRoutes.js');
 const chatRoutes = require('./routes/chatRoutes.js');
 const locationRouter = require('./routes/locationRoutes.js');
 const userInteractionRoutes = require('./routes/userInteractionRoutes.js');
+const avatarUploadRouter = require('./routes/avatarUploadRoutes.js'); 
 const itineraryRoutes = require('./routes/itineraryRoutes.js');
 
 const app = express();
@@ -34,6 +36,8 @@ app.use('/api/messages', authenticateToken, messageRoutes);
 app.use('/api/chats', authenticateToken, chatRoutes);
 app.use('/api/location', locationRouter);
 app.use('/api/interactions',authenticateToken,userInteractionRoutes);
+app.use('/api/users', avatarUploadRouter); 
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/api/itineraries', authenticateToken, itineraryRoutes);
 
 app.use((req, res) => {
