@@ -11,7 +11,6 @@ const chatRoutes = require('./routes/chatRoutes.js');
 const locationRouter = require('./routes/locationRoutes.js');
 const userInteractionRoutes = require('./routes/userInteractionRoutes.js');
 const uploadRoutes = require('./routes/uploadRoutes');
-const path = require('path');
 const avatarUploadRouter = require('./routes/avatarUploadRoutes.js'); 
 const itineraryRoutes = require('./routes/itineraryRoutes.js');
 
