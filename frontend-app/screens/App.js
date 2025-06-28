@@ -1,6 +1,7 @@
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { AuthProvider } from './contexts/AuthContext';
 import LoginScreen from './screens/LoginScreen';
 import SignupScreen from './screens/SignupScreen';
 import SignupDetailsScreen from './screens/SignupDetailsScreen';
@@ -53,7 +54,8 @@ function MainAppTabs() {
 
 export default function App() {
   return (
-    <NavigationContainer>
+    <AuthProvider>
+      <NavigationContainer>
       <Stack.Navigator initialRouteName="Signup">
         <Stack.Screen name="Signup" component={SignupScreen} />
         <Stack.Screen name="SignupDetails" component={SignupDetailsScreen} />
@@ -84,11 +86,13 @@ export default function App() {
           })}
         />
         <Stack.Screen name="Create New Group" component={CreateGroupChatScreen} />
-        <Stack.Screen name="Chat Settings" component={ChatSettingScreen} />
+        <Stack.Screen name="Chat Settings" component={ChatSettingScreen} options={{ headerShown: false }}/>
         <Stack.Screen name="Members" component={GroupChatMembersScreen} />
         <Stack.Screen name="CreateThread" component={CreateThreadScreen} options={{ headerShown: false }} />
         <Stack.Screen name="CreateItinerary" component={require('./screens/CreateItineraryScreen').default} options={{ headerShown: false }} />
       </Stack.Navigator>
     </NavigationContainer>
+    </AuthProvider>
+    
   );
 }

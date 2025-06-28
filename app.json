@@ -3,6 +3,9 @@
     "package": "com.anonymous.usermanagementsystem"
   },
   "ios": {
-    "bundleIdentifier": "com.anonymous.usermanagementsystem"
+    "bundleIdentifier": "com.anonymous.usermanagementsystem",
+    "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "This app needs access to your photo library to select an avatar."
+      }
   }
 }
