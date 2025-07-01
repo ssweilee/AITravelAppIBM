@@ -50,7 +50,6 @@ const loadProfileData = useCallback(async () => {
     loadProfileData();
   }, [loadProfileData]); 
 
-  // 🧠 SET UP CHAT BUTTON
   useLayoutEffect(() => {
     if (user && currentUserId && currentUserId !== user._id) {
       navigation.setOptions({
