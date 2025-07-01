@@ -1,52 +1,36 @@
-import React, { useState, useCallback, useLayoutEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, Platform, StatusBar as RNStatusBar } from 'react-native';
-import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import React, { useState, useCallback, useLayoutEffect, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Platform, Image, StatusBar as RNStatusBar } from 'react-native';
+import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fetchUserProfile } from '../utils/ProfileInfo';
+import { useAuth } from '../contexts/AuthContext';
 import AddPost from '../components/AddPost';
 import PostList from '../components/PostList';
+import debounce from 'lodash.debounce';
+import ItineraryList from '../components/profileComponents/ItineraryList';
 
 const ProfileScreen = () => {
-  const [userInfo, setUserInfo] = useState(null);
+  const { user: userInfo, isLoading, refreshUser } = useAuth();
   const [refreshKey, setRefreshKey] = useState(0);
   const [showDropdown, setShowDropdown] = useState(false);
   const [selectedTab, setSelectedTab] = useState('Post');
-  const [loading, setLoading] = useState(false);
+  
 
   const navigation = useNavigation();
+  const route = useRoute();
   const triggerRefresh = () => setRefreshKey(prev => prev + 1);
 
-  const loadUser = useCallback(() => {
-    async function fetchUserData() {
-      try {
-        setLoading(true);
-        const token = await AsyncStorage.getItem('token');
-        if (!token) {
-          Alert.alert('Error', 'Authentication token missing. Please log in again.');
-          setUserInfo(null);
-          return;
-        }
-
-        const userData = await fetchUserProfile();
-        if (userData && userData.success && userData.user && userData.user._id) {
-          setUserInfo(userData.user);
-        } else {
-          const errorMsg = userData?.error?.message || JSON.stringify(userData?.error) || 'Invalid user data';
-          Alert.alert('Error', `Failed to load user data: ${errorMsg}`);
-          setUserInfo(null);
-        }
-      } catch (error) {
-        Alert.alert('Error', `An unexpected error occurred: ${error.message}`);
-        setUserInfo(null);
-      } finally {
-        setLoading(false);
+  useFocusEffect(
+    useCallback(() => {
+      if (route.params?.profileUpdated) {
+        console.log('[ProfileScreen] Refreshing user data from context...');
+        refreshUser();
+        navigation.setParams({ profileUpdated: false }); 
       }
-    }
-
-    fetchUserData();
-  }, []);
+    }, [route.params?.profileUpdated, refreshUser, navigation])
+  );
 
   const formatLocation = (locationString) => {
     if (!locationString || !locationString.includes('|')) {
@@ -56,7 +40,15 @@ const ProfileScreen = () => {
     return `${city}, ${countryCode}`;
   };
 
-  useFocusEffect(loadUser);
+  if (isLoading) {
+    return <View style={styles.loadingContainer}><ActivityIndicator size="large" color="#007bff" /></View>;
+  }
+
+  if (!userInfo) {
+    return <View style={styles.loadingContainer}><Text>Please log in to view your profile.</Text></View>;
+  }
+
+  
 
   // 👇 Place name and buttons in header
   useLayoutEffect(() => {
@@ -88,6 +80,31 @@ const ProfileScreen = () => {
     });
   }, [navigation, userInfo]);
 
+  if (isLoading) {
+    return <View style={styles.loadingContainer}><ActivityIndicator size="large" color="#007bff" /></View>;
+  }
+
+  if (!userInfo) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Text>Please log in to view your profile.</Text>
+        {/* 可以加一個登入按鈕 */}
+      </View>
+    );
+  }
+
+  const navigateToEdit = () => {
+    if (!userInfo) {
+        console.warn("User info is not available yet, cannot navigate to edit.");
+        return; 
+    }
+
+    navigation.navigate('EditProfile', {
+        userId: userInfo._id,
+        currentUserInfo: userInfo, 
+    });
+};
+
   return (
     <View style={[styles.container, { paddingTop: Platform.OS === 'android' ? RNStatusBar.currentHeight : 30 }]}>
       <StatusBar style="dark" />
@@ -111,9 +128,20 @@ const ProfileScreen = () => {
       )}
 
       <View style={styles.profileSection}>
-        <View style={styles.profilePictureWrapper}>
-          <Ionicons name="person" size={40} color="#999" />
-        </View>
+      <TouchableOpacity 
+    style={styles.profilePictureWrapper} 
+    onPress={navigateToEdit}  
+    >
+    {userInfo?.profilePicture ? (
+      <Image
+      source={{ uri: userInfo.profilePicture }}
+      style={styles.profilePicture}
+      key={userInfo.profilePicture} 
+    />
+    ) : (
+      <Ionicons name="person" size={40} color="#999" />
+    )}
+  </TouchableOpacity>
         <View style={styles.profileStatsColumn}>
           <View style={styles.statRow}>
             <Text>
@@ -141,7 +169,7 @@ const ProfileScreen = () => {
         <Text style={styles.locationText}>{formatLocation(userInfo?.location)}</Text>
         <Text style={styles.bioText}>{userInfo?.bio || ''}</Text>
         </View>
-        <TouchableOpacity style={styles.editButton} onPress={() => navigation.navigate('EditProfile', { userId: userInfo?._id })}>
+        <TouchableOpacity style={styles.editButton} onPress={navigateToEdit} >
           <Text style={styles.editButtonText}>Edit</Text>
         </TouchableOpacity>
       </View>
@@ -160,9 +188,16 @@ const ProfileScreen = () => {
 
       {selectedTab === 'Post' && (
         <>
-          <AddPost onPostCreated={triggerRefresh} />
-          <Text style={styles.subHeader}>Recent Posts:</Text>
           <PostList refreshTrigger={refreshKey} />
+        </>
+      )}
+
+      {selectedTab === 'Itinerary' && (
+        <>
+          <ItineraryList 
+            refreshTrigger={refreshKey}
+            onPress={() => navigation.navigate('ItineraryDetail', { itinerary: item })}
+          />
         </>
       )}
     </View>
@@ -171,10 +206,16 @@ const ProfileScreen = () => {
 
 const styles = StyleSheet.create({
   container: { padding: 20, flex: 1, backgroundColor: '#fff' },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   profileSection: { flexDirection: 'row', alignItems: 'center', marginTop: 15 },
   profilePictureWrapper: {
     width: 100, height: 100, borderRadius: 60,
     backgroundColor: '#eee', justifyContent: 'center', alignItems: 'center', marginRight: 12
+  },
+  profilePicture: { 
+    width: '100%',
+    height: '100%',
+    borderRadius: 50,
   },
   profileStatsColumn: {
     flex: 1, justifyContent: 'center', alignItems: 'center',

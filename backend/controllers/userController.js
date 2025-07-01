@@ -1,6 +1,7 @@
 const User = require('../models/User');
 const Trip = require('../models/Trip');
 const Review = require('../models/Review');
+const bcrypt = require('bcryptjs');
 
 exports.followUser = async (req, res) => {
   try {
@@ -78,10 +79,13 @@ exports.getSingleUser = async (req, res) => {
 
 exports.updateUserProfile = async (userId, updatedData) => {
   try {
-    const allowedFields = ['firstName', 'lastName', 'bio', 'profilePicture', 'isPublic', 'location', 'travelStyle', 'dob'];
+    const allowedFields = ['firstName', 'lastName', 'bio', 'isPublic', 'location', 'travelStyle', 'dob', 'profilePicture'];
     const updates = {};
+    const unsets = {}; 
     for (const field of allowedFields) {
-      if (updatedData[field] !== undefined) {
+      if (updatedData[field] === null) {
+        unsets[field] = 1;
+      } else if (updatedData[field] !== undefined) {
         updates[field] = updatedData[field];
       }
     }
@@ -89,22 +93,88 @@ exports.updateUserProfile = async (userId, updatedData) => {
     console.log('updateUserProfile - Updating user:', userId, 'with data:', updates);
     console.log('User Controller: Received data to update:', updatedData);
     console.log('User Controller: Filtered updates to be saved:', updates);
+
+    const operations = {};
+    if (Object.keys(updates).length > 0) {
+      operations.$set = updates;
+    }
+    if (Object.keys(unsets).length > 0) {
+      operations.$unset = unsets;
+    }
+
+    if (Object.keys(operations).length === 0) {
+        const user = await User.findById(userId).select('-password');
+        return user;
+    }
+
     // Update user in MongoDB using Mongoose
     const user = await User.findByIdAndUpdate(
       userId,
-      { $set: updates },
+      operations,
       { new: true, runValidators: true, select: '-password' } // Return updated document, validate, exclude password
     );
 
     if (!user) {
-      console.log('updateUserProfile - User not found:', userId);
-      return null;
+      console.error('[ERROR] userController - User not found during update:', userId);      return null;
     }
 
     console.log('updateUserProfile - Updated user:', user);
     return user;
   } catch (error) {
-    console.error('updateUserProfile - Database error:', error.message);
-    throw new Error(error.message);
+    console.error('[ERROR] userController - Database update error:', error.message);
+  }
+};
+
+exports.getUserFollowings = async (req, res) => {
+  try {
+    const user = await require('../models/User').findById(req.user.userId)
+      .populate('followings', '_id firstName lastName profilePicture');
+    res.status(200).json(user.followings);
+  } catch (error) {
+    console.error('Error fetching followings:', error);
+    res.status(500).json({ message: 'Failed to fetch followings' });
+  }
+};
+
+exports.changeEmail = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { newEmail } = req.body;
+    if (!newEmail) {
+      return res.status(400).json({ message: 'New email is required.' });
+    }
+    // Check if email is already taken
+    const existing = await User.findOne({ email: newEmail });
+    if (existing) {
+      return res.status(409).json({ message: 'Email already in use.' });
+    }
+    const user = await User.findByIdAndUpdate(userId, { email: newEmail }, { new: true });
+    res.json({ message: 'Email updated successfully.', user });
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to update email', error: err.message });
+  }
+};
+
+exports.changePassword = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { password, newPassword } = req.body;
+    if (!password || !newPassword) {
+      return res.status(400).json({ message: 'Current and new password are required.' });
+    }
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(401).json({ message: 'Current password is incorrect.' });
+    }
+    const hashed = await bcrypt.hash(newPassword, 10);
+    user.password = hashed;
+    await user.save();
+    res.json({ message: 'Password updated successfully.' });
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to update password', error: err.message });
   }
 };

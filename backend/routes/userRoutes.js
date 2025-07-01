@@ -5,6 +5,7 @@ const userController = require('../controllers/userController');
 const { body, validationResult } = require('express-validator');
 
 router.get('/profile', authenticateToken, userController.getUserProfile);
+router.get('/followings', authenticateToken, userController.getUserFollowings)
 router.put('/:id/follow', authenticateToken, userController.followUser);
 router.get('/:id', authenticateToken, userController.getSingleUser);
 // get the saved posts of the user
@@ -36,7 +37,7 @@ router.put(
        .withMessage('Last name must contain only letters and spaces'),
      body('bio')
        .optional(),
-     body('location').optional(),//make scroll down
+     body('location').optional(),
      body('profilePicture').optional(),
      body('isPublic').optional().isBoolean().withMessage('isPublic must be a boolean'),
    ],
@@ -61,12 +62,14 @@ router.put(
          if (!result) {
            return res.status(404).json({ message: 'User not found' });
          }
-         res.status(200).json({ message: 'Profile updated successfully', data: result });
+         res.status(200).json({ success: true, user: result });
        } catch (error) {
          console.error('Edit profile route - Error:', error.message, error.stack);
          res.status(500).json({ message: 'Error updating profile', error: error.message });
        }
     }
   );
+router.put('/change-email', authenticateToken, userController.changeEmail);
+router.put('/change-password', authenticateToken, userController.changePassword);
 
 module.exports = router;

@@ -1,19 +1,33 @@
 const Post = require('../models/Post');
 const User = require('../models/User');
 const Comment = require('../models/Comment');
+const Itinerary = require('../models/Itinerary');
+
 exports.createPost = async (req, res) => {
-  const { content } = req.body;
+  const { content, images, taggedUsers, bindItinerary} = req.body;
   const userId = req.user.userId;
 
   console.log("Authenticated user:", req.user);
   console.log("Post content:", req.body.content);
+  console.log("Images:", images);
+  console.log("Tagged Users:", taggedUsers);
 
-  if (!content) {
-      return res.status(400).json({ message: 'Post content is required' });
-    }
+  if (!content && !bindItinerary) {
+    return res.status(400).json({ message: 'Post must contain text or itineraries' });
+  }
+
+  console.log('Parsed bindItinerary:', req.body.bindItinerary);
 
   try {
-    const post = await Post.create({ userId, content });
+    const post = await Post.create({ userId, content, bindItinerary, taggedUsers: taggedUsers || [], images: Array.isArray(images) ? images : [] });
+
+    if (bindItinerary) {
+    // Push user to 'repostedBy' array only if not already included
+      await Itinerary.findByIdAndUpdate(bindItinerary, {
+        $addToSet: { repostCount: userId } // avoids duplicates
+      });
+    }
+
     res.status(201).json({ message: 'Post created succesfully', post });
   } catch (err) {
     res.status(500).json({ message: 'Failed to create post', error: err.message });
@@ -26,6 +40,10 @@ exports.getUserPosts = async (req, res) => {
   try {
     const posts = await Post.find({ userId })
       .populate('userId', 'firstName lastName')
+      .populate({
+        path: 'bindItinerary',
+        populate: { path: 'createdBy', select: 'firstName lastName'}
+      })
       .sort({ createdAt: -1 });
 
     res.status(200).json(posts);
@@ -47,6 +65,10 @@ exports.getFeedPosts = async (req, res) => {
 
     const posts = await Post.find({ userId: { $in: userAndFollowings } })
       .populate('userId', 'firstName lastName')
+       .populate({
+        path: 'bindItinerary',
+        populate: { path: 'createdBy', select: 'firstName lastName'}
+      })
       .sort({ createdAt: -1 });
 
     res.status(200).json(posts);
@@ -60,6 +82,7 @@ exports.getPostsByUserId = async (req, res) => {
     const userId = req.params.userId;
     const posts = await Post.find({ userId })
       .populate('userId', 'firstName lastName')
+      .populate('bindItinerary')
       .sort({ createdAt: -1 });
     res.status(200).json(posts);
   } catch (err) {

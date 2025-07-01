@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { View, FlatList, Text, StyleSheet, TouchableOpacity, RefreshControl } from "react-native";
+import { View, FlatList, Text, StyleSheet, TouchableOpacity, RefreshControl, Image } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { API_BASE_URL } from "../../config";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import socket from "../../utils/socket";
 import moment from "moment";
+import { Ionicons } from '@expo/vector-icons';
 
 const MessageList = ({ searchQuery }) => {
   const [chats, setChats] = useState([]);
@@ -53,6 +54,8 @@ const MessageList = ({ searchQuery }) => {
   // Listen for real-time messages
   useEffect(() => {
     const handleNewMessage = (message) => {
+
+      console.log("Incoming message via socket:", message);
       setChats((prevChats) => {
         const chatIndex = prevChats.findIndex(c => c._id === message.chatId);
         if (chatIndex === -1) return prevChats;
@@ -60,10 +63,10 @@ const MessageList = ({ searchQuery }) => {
         const updatedChats = [...prevChats];
         const chatToUpdate = { ...updatedChats[chatIndex] };
         chatToUpdate.lastMessage = message;
-        chatToUpdate.updatedAt = new Date();
+        chatToUpdate.updatedAt = message.createdAt; // ✅ REAL server time
 
-        updatedChats.splice(chatIndex, 1); // Remove old
-        return [chatToUpdate, ...updatedChats]; // Push to top
+        updatedChats.splice(chatIndex, 1);
+        return [chatToUpdate, ...updatedChats];
       });
     };
 
@@ -89,6 +92,7 @@ const MessageList = ({ searchQuery }) => {
       otherUserName: chat.isGroup && chat.chatName
         ? chat.chatName
         : `${otherUser.firstName} ${otherUser.lastName}`,
+      isGroup: chat.isGroup, // Pass isGroup to ChatScreen
     });
   };
 
@@ -101,29 +105,53 @@ const MessageList = ({ searchQuery }) => {
       : null;
 
     const isUnread = item.lastMessage &&
-      item.lastMessage.senderId._id !== currentUserId && // updated after .populate()
+      item.lastMessage.senderId._id !== currentUserId &&
       !item.lastMessage.readBy.includes(currentUserId);
+
+    // Avatar logic: show profilePicture if available, else initials, else icon
+    const renderAvatar = (user, isGroup) => {
+      if (isGroup) {
+        // Show group icon for group chats
+        return (
+          <View style={styles.avatarCircle}>
+            <Ionicons name="people" size={24} color="#fff" />
+          </View>
+        );
+      }
+      if (user.profilePicture) {
+        return (
+          <Image source={{ uri: user.profilePicture }} style={styles.avatarImg} />
+        );
+      }
+      const initials = (user.firstName?.[0] || '') + (user.lastName?.[0] || '');
+      return (
+        <View style={styles.avatarCircle}>
+          <Text style={styles.avatarInitials}>{initials || <Ionicons name="person" size={20} color="#fff" />}</Text>
+        </View>
+      );
+    };
 
     return (
       <TouchableOpacity
         style={styles.chatItem}
         onPress={() => handleChatPress(item)}
+        activeOpacity={0.7}
       >
-        <Text style={styles.chatName}>
-          {item.isGroup && item.chatName
-            ? item.chatName
-            : `${otherUser.firstName} ${otherUser.lastName}`}
-        </Text>
-
-        <View style={styles.messageRow}>
-          <Text numberOfLines={1} style={[ styles.lastMessage, isUnread && styles.unreadMessage ]}>
-            {item.lastMessage?.text || "No messages yet"}
-          </Text>
-          <View style={styles.timestampWrapper}>
-            {lastMessageTime && (
-              <Text style={styles.timestamp}>{lastMessageTime}</Text>
-            )}
+        <View style={styles.rowTop}>
+          {renderAvatar(otherUser, item.isGroup)}
+          <View style={{ flex: 1, marginLeft: 12 }}>
+            <Text style={styles.chatName} numberOfLines={1}>
+              {item.isGroup && item.chatName
+                ? item.chatName
+                : `${otherUser.firstName} ${otherUser.lastName}`}
+            </Text>
+            <Text numberOfLines={1} style={[ styles.lastMessage, isUnread && styles.unreadMessage ]}>
+              {item.lastMessage?.text || "No messages yet"}
+            </Text>
+          </View>
+          <View style={styles.rightIcons}>
             {isUnread && <View style={styles.unreadDot} />}
+            <Text style={styles.timestamp}>{lastMessageTime}</Text>
           </View>
         </View>
       </TouchableOpacity>
@@ -167,7 +195,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "flex-end",
   },
-    chatName: {
+  chatName: {
     fontWeight: "bold",
     fontSize: 16,
     marginBottom: 5,
@@ -196,6 +224,36 @@ const styles = StyleSheet.create({
   unreadMessage: {
     fontWeight: "bold",
     color: "#000",
+  },
+  rowTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+  },
+  avatarImg: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#eee',
+  },
+  avatarCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#bbb',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarInitials: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 18,
+  },
+  rightIcons: {
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    height: 44,
+    marginLeft: 8,
   },
 });
 

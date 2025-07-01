@@ -1,11 +1,12 @@
 // components/PostCard.js
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Image } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import { API_BASE_URL } from '../config';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
-import { useFocusEffect } from '@react-navigation/native';
+import BindItineraryCard from './ItineraryComponents/BindItineraryCard';
+
 
 const PostCard = ({ post, onPress }) => {
   const navigation = useNavigation();
@@ -86,6 +87,16 @@ const PostCard = ({ post, onPress }) => {
     }
   };
 
+  const formatDate = (dateStr) => {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('en-UK', {
+      month: 'short',
+      day: 'numeric',
+    });
+  };
+
+
   // 3️⃣ Navigate to detail/comments
   const goToComments = () =>
     navigation.navigate('PostDetail', { post });
@@ -116,10 +127,38 @@ const PostCard = ({ post, onPress }) => {
       </View>
       <TouchableOpacity onPress={() => onPress?.(post) ?? goToComments()}>
         <Text style={styles.content}>{post.content}</Text>
+        {post.images && post.images.length > 0 && (
+          <ScrollView horizontal style={{ marginTop: 8 }}>
+          {post.images.map((img, index) => {
+            console.log('Post image url:', img.url); 
+
+            return (
+              <Image
+                key={index}
+                source={{ uri: `${API_BASE_URL}${img.url}` }}
+                style={{ width: 200, height: 200, borderRadius: 8, marginRight: 10 }}
+                onError={() => console.log(`Failed to load image: ${img.url}`)}
+              />
+            );
+          })}
+  </ScrollView>
+)}
+
       </TouchableOpacity>
+
+      {post.bindItinerary && (
+        <BindItineraryCard
+          itinerary={post.bindItinerary}
+          onPress={() =>
+            navigation.navigate('ItineraryDetail', { itinerary: post.bindItinerary })
+          }
+        />
+      )}
       <Text style={styles.timestamp}>
         {new Date(post.createdAt).toLocaleString()}
       </Text>
+
+      
 
       {/* Actions row (like, comment, save) ABOVE comments preview */}
       <View style={styles.actions}>

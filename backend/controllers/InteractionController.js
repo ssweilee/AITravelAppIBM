@@ -1,29 +1,31 @@
 const Post = require('../models/Post');
 const User = require('../models/User');
 const Trip = require('../models/Trip');
+const Itinerary = require('../models/Itinerary');
+
  function getModel(type) {
   switch (type) {
     case 'post':
       return Post;
     case 'trip':
       return Trip;
-      /*case Itinerary:
-        return Itinerary;
-        */
+    case 'itinerary':
+      return Itinerary;
+      
     default:
       throw new Error('Invalid model type');
   }
 }
 
-  exports.toggleLike = async (req, res) => {
-    const { type, id } = req.params;        
+exports.toggleLike = async (req, res) => {
+  const { type, id } = req.params;        
   const userId       = req.user.userId;
   const Model        = getModel(type);
   const doc          = await Model.findById(id);
   if (!doc) return res.status(404).json({ message: `${type} not found` });
 
   // pick the right array field
-  const arr = type==='post' ? doc.likes : doc.likedBy;  
+  const arr = doc.likes;  
   const idx = arr.findIndex(u=>u.toString()===userId);
   if (idx >= 0) arr.splice(idx,1);
   else          arr.push(userId);
@@ -34,6 +36,7 @@ const Trip = require('../models/Trip');
     count: arr.length
   });
 };
+
 exports.toggleSave = async (req, res) => {
   const { type, id } = req.params;
   const userId       = req.user.userId;
@@ -60,8 +63,8 @@ exports.addMention = async (req, res) => {
     const Model        = getModel(type);
     const doc          = await Model.findById(id);
     if (!doc) return res.status(404).json({ message: `${type} not found` });
-    if (!doc.taggesdUsers.includes(userId)) {
-      doc.taggesdUsers.push(userId);
+    if (!doc.taggedUsers.includes(userId)) {
+      doc.taggedUsers.push(userId);
       await doc.save();
     }
         res.json({ tagged: true, count: doc.taggedUsers.length });

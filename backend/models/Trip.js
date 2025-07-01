@@ -68,7 +68,7 @@ const tripSchema = new mongoose.Schema({
     type: Boolean,
     default: true // Default to public trips
   },
-  likedBy: [
+  likes: [
     {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User'

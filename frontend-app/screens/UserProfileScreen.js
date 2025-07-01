@@ -9,14 +9,15 @@ import { StatusBar } from 'expo-status-bar';
 import Feather from 'react-native-vector-icons/Feather';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import ItineraryList from '../components/profileComponents/ItineraryList';
 
 const UserProfileScreen = ({ route, navigation }) => {
   const { userId } = route.params;
-
+  const [selectedTab, setSelectedTab] = useState('Post');
   const [user, setUser] = useState(null);
   const [currentUserId, setCurrentUserId] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [selectedTab, setSelectedTab] = useState('Post');
+  
 
   const decodeUserIdFromToken = async () => {
     const token = await AsyncStorage.getItem('token');
@@ -157,11 +158,9 @@ const loadProfileData = useCallback(async () => {
           <TouchableOpacity
             key={tab}
             onPress={() => setSelectedTab(tab)}
-            style={[styles.tabItem, selectedTab === tab && styles.tabItemActive]} // 🔧 修改
+            style={[styles.tabItem, selectedTab === tab && styles.tabItemActive]}
           >
-            <Text style={[styles.tabText, selectedTab === tab && styles.tabTextActive]}> {/* 🔧 修改 */}
-              {tab}
-            </Text>
+            <Text style={[styles.tabText, selectedTab === tab && styles.tabTextActive]}>{tab}</Text>
           </TouchableOpacity>
         ))}
       </View>
@@ -172,9 +171,16 @@ const loadProfileData = useCallback(async () => {
           <UserPostList userId={user._id} />
         </>
       )}
-      {selectedTab === 'Itinerary'}
-      {selectedTab === 'Trip'}
-      {selectedTab === 'Review'}
+
+      {selectedTab === 'Itinerary' && (
+        <>
+          <Text style={styles.subHeader}>Your Itineraries:</Text>
+          <ItineraryList 
+            userId={user._id} 
+            onPress={() => navigation.navigate('ItineraryDetail', { itinerary: item })}
+          />
+        </>
+      )}
     </View>
   );
 };

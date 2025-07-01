@@ -1,34 +1,89 @@
 import React from 'react';
-import { View, TextInput, Button, StyleSheet, Platform } from 'react-native';
+import { View, TextInput, StyleSheet, Platform, TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 const MessageInput = ({ text, setText, onSend }) => {
   return (
-    <View style={styles.inputContainer}>
-      <TextInput
-        value={text}
-        onChangeText={setText}
-        placeholder="Type your message..."
-        style={styles.textInput}
-      />
-      <Button title="Send" onPress={onSend} />
+    <View style={styles.inputBarRow}>
+      <TouchableOpacity style={styles.iconButton}>
+        <Ionicons name="image-outline" size={24} color="#222" />
+      </TouchableOpacity>
+      <View style={styles.inputWrapper}>
+        <TextInput
+          value={text}
+          onChangeText={setText}
+          placeholder="Message..."
+          style={styles.textInput}
+          placeholderTextColor="#888"
+          multiline
+          returnKeyType="send"
+          blurOnSubmit={false}
+        />
+      </View>
+      <TouchableOpacity
+        style={styles.sendButton}
+        onPress={onSend}
+        disabled={!text.trim()}
+        activeOpacity={0.8}
+      >
+        <Ionicons name="send" size={22} color="#fff" />
+      </TouchableOpacity>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  inputContainer: {
+  inputBarRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    paddingBottom: Platform.OS === 'ios' ? 10 : 0,
+    alignItems: 'center', // changed from 'flex-end' to 'center' for perfect alignment
+    backgroundColor: '#fff',
+    borderRadius: 28,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    margin: 8,
+    shadowColor: '#000',
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 1 },
+    borderWidth: 1,
+    borderColor: '#eee',
+  },
+  inputWrapper: {
+    flex: 1,
+    marginRight: 6,
+    borderRadius: 18,
+    backgroundColor: '#f7f7f7',
+    paddingHorizontal: 10,
+    paddingVertical: 2,
+    justifyContent: 'center',
   },
   textInput: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: '#ccc',
-    padding: 10,
-    marginRight: 10,
-    borderRadius: 5
-  }
+    fontSize: 16,
+    minHeight: 36,
+    maxHeight: 100,
+    color: '#222',
+    backgroundColor: 'transparent',
+    paddingVertical: 6,
+    paddingRight: 0,
+  },
+  iconButton: {
+    padding: 6,
+    marginRight: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+    alignSelf: 'center',
+  },
+  sendButton: {
+    backgroundColor: '#1877f2',
+    borderRadius: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'center',
+    marginLeft: 2,
+    opacity: 1,
+  },
 });
 
 export default MessageInput;
