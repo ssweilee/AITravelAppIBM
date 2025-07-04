@@ -46,21 +46,11 @@ const HomeScreen = ({ navigation }) => {
                   style={styles.dropdownItem}
                   onPress={() => {
                     setShowDropdown(false);
-                    navigation.navigate('CreateThread');
+                    navigation.navigate('CreatePost');
                   }}
                 >
                   <MaterialIcons
                     name="forum"
-                    size={22}
-                    color="#222"
-                    style={{ marginRight: 10 }}
-                  />
-                  <Text>Thread</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity style={styles.dropdownItem}>
-                  <MaterialIcons
-                    name="post-add"
                     size={22}
                     color="#222"
                     style={{ marginRight: 10 }}

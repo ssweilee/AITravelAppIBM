@@ -2,9 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { View, ActivityIndicator } from 'react-native';
 import LoginScreen from './screens/LoginScreen';
 import SignupScreen from './screens/SignupScreen';
 import SignupDetailsScreen from './screens/SignupDetailsScreen';
+import InterestScreen from './screens/InterestScreen';
 import ProfileScreen from './screens/ProfileScreen';
 import HomeScreen from './screens/HomeScreen';
 import SearchScreen from './screens/SearchScreen';
@@ -17,7 +20,7 @@ import CreateGroupChatScreen from './screens/CreateGroupChatScreen';
 import ChatSettingScreen from './screens/ChatSettingScreen';
 import GroupChatMembersScreen from './screens/GroupChatMembersScreen';
 import CreateItineraryScreen from './screens/CreateItineraryScreen';
-import CreateThreadScreen from './screens/CreateThreadScreen';
+import CreatePostScreen from './screens/CreatePostScreen';
 import ControlPanelScreen from './screens/ControlPanelScreen';
 import BookingsScreen from './screens/BookingsScreen';
 import ItineraryDetailScreen from './screens/ItineraryDetailScreen';
@@ -90,12 +93,13 @@ export default function App() {
   }
 
   return (
-    <SafeAreaProvider>
+    <AuthProvider>
       <NavigationContainer>
         <Stack.Navigator initialRouteName={initialRoute}>
           <Stack.Screen name="Signup" component={SignupScreen} />
           <Stack.Screen name="SignupDetails" component={SignupDetailsScreen} />
           <Stack.Screen name="Login" component={LoginScreen} />
+          <Stack.Screen name="Interest" component={InterestScreen} />
           <Stack.Screen 
             name="Main" 
             component={MainAppTabs} 
@@ -106,7 +110,7 @@ export default function App() {
             })}
           />
           <Stack.Screen name="UserProfile" component={UserProfileScreen} />
-
+          <Stack.Screen name="Profile" component={ProfileScreen} />
           <Stack.Screen name="Chat" component={ChatScreen} />
           <Stack.Screen name="PostDetail" component={PostDetailScreen} />
           <Stack.Screen name="EditProfile" component={EditProfileScreen} />
@@ -122,13 +126,13 @@ export default function App() {
           <Stack.Screen name="Members" component={GroupChatMembersScreen} />
           <Stack.Screen name="CreateItinerary" component={CreateItineraryScreen} options={{ headerShown: false }}/>
           <Stack.Screen name="CreateTrip" component={CreateTripScreen} options={{ headerShown: false }}/> 
-          <Stack.Screen name="CreateThread" component={CreateThreadScreen} options={{ headerShown: false }}/>
+          <Stack.Screen name="CreatePost" component={CreatePostScreen} options={{ headerShown: false }}/>
           <Stack.Screen name="ItineraryDetail" component={ItineraryDetailScreen} options={{ headerShown: false }} />
           <Stack.Screen name="TripDetail" component={TripDetailScreen} options={{ headerShown: false }} />
           <Stack.Screen name="AccountSettings" component={AccountSettingsScreen} />
           <Stack.Screen name="SavedPosts" component={SavedPostsScreen} options={{ title: 'Saved Content' }} />
         </Stack.Navigator>
       </NavigationContainer>
-    </SafeAreaProvider>
+    </AuthProvider>
   );
 }

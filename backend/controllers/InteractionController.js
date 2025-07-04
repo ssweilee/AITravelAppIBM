@@ -144,8 +144,8 @@ exports.addMention = async (req, res) => {
     const Model        = getModel(type);
     const doc          = await Model.findById(id);
     if (!doc) return res.status(404).json({ message: `${type} not found` });
-    if (!doc.taggesdUsers.includes(userId)) {
-      doc.taggesdUsers.push(userId);
+    if (!doc.taggedUsers.includes(userId)) {
+      doc.taggedUsers.push(userId);
       await doc.save();
     }
         res.json({ tagged: true, count: doc.taggedUsers.length });

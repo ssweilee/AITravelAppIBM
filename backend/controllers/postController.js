@@ -5,11 +5,13 @@ const Itinerary = require('../models/Itinerary');
 const Trip = require('../models/Trip'); // Add this import
 
 exports.createPost = async (req, res) => {
-  const { content, bindItinerary, bindTrip } = req.body; // Add bindTrip
+  const { content, images, taggedUsers, bindItinerary, bindTrip} = req.body; // Add bindTrip
   const userId = req.user.userId;
 
   console.log("Authenticated user:", req.user);
   console.log("Post content:", req.body.content);
+  console.log("Images:", images);
+  console.log("Tagged Users:", taggedUsers);
 
   if (!content && !bindItinerary && !bindTrip) {
     return res.status(400).json({ message: 'Post must contain text, itineraries, or trips' });
@@ -19,7 +21,7 @@ exports.createPost = async (req, res) => {
   console.log('Parsed bindTrip:', req.body.bindTrip); // Add logging
 
   try {
-    const post = await Post.create({ userId, content, bindItinerary, bindTrip }); // Add bindTrip
+    const post = await Post.create({ userId, content, bindItinerary, taggedUsers: taggedUsers || [], images: Array.isArray(images) ? images : [], bindTrip }); // Add bindTrip
 
     // Handle itinerary repost count
     if (bindItinerary) {

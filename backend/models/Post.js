@@ -32,14 +32,33 @@ const postSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Comment'
   }],
-  taggesdUsers: [{
+  taggedUsers: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
   }],
   createdAt: {
     type: Date,
     default: Date.now
-  }
+  },
+  /*taggedPeople: {
+
+  },*/
+  /*location: {
+
+  },*/
+  images: [{
+    url: {
+      type: String,
+      required: true 
+    },
+    caption: {
+      type: String,
+      default: ''
+    }    
+  }]
+  /*bindInterary: {
+    
+  }*/
 });
 
 module.exports = mongoose.model('Post', postSchema);
