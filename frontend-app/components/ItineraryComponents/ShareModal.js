@@ -10,8 +10,18 @@ const ShareModal = ({
   users,
   selectedFollowers,
   toggleSelectFollower,
-  styles
+  styles,
+  contentType = 'content' // 'post', 'trip', 'itinerary', or generic 'content'
 }) => {
+  const getShareTitle = () => {
+    switch (contentType) {
+      case 'post': return 'Share Post';
+      case 'trip': return 'Share Trip';
+      case 'itinerary': return 'Share Itinerary';
+      default: return 'Share Content';
+    }
+  };
+
   return (
     <Modal
       visible={visible}
@@ -21,7 +31,8 @@ const ShareModal = ({
     >
       <View style={styles.modalOverlay}>
         <View style={styles.modalContent}>
-          <Text style={styles.modalTitle}>Share with Followers & Following</Text>
+          <Text style={styles.modalTitle}>{getShareTitle()}</Text>
+          <Text style={styles.modalSubtitle}>Select who to share with</Text>
           <FlatList
             data={users}
             keyExtractor={item => item._id}
@@ -46,8 +57,14 @@ const ShareModal = ({
             )}
             ListEmptyComponent={<Text style={{ textAlign: 'center', marginTop: 10 }}>No followers or followings to share with.</Text>}
           />
-          <TouchableOpacity style={styles.modalCloseButton} onPress={onConfirm}>
-            <Text style={styles.modalCloseButtonText}>Share</Text>
+          <TouchableOpacity 
+            style={[styles.modalCloseButton, selectedFollowers.length === 0 && styles.modalCloseButtonDisabled]} 
+            onPress={onConfirm}
+            disabled={selectedFollowers.length === 0}
+          >
+            <Text style={styles.modalCloseButtonText}>
+              Share{selectedFollowers.length > 0 ? ` (${selectedFollowers.length})` : ''}
+            </Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.modalCloseButton, { backgroundColor: '#ccc', marginTop: 8 }]}

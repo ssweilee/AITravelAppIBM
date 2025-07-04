@@ -8,6 +8,7 @@ import { fetchUserProfile } from '../utils/ProfileInfo';
 import AddPost from '../components/AddPost';
 import PostList from '../components/PostList';
 import ItineraryList from '../components/profileComponents/ItineraryList';
+import TripList from '../components/profileComponents/TripList'; 
 
 const ProfileScreen = () => {
   const [userInfo, setUserInfo] = useState(null);
@@ -170,6 +171,15 @@ const ProfileScreen = () => {
           <ItineraryList 
             refreshTrigger={refreshKey}
             onPress={() => navigation.navigate('ItineraryDetail', { itinerary: item })}
+          />
+        </>
+      )}
+      {selectedTab === 'Trip' && (
+        <>
+          <TripList 
+            refreshTrigger={refreshKey}
+            userId={userInfo?._id}
+            onPress={(trip) => navigation.navigate('TripDetail', { trip })}
           />
         </>
       )}

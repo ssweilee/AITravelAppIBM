@@ -86,6 +86,10 @@ const tripSchema = new mongoose.Schema({
       ref: 'Comment'
     }
   ],
+  repostCount: [{  
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }],
 },
 {
   timestamps: true // Automatically adds createdAt and updatedAt fields

@@ -83,6 +83,22 @@ const HomeScreen = ({ navigation }) => {
                   />
                   <Text>Itinerary</Text>
                 </TouchableOpacity>
+              
+                <TouchableOpacity
+                  style={styles.dropdownItem}
+                  onPress={() => {
+                    setShowDropdown(false);
+                    navigation.navigate('CreateTrip');
+                  }}
+                >
+                  <MaterialIcons
+                    name="luggage"
+                    size={22}
+                    color="#222"
+                    style={{ marginRight: 10 }}
+                  />
+                  <Text>Trip</Text>
+                </TouchableOpacity>
               </View>
             )}
           </View>

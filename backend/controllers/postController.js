@@ -2,31 +2,40 @@ const Post = require('../models/Post');
 const User = require('../models/User');
 const Comment = require('../models/Comment');
 const Itinerary = require('../models/Itinerary');
+const Trip = require('../models/Trip'); // Add this import
 
 exports.createPost = async (req, res) => {
-  const { content, bindItinerary } = req.body;
+  const { content, bindItinerary, bindTrip } = req.body; // Add bindTrip
   const userId = req.user.userId;
 
   console.log("Authenticated user:", req.user);
   console.log("Post content:", req.body.content);
 
-  if (!content && !bindItinerary) {
-    return res.status(400).json({ message: 'Post must contain text or itineraries' });
+  if (!content && !bindItinerary && !bindTrip) {
+    return res.status(400).json({ message: 'Post must contain text, itineraries, or trips' });
   }
 
   console.log('Parsed bindItinerary:', req.body.bindItinerary);
+  console.log('Parsed bindTrip:', req.body.bindTrip); // Add logging
 
   try {
-    const post = await Post.create({ userId, content, bindItinerary });
+    const post = await Post.create({ userId, content, bindItinerary, bindTrip }); // Add bindTrip
 
+    // Handle itinerary repost count
     if (bindItinerary) {
-    // Push user to 'repostedBy' array only if not already included
       await Itinerary.findByIdAndUpdate(bindItinerary, {
-        $addToSet: { repostCount: userId } // avoids duplicates
+        $addToSet: { repostCount: userId }
       });
     }
 
-    res.status(201).json({ message: 'Post created succesfully', post });
+    // Handle trip repost count
+    if (bindTrip) {
+      await Trip.findByIdAndUpdate(bindTrip, {
+        $addToSet: { repostCount: userId }
+      });
+    }
+
+    res.status(201).json({ message: 'Post created successfully', post });
   } catch (err) {
     res.status(500).json({ message: 'Failed to create post', error: err.message });
   }
@@ -41,6 +50,10 @@ exports.getUserPosts = async (req, res) => {
       .populate({
         path: 'bindItinerary',
         populate: { path: 'createdBy', select: 'firstName lastName'}
+      })
+      .populate({
+        path: 'bindTrip', // Add trip population
+        populate: { path: 'userId', select: 'firstName lastName'}
       })
       .sort({ createdAt: -1 });
 
@@ -63,9 +76,13 @@ exports.getFeedPosts = async (req, res) => {
 
     const posts = await Post.find({ userId: { $in: userAndFollowings } })
       .populate('userId', 'firstName lastName')
-       .populate({
+      .populate({
         path: 'bindItinerary',
         populate: { path: 'createdBy', select: 'firstName lastName'}
+      })
+      .populate({
+        path: 'bindTrip', // Add trip population
+        populate: { path: 'userId', select: 'firstName lastName'}
       })
       .sort({ createdAt: -1 });
 
@@ -81,6 +98,7 @@ exports.getPostsByUserId = async (req, res) => {
     const posts = await Post.find({ userId })
       .populate('userId', 'firstName lastName')
       .populate('bindItinerary')
+      .populate('bindTrip') // Add trip population
       .sort({ createdAt: -1 });
     res.status(200).json(posts);
   } catch (err) {
@@ -88,31 +106,6 @@ exports.getPostsByUserId = async (req, res) => {
   }
 }
 
-/*exports.toggleLikePost = async (req, res) => {
-  const postId = req.params.postId;        
-  const userId = req.user.userId;
-
-  try {
-    const post = await Post.findById(postId);
-    if (!post) return res.status(404).json({ message: 'Post not found' });
-
-    const liked = post.likes.includes(userId);
-    if (liked) {
-      post.likes = post.likes.filter(u => u.toString() !== userId);
-    } else {
-      post.likes.push(userId);
-    }
-    await post.save();
-
-    return res.json({
-      liked: !liked,
-      likesCount: post.likes.length,
-    });
-  } catch (err) {
-    return res.status(500).json({ message: 'Failed to toggle like', error: err.message });
-  }
-};
-*/
 exports.addComment = async (req, res) => {
   const {postId} = req.params;
   const {text} = req.body;
@@ -133,6 +126,7 @@ exports.addComment = async (req, res) => {
     res.status(500).json({ message: 'Failed to add comment', error: err.message });
   }
 };
+
 exports.getCommentsForPost = async (req, res) => {
   const { postId } = req.params;
 

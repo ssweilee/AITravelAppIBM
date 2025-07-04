@@ -4,7 +4,7 @@ const messageSchema = new mongoose.Schema({
   chatId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Chat',
-    require: true
+    required: true
   },
   senderId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -18,6 +18,16 @@ const messageSchema = new mongoose.Schema({
   sharedItinerary: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Itinerary',
+    default: null
+  },
+  sharedTrip: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Trip',
+    default: null
+  },  
+  sharedPost: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Post',
     default: null
   },
   createdAt: {
