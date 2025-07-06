@@ -23,8 +23,8 @@ const FollowButton = ({ userId, isFollowingInitially, onFollowToggle }) => {
 
       if (response.ok) {
         const newState = !isFollowing;
-        setIsFollowing(!isFollowing);
-        onFollowToggle?.(!isFollowing); // Notify parent if needed
+        setIsFollowing(newState);
+        onFollowToggle?.(newState); // Notify parent if needed
       } else {
         console.log('Follow action failed:', data);
         Alert.alert('Failed to follow/unfollow');
