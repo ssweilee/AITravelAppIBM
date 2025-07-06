@@ -241,20 +241,36 @@ const PostCard = ({ post, onPress, onToggleSave }) => {
       </View>
       <TouchableOpacity onPress={() => onPress?.(post) ?? goToComments()}>
         <Text style={styles.content}>{post.content}</Text>
-        {post.images && post.images.length > 0 && (
-          <ScrollView horizontal style={{ marginTop: 8 }}>
-          {post.images.map((img, index) => {
-            console.log('Post image url:', img.url); 
+     {post.images && post.images.length > 0 && (
+  <ScrollView horizontal style={{ marginTop: 8 }}>
+    {post.images.map((img, index) => {
+      console.log('Original image url:', img.url);
+      
+      // Smart URL conversion: use current user's API_BASE_URL with the filename
+      let imageUrl;
+      
+      if (img.url.includes('/uploads/')) {
+        // Extract the /uploads/filename part from any URL format
+        const uploadsPath = img.url.substring(img.url.indexOf('/uploads/'));
+        // Use current user's server base URL
+        imageUrl = `${API_BASE_URL}${uploadsPath}`;
+      } else {
+        // Fallback: use as is
+        imageUrl = img.url;
+      }
+      
+      console.log('Converted to:', imageUrl);
 
-            return (
-              <Image
-                key={index}
-                source={{ uri: `${API_BASE_URL}${img.url}` }}
-                style={{ width: 200, height: 200, borderRadius: 8, marginRight: 10 }}
-                onError={() => console.log(`Failed to load image: ${img.url}`)}
-              />
-            );
-          })}
+      return (
+        <Image
+          key={index}
+          source={{ uri: imageUrl }}
+          style={{ width: 200, height: 200, borderRadius: 8, marginRight: 10 }}
+          onError={() => console.log(`Failed to load image: ${imageUrl}`)}
+          onLoad={() => console.log(`Successfully loaded: ${imageUrl}`)}
+        />
+      );
+    })}
   </ScrollView>
 )}
 

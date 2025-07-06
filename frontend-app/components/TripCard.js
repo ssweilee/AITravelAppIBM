@@ -291,7 +291,7 @@ const TripCard = ({ trip, onPress, onToggleSave }) => {
           </Text>
         )}
 
-        {/* Preview of posts in trip */}
+        {/* Preview of posts in trip - UPDATED WITH IMAGES */}
         {trip.posts && trip.posts.length > 0 && (
           <View style={styles.postsPreview}>
             <Text style={styles.postsPreviewTitle}>
@@ -303,6 +303,38 @@ const TripCard = ({ trip, onPress, onToggleSave }) => {
                   <Text numberOfLines={2} style={styles.postPreviewText}>
                     {post.content || 'Post content'}
                   </Text>
+                  {/* Add image rendering for posts */}
+                  {post.images && post.images.length > 0 && (
+                    <View style={styles.postImageContainer}>
+                      {post.images.slice(0, 1).map((img, imgIndex) => {
+                        // Use the same image URL logic as PostCard
+                        let imageUrl;
+                        if (img.url && img.url.includes('/uploads/')) {
+                          const uploadsPath = img.url.substring(img.url.indexOf('/uploads/'));
+                          imageUrl = `${API_BASE_URL}${uploadsPath}`;
+                        } else {
+                          imageUrl = img.url;
+                        }
+                        
+                        return (
+                          <Image
+                            key={imgIndex}
+                            source={{ uri: imageUrl }}
+                            style={styles.postPreviewImage}
+                            onError={() => {
+                              // Fallback for dead ngrok URLs
+                              if (img.url.startsWith('http') && img.url !== imageUrl) {
+                                // Could add fallback logic here if needed
+                              }
+                            }}
+                          />
+                        );
+                      })}
+                      {post.images.length > 1 && (
+                        <Text style={styles.moreImagesText}>+{post.images.length - 1}</Text>
+                      )}
+                    </View>
+                  )}
                 </View>
               ))}
               {trip.posts.length > 3 && (
@@ -539,6 +571,28 @@ const styles = StyleSheet.create({
   postPreviewText: {
     fontSize: 12,
     color: '#555',
+  },
+  // NEW STYLES FOR IMAGES
+  postImageContainer: {
+    marginTop: 4,
+    position: 'relative',
+  },
+  postPreviewImage: {
+    width: '100%',
+    height: 60,
+    borderRadius: 6,
+    backgroundColor: '#f0f0f0',
+  },
+  moreImagesText: {
+    position: 'absolute',
+    bottom: 4,
+    right: 4,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    color: '#fff',
+    fontSize: 10,
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+    borderRadius: 4,
   },
   morePostsIndicator: {
     backgroundColor: '#e9ecef',

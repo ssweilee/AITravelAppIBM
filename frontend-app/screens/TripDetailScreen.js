@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   TextInput,
   Alert,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
@@ -175,6 +176,15 @@ const TripDetailScreen = ({ route, navigation }) => {
     return `${diffDays} day${diffDays > 1 ? 's' : ''}`;
   };
 
+  // Helper function to get image URL
+  const getImageUrl = (imgUrl) => {
+    if (imgUrl && imgUrl.includes('/uploads/')) {
+      const uploadsPath = imgUrl.substring(imgUrl.indexOf('/uploads/'));
+      return `${API_BASE_URL}${uploadsPath}`;
+    }
+    return imgUrl;
+  };
+
   if (loading && !trip.posts) {
     return (
       <SafeAreaView style={styles.container}>
@@ -197,6 +207,28 @@ const TripDetailScreen = ({ route, navigation }) => {
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        {/* User info row */}
+        <View style={styles.userRow}>
+          <View style={styles.avatarWrapper}>
+            <Image
+              source={
+                trip.userId?.profilePicture 
+                  ? { uri: trip.userId.profilePicture }
+                  : require('../assets/icon.png')
+              }
+              style={styles.avatar}
+            />
+          </View>
+          <View style={styles.userInfo}>
+            <Text style={styles.username}>
+              {(trip.userId?.firstName || '') + (trip.userId?.lastName ? ' ' + trip.userId.lastName : '') || 'User'}
+            </Text>
+            <Text style={styles.postDate}>
+              {new Date(trip.createdAt).toLocaleDateString()}
+            </Text>
+          </View>
+        </View>
+
         {/* Trip Info */}
         <View style={styles.tripInfo}>
           <Text style={styles.tripTitle}>{trip.title}</Text>
@@ -223,16 +255,6 @@ const TripDetailScreen = ({ route, navigation }) => {
           {trip.description && (
             <Text style={styles.description}>{trip.description}</Text>
           )}
-
-          {/* Author info */}
-          <View style={styles.authorRow}>
-            <Text style={styles.authorText}>
-              By {trip.userId?.firstName} {trip.userId?.lastName}
-            </Text>
-            <Text style={styles.createdAt}>
-              {new Date(trip.createdAt).toLocaleDateString()}
-            </Text>
-          </View>
         </View>
 
         {/* Trip Posts Grid */}
@@ -250,9 +272,31 @@ const TripDetailScreen = ({ route, navigation }) => {
                   activeOpacity={0.7}
                 >
                   <View style={styles.postBoxContent}>
-                    <Text style={styles.postBoxText} numberOfLines={4}>
-                      {post.content || 'Post content'}
-                    </Text>
+                    {/* Show post image if available */}
+                    {post.images && post.images.length > 0 ? (
+                      <>
+                        <Text style={styles.postBoxTextWithImage} numberOfLines={2}>
+                          {post.content || 'Post content'}
+                        </Text>
+                        <View style={styles.postImageContainer}>
+                          <Image
+                            source={{ uri: getImageUrl(post.images[0].url) }}
+                            style={styles.postBoxImage}
+                            onError={() => console.log(`Failed to load image: ${getImageUrl(post.images[0].url)}`)}
+                          />
+                          {post.images.length > 1 && (
+                            <View style={styles.imageCountBadge}>
+                              <Text style={styles.imageCountText}>+{post.images.length - 1}</Text>
+                            </View>
+                          )}
+                        </View>
+                      </>
+                    ) : (
+                      <Text style={styles.postBoxText} numberOfLines={4}>
+                        {post.content || 'Post content'}
+                      </Text>
+                    )}
+                    
                     <View style={styles.postBoxFooter}>
                       <Text style={styles.postBoxDate}>
                         {new Date(post.createdAt).toLocaleDateString('en-UK', {
@@ -333,7 +377,7 @@ const TripDetailScreen = ({ route, navigation }) => {
             <Text style={styles.noComments}>No comments yet. Be the first to comment!</Text>
           ) : (
             <View style={styles.commentsList}>
-              {comments.map((comment) => (
+              {comments.map((comment, index) => (
                 <View key={comment._id || `comment-${index}`} style={styles.commentItem}>
                   <TouchableOpacity
                     onPress={() => {
@@ -399,6 +443,42 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
   },
+  userRow: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0'
+  },
+  avatarWrapper: { 
+    width: 38, 
+    height: 38, 
+    borderRadius: 19, 
+    overflow: 'hidden', 
+    marginRight: 10, 
+    backgroundColor: '#eee' 
+  },
+  avatar: { 
+    width: 38, 
+    height: 38, 
+    borderRadius: 19, 
+    resizeMode: 'cover' 
+  },
+  userInfo: {
+    flex: 1,
+  },
+  username: { 
+    fontWeight: 'bold', 
+    fontSize: 15, 
+    color: '#222',
+    marginBottom: 2
+  },
+  postDate: {
+    fontSize: 11,
+    color: '#888',
+  },
   tripInfo: {
     padding: 16,
     borderBottomWidth: 1,
@@ -450,20 +530,6 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     marginBottom: 16,
   },
-  authorRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  authorText: {
-    fontSize: 14,
-    color: '#666',
-    fontWeight: '500',
-  },
-  createdAt: {
-    fontSize: 12,
-    color: '#999',
-  },
   actions: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -514,7 +580,38 @@ const styles = StyleSheet.create({
   postBoxContent: {
     flex: 1,
     padding: 12,
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
+  },
+  postImageContainer: {
+    position: 'relative',
+    marginBottom: 6,
+  },
+  postBoxImage: {
+    width: '100%',
+    height: 80,
+    borderRadius: 8,
+    backgroundColor: '#f0f0f0',
+  },
+  imageCountBadge: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    borderRadius: 10,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  imageCountText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: 'bold',
+  },
+  postBoxTextWithImage: {
+    fontSize: 11,
+    color: '#333',
+    lineHeight: 14,
+    fontWeight: '500',
+    marginBottom: 4,
   },
   postBoxText: {
     fontSize: 12,
@@ -526,7 +623,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 8,
+    marginTop: 4,
   },
   postBoxDate: {
     fontSize: 10,

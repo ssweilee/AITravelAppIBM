@@ -28,7 +28,6 @@ import AccountSettingsScreen from './screens/AccountSettingsScreen';
 import { Ionicons, MaterialIcons, FontAwesome } from '@expo/vector-icons';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { ActivityIndicator, View } from 'react-native';
 import SavedPostsScreen from './screens/SavedPostScreen';
 import { size } from 'lodash';
 import CreateTripScreen from './screens/CreateTripScreen';

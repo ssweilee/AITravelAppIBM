@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Image, ScrollView } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import { API_BASE_URL } from '../config';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
-import BindItineraryCard from './ItineraryComponents/BindItineraryCard'; // Keep as is
-import ShareTripCard from './ShareTripCard'; // Only change this for trips
+import BindItineraryCard from './ItineraryComponents/BindItineraryCard';
+import ShareTripCard from './ShareTripCard';
 
 const SharePostCard = ({ post }) => {
   const navigation = useNavigation();
@@ -99,9 +99,43 @@ const SharePostCard = ({ post }) => {
       {/* Post content */}
       <TouchableOpacity onPress={goToPostDetail}>
         <Text style={styles.content}>{post.content}</Text>
+        
+        {/* Post Images */}
+        {post.images && post.images.length > 0 && (
+          <ScrollView horizontal style={styles.imagesContainer} showsHorizontalScrollIndicator={false}>
+            {post.images.map((img, index) => {
+              console.log('SharePostCard image url:', img.url);
+              
+              // Smart URL conversion: use current user's API_BASE_URL with the filename
+              let imageUrl;
+              
+              if (img.url && img.url.includes('/uploads/')) {
+                // Extract the /uploads/filename part from any URL format
+                const uploadsPath = img.url.substring(img.url.indexOf('/uploads/'));
+                // Use current user's server base URL
+                imageUrl = `${API_BASE_URL}${uploadsPath}`;
+              } else {
+                // Fallback: use as is
+                imageUrl = img.url;
+              }
+              
+              console.log('SharePostCard converted to:', imageUrl);
+
+              return (
+                <Image
+                  key={index}
+                  source={{ uri: imageUrl }}
+                  style={styles.postImage}
+                  onError={() => console.log(`Failed to load image: ${imageUrl}`)}
+                  onLoad={() => console.log(`Successfully loaded: ${imageUrl}`)}
+                />
+              );
+            })}
+          </ScrollView>
+        )}
       </TouchableOpacity>
 
-      {/* Render bound itinerary - Keep as is, working perfectly */}
+      {/* Render bound itinerary */}
       {post.bindItinerary && (
         <BindItineraryCard
           itinerary={post.bindItinerary}
@@ -111,7 +145,7 @@ const SharePostCard = ({ post }) => {
         />
       )}
 
-      {/* Render bound trip - ONLY change this to use compact ShareTripCard */}
+      {/* Render bound trip */}
       {post.bindTrip && (
         <ShareTripCard trip={post.bindTrip} />
       )}
@@ -202,6 +236,17 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginBottom: 6,
     lineHeight: 18,
+  },
+  imagesContainer: {
+    marginTop: 6,
+    marginBottom: 6,
+  },
+  postImage: {
+    width: 120,
+    height: 120,
+    borderRadius: 8,
+    marginRight: 8,
+    backgroundColor: '#f0f0f0',
   },
   timestamp: {
     fontSize: 11,
