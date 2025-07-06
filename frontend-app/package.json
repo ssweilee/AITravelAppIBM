@@ -21,7 +21,6 @@
     "dayjs": "^1.11.13",
     "expo": "~53.0.10",
     "expo-image-picker": "~16.1.4",
-    "expo-image-picker": "^16.1.4",
     "expo-status-bar": "~2.2.3",
     "i18n-iso-countries": "^7.14.0",
     "jwt-decode": "^4.0.0",
@@ -43,8 +42,8 @@
     "react-native-ui-datepicker": "^3.1.2",
     "react-native-vector-icons": "^10.2.0",
     "socket.io-client": "^4.8.1",
-    "expo-linear-gradient": "~14.1.5"
-    "sharp": "^0.34.2",
+    "expo-linear-gradient": "~14.1.5",
+    "sharp": "^0.34.2"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",

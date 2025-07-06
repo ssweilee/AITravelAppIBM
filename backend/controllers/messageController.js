@@ -9,7 +9,7 @@ exports.getMessagesForChat = async (req, res) => {
   try {
     // Fetch all messages in the chat
     const messages = await Message.find({ chatId })
-      .populate('senderId', 'firstName lastName')
+      .populate('senderId', 'firstName lastName profilePicture')
       .populate('sharedItinerary')
       .sort('createdAt');
 
@@ -58,7 +58,7 @@ exports.sendMessage = async (req, res) => {
     });
 
     const message = await Message.findById(createdMessage._id)
-      .populate('senderId', 'firstName lastName')
+      .populate('senderId', 'firstName lastName profilePicture')
       .populate('sharedItinerary');
 
     // Update the chat's last message reference

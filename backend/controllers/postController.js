@@ -39,10 +39,10 @@ exports.getUserPosts = async (req, res) => {
 
   try {
     const posts = await Post.find({ userId })
-      .populate('userId', 'firstName lastName')
+      .populate('userId', 'firstName lastName profilePicture')
       .populate({
         path: 'bindItinerary',
-        populate: { path: 'createdBy', select: 'firstName lastName'}
+        populate: { path: 'createdBy', select: 'firstName lastName profilePicture'}
       })
       .sort({ createdAt: -1 });
 
@@ -64,10 +64,10 @@ exports.getFeedPosts = async (req, res) => {
     const userAndFollowings = [currentUserId, ...currentUser.followings];
 
     const posts = await Post.find({ userId: { $in: userAndFollowings } })
-      .populate('userId', 'firstName lastName')
+      .populate('userId', 'firstName lastName profilePicture')
        .populate({
         path: 'bindItinerary',
-        populate: { path: 'createdBy', select: 'firstName lastName'}
+        populate: { path: 'createdBy', select: 'firstName lastName profilePicture'}
       })
       .sort({ createdAt: -1 });
 
@@ -81,8 +81,11 @@ exports.getPostsByUserId = async (req, res) => {
   try {
     const userId = req.params.userId;
     const posts = await Post.find({ userId })
-      .populate('userId', 'firstName lastName')
-      .populate('bindItinerary')
+      .populate('userId', 'firstName lastName profilePicture')
+      .populate({
+        path: 'bindItinerary',
+        populate: { path: 'createdBy', select: 'firstName lastName profilePicture'} // Added profilePicture
+      })
       .sort({ createdAt: -1 });
     res.status(200).json(posts);
   } catch (err) {

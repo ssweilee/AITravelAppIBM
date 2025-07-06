@@ -6,7 +6,7 @@ import { useNavigation } from '@react-navigation/native';
 import { API_BASE_URL } from '../config';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import BindItineraryCard from './ItineraryComponents/BindItineraryCard';
-
+import { useAuth } from '../contexts/AuthContext';
 
 const PostCard = ({ post, onPress }) => {
   const navigation = useNavigation();
@@ -106,10 +106,19 @@ const PostCard = ({ post, onPress }) => {
       {/* User info row */}
       <View style={styles.userRow}>
         <View style={styles.avatarWrapper}>
-          <Image
-            source={require('../assets/icon.png')} // Dummy profile photo
-            style={styles.avatar}
-          />
+        {post.userId?.profilePicture ? (
+            <Image
+              source={{ uri: post.userId.profilePicture }}
+              style={styles.avatar}
+              cachePolicy="memory-disk"
+            />
+          ) : (
+            <View style={styles.avatarPlaceholder}>
+              <Text style={styles.avatarPlaceholderText}>
+                {post.userId?.firstName?.[0]?.toUpperCase() || '?'}
+              </Text>
+            </View>
+          )}
         </View>
         <TouchableOpacity onPress={() => {
           if (post.userId?._id) {
@@ -240,6 +249,8 @@ const styles = StyleSheet.create({
   userRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
   avatarWrapper: { width: 38, height: 38, borderRadius: 19, overflow: 'hidden', marginRight: 10, backgroundColor: '#eee' },
   avatar: { width: 38, height: 38, borderRadius: 19, resizeMode: 'cover' },
+  avatarPlaceholder: { width: 38, height: 38, borderRadius: 19, backgroundColor: '#ccc', justifyContent: 'center', alignItems: 'center' },
+  avatarPlaceholderText: { color: '#fff', fontWeight: 'bold' },
   username: { fontWeight: 'bold', fontSize: 15, color: '#222' },
   commentsPreviewRow: { marginTop: 6, marginBottom: 2, backgroundColor: '#f8f8f8', borderRadius: 8, padding: 8 },
   commentPreviewItemRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 2 },

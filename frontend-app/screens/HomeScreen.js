@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -10,12 +10,20 @@ import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context'; // ✅ SafeAreaView for both platforms
 import FeedList from '../components/FeedList';
+import { useFocusEffect } from '@react-navigation/native';
 
 const HomeScreen = ({ navigation }) => {
   const [refreshKey, setRefreshKey] = useState(0);
   const [showDropdown, setShowDropdown] = useState(false);
 
   const triggerRefresh = () => setRefreshKey(prev => prev + 1);
+
+  useFocusEffect(
+    useCallback(() => {
+      console.log('HomeScreen is focused. Triggering feed refresh...');
+      setRefreshKey((prevKey) => prevKey + 1);
+    }, [])
+  );
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>

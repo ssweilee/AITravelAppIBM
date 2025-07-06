@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useLayoutEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Button } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Button, Image } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fetchUserById } from '../utils/ProfileInfo';
 import UserPostList from '../components/UserPostList';
@@ -87,6 +87,21 @@ const UserProfileScreen = ({ route, navigation }) => {
 
   return (
     <View style={styles.container}>
+      <View style={styles.avatarContainer}>
+        {user.profilePicture ? (
+          <Image
+            source={{ uri: user.profilePicture }}
+            style={styles.avatar}
+            cachePolicy="memory-disk"
+          />
+        ) : (
+          <View style={styles.avatarPlaceholder}>
+            <Text style={styles.avatarPlaceholderText}>
+              {user.firstName?.[0]?.toUpperCase() || '?'}
+            </Text>
+          </View>
+        )}
+      </View>
       <Text style={styles.name}>
         {user.firstName} {user.lastName}
       </Text>
@@ -146,6 +161,17 @@ const UserProfileScreen = ({ route, navigation }) => {
 
 const styles = StyleSheet.create({
   container: { padding: 20, flex: 1 },
+  avatarContainer: { alignItems: 'center', marginBottom: 12 },
+  avatar: { width: 80, height: 80, borderRadius: 40 },
+  avatarPlaceholder: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#ccc',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarPlaceholderText: { color: '#fff', fontWeight: 'bold', fontSize: 24 },
   name: { fontSize: 24, fontWeight: 'bold', marginBottom: 10 },
   info: { fontSize: 18, marginBottom: 5 },
   tabRow: {

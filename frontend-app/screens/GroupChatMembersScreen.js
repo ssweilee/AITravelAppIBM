@@ -36,10 +36,25 @@ function GroupChatMembersScreen() {
       activeOpacity={item._id === currentUserId ? 1 : 0.6}
       style={styles.memberItem}
     >
-      <Text style={styles.name}>
-        {item.firstName} {item.lastName}
-        {item._id === currentUserId ? " (You)" : ""}
-      </Text>
+      <View style={styles.userRow}>
+        {item.profilePicture ? (
+          <Image
+            source={{ uri: item.profilePicture }}
+            style={styles.avatar}
+            cachePolicy="memory-disk"
+          />
+        ) : (
+          <View style={styles.avatarPlaceholder}>
+            <Text style={styles.avatarPlaceholderText}>
+              {item.firstName?.[0]?.toUpperCase() || '?'}
+            </Text>
+          </View>
+        )}
+        <Text style={styles.name}>
+          {item.firstName} {item.lastName}
+          {item._id === currentUserId ? " (You)" : ""}
+        </Text>
+      </View>
     </TouchableOpacity>
   );
 
@@ -75,6 +90,29 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginBottom: 10,
     backgroundColor: "#f4f4f8",
+  },
+  userRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  avatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    marginRight: 8,
+  },
+  avatarPlaceholder: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#ccc',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  avatarPlaceholderText: {
+    color: '#fff',
+    fontWeight: 'bold',
   },
   name: {
     fontSize: 17,
