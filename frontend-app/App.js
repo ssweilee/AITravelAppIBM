@@ -7,6 +7,7 @@ import { View, ActivityIndicator } from 'react-native';
 import LoginScreen from './screens/LoginScreen';
 import SignupScreen from './screens/SignupScreen';
 import SignupDetailsScreen from './screens/SignupDetailsScreen';
+import InterestScreen from './screens/InterestScreen';
 import ProfileScreen from './screens/ProfileScreen';
 import HomeScreen from './screens/HomeScreen';
 import SearchScreen from './screens/SearchScreen';
@@ -93,6 +94,7 @@ export default function App() {
           <Stack.Screen name="Signup" component={SignupScreen} />
           <Stack.Screen name="SignupDetails" component={SignupDetailsScreen} />
           <Stack.Screen name="Login" component={LoginScreen} />
+          <Stack.Screen name="Interest" component={InterestScreen} />
           <Stack.Screen 
             name="Main" 
             component={MainAppTabs} 

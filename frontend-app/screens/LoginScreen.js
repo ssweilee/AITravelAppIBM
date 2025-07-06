@@ -11,7 +11,7 @@ function LoginScreen() {
   
   return (
     <LinearGradient
-        colors={[ '#00C7BE','#B2FEFA']}
+        colors={['#00C7BE', '#B2FEFA']}
         style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}
     >
     <View style={[GlobalStyles.center, GlobalStyles.container]}>

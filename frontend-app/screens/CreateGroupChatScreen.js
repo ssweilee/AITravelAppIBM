@@ -33,35 +33,44 @@ const CreateGroupChatScreen = () => {
     getUserId();
   }, []);
 
+  const [followings, setFollowings] = useState([]);
+
+useEffect(() => {
+  const fetchFollowings = async () => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/api/users/followings`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await response.json();
+      if (response.ok && Array.isArray(data)) {
+        setFollowings(data);
+      } else {
+        console.error("Unexpected followings response:", data);
+      }
+    } catch (err) {
+      console.error("Error fetching followings:", err);
+    }
+  };
+
+  fetchFollowings();
+}, []);
+
   useEffect(() => {
-    const fetchMatchingUsers = async () => {
-      if (!searchQuery.trim()) {
-        setMatchedUsers([]);
-        return;
-      }
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) {
+      setMatchedUsers([]);
+      return;
+    }
 
-      try {
-        const token = await AsyncStorage.getItem('token');
-        const response = await fetch(`${API_BASE_URL}/api/search?q=${encodeURIComponent(searchQuery)}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+    const filtered = followings.filter(
+      (user) =>
+        user.firstName?.toLowerCase().includes(query) ||
+        user.lastName?.toLowerCase().includes(query)
+    );
 
-        const data = await response.json();
-
-        if (response.ok && Array.isArray(data.users)) {
-          const payload = JSON.parse(atob(token.split('.')[1]));
-          const filtered = data.users.filter((u) => u._id !== payload.userId);
-          setMatchedUsers(filtered);
-        } else {
-          console.error("Unexpected search response:", data);
-        }
-      } catch (err) {
-        console.error("Error fetching search results:", err);
-      }
-    };
-
-    fetchMatchingUsers();
-  }, [searchQuery]);
+    setMatchedUsers(filtered);
+  }, [searchQuery, followings]);
 
   const toggleUserSelection = (user) => {
     setSelectedUsers((prev) => {
