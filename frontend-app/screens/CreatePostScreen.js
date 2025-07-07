@@ -223,7 +223,7 @@ const CreatePostScreen = ({ navigation, route }) => {
         {uploadedImageURL.map((img, index) => (
           <View key={img.url || index} style={{ marginRight: 10 }}>
           <Image
-            source={{ uri: API_BASE_URL + img.url }} 
+            source={{ uri: img.url }} 
             style={{ width: 100, height: 100, borderRadius: 8 }}
           />
           </View>

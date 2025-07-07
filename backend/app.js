@@ -13,6 +13,7 @@ const userInteractionRoutes = require('./routes/userInteractionRoutes.js');
 const uploadRoutes = require('./routes/uploadRoutes');
 const avatarUploadRouter = require('./routes/avatarUploadRoutes.js'); 
 const itineraryRoutes = require('./routes/itineraryRoutes.js');
+const tripRoutes = require('./routes/tripRoutes.js');
 
 const app = express();
 
@@ -41,6 +42,8 @@ app.use('/upload', uploadRoutes);
 app.use('/api/users', avatarUploadRouter); 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/api/itineraries', authenticateToken, itineraryRoutes);
+app.use('/api/trips', authenticateToken, tripRoutes);
+
 
 app.use((req, res) => {
   res.status(404).json({ message: 'Route not found' });
