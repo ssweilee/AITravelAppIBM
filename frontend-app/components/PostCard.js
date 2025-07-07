@@ -1,23 +1,27 @@
-// components/PostCard.js
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Image } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Image, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import { API_BASE_URL } from '../config';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import BindItineraryCard from './ItineraryComponents/BindItineraryCard';
+import ShareModal from './ItineraryComponents/ShareModal';
+import BindTripCard from './BindTripCard';
 
 
-const PostCard = ({ post, onPress }) => {
+const PostCard = ({ post, onPress, onToggleSave }) => {
   const navigation = useNavigation();
-  const [userId, setUserId]       = useState(null);
-  const [liked, setLiked]         = useState(false);
+  const [userId, setUserId] = useState(null);
+  const [liked, setLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(post.likes?.length || 0);
-  const [saved, setSaved]             = useState(false);
-  const [savedCount, setSavedCount]   = useState(post.savedBy?.length || 0);
+  const [saved, setSaved] = useState(false);
   const [commentsPreview, setCommentsPreview] = useState([]);
+  
+  // Share functionality state
+  const [shareModalVisible, setShareModalVisible] = useState(false);
+  const [followers, setFollowers] = useState([]);
+  const [selectedFollowers, setSelectedFollowers] = useState([]);
 
- 
   useEffect(() => {
     (async () => {
       const token = await AsyncStorage.getItem('token');
@@ -25,6 +29,7 @@ const PostCard = ({ post, onPress }) => {
       const payload = JSON.parse(atob(token.split('.')[1]));
       setUserId(payload.userId);
       setLiked(post.likes?.includes(payload.userId));
+      setSaved(post.savedBy?.includes(payload.userId));
     })();
   }, [post]);
 
@@ -72,34 +77,143 @@ const PostCard = ({ post, onPress }) => {
       console.error('Error toggling like:', err);
     }
   };
+
   const toggleSave = async () => {
     const token = await AsyncStorage.getItem('token');
     try {
       const res = await fetch(
-        `${API_BASE_URL}/api/interaction/post/${post._id}/save`,
+        `${API_BASE_URL}/api/interactions/post/${post._id}/save`,
         { method: 'PUT', headers: { Authorization: `Bearer ${token}` } }
       );
-      const { saved: nowSaved, count } = await res.json();
+      const { saved: nowSaved } = await res.json();
+      
+      // Update local state
       setSaved(nowSaved);
-      setSavedCount(count);
+      
+      // Update the post object's savedBy array to keep it in sync
+      if (userId) {
+        if (!post.savedBy) {
+          post.savedBy = [];
+        }
+        
+        if (nowSaved) {
+          // Add userId to savedBy if not already present
+          if (!post.savedBy.includes(userId)) {
+            post.savedBy.push(userId);
+          }
+        } else {
+          // Remove userId from savedBy
+          post.savedBy = post.savedBy.filter(id => id !== userId);
+        }
+      }
+      
+      // Call the onToggleSave callback if provided (for SavedPostsScreen)
+      if (typeof onToggleSave === 'function') {
+        onToggleSave(post._id, nowSaved);
+      }
+
     } catch (err) {
       console.error('Error toggling save:', err);
     }
   };
 
-  const formatDate = (dateStr) => {
-    if (!dateStr) return '';
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('en-UK', {
-      month: 'short',
-      day: 'numeric',
-    });
-  };
-
-
-  // 3️⃣ Navigate to detail/comments
+  // Navigate to detail/comments
   const goToComments = () =>
     navigation.navigate('PostDetail', { post });
+
+  // Share functionality
+  const fetchFollowers = async () => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/api/users/followers-following`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setFollowers(data);
+      }
+    } catch (error) {
+      console.error('Error fetching followers:', error);
+    }
+  };
+
+  const handleSharePress = () => {
+    fetchFollowers();
+    setShareModalVisible(true);
+  };
+
+  const toggleSelectFollower = (userId) => {
+    setSelectedFollowers(prev => 
+      prev.includes(userId) 
+        ? prev.filter(id => id !== userId)
+        : [...prev, userId]
+    );
+  };
+
+  const confirmShare = async () => {
+  if (selectedFollowers.length === 0) {
+    Alert.alert('Error', 'Please select at least one person to share with');
+    return;
+  }
+
+  try {
+    const token = await AsyncStorage.getItem('token');
+    
+    // Get current user's name for the message
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    const currentUserResponse = await fetch(`${API_BASE_URL}/api/users/${payload.userId}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const { user: currentUser } = await currentUserResponse.json();
+    const senderName = currentUser.firstName || 'Someone';
+    
+    const sharePromises = selectedFollowers.map(async (userId) => {
+      // Use existing chat endpoint
+      const chatResponse = await fetch(`${API_BASE_URL}/api/chats`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ otherUserId: userId })
+      });
+
+      if (chatResponse.ok) {
+        const { chat } = await chatResponse.json();
+        
+        // Send message with shared post
+        const messageResponse = await fetch(`${API_BASE_URL}/api/messages/${chat._id}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({ 
+            text: `${senderName} shared a post with you!`,
+            sharedPost: post._id
+          })
+        });
+
+        return messageResponse.ok;
+      }
+      return false;
+    });
+
+    const results = await Promise.all(sharePromises);
+    const successCount = results.filter(Boolean).length;
+
+    if (successCount > 0) {
+      Alert.alert('Success', `Post shared with ${successCount} ${successCount === 1 ? 'person' : 'people'}!`);
+      setShareModalVisible(false);
+      setSelectedFollowers([]);
+    } else {
+      Alert.alert('Error', 'Failed to share post. Please try again.');
+    }
+  } catch (error) {
+    console.error('Error sharing post:', error);
+    Alert.alert('Error', 'Network error. Please try again.');
+  }
+};
 
   return (
     <View style={styles.container}>
@@ -127,20 +241,36 @@ const PostCard = ({ post, onPress }) => {
       </View>
       <TouchableOpacity onPress={() => onPress?.(post) ?? goToComments()}>
         <Text style={styles.content}>{post.content}</Text>
-        {post.images && post.images.length > 0 && (
-          <ScrollView horizontal style={{ marginTop: 8 }}>
-          {post.images.map((img, index) => {
-            console.log('Post image url:', img.url); 
+     {post.images && post.images.length > 0 && (
+  <ScrollView horizontal style={{ marginTop: 8 }}>
+    {post.images.map((img, index) => {
+      console.log('Original image url:', img.url);
+      
+      // Smart URL conversion: use current user's API_BASE_URL with the filename
+      let imageUrl;
+      
+      if (img.url.includes('/uploads/')) {
+        // Extract the /uploads/filename part from any URL format
+        const uploadsPath = img.url.substring(img.url.indexOf('/uploads/'));
+        // Use current user's server base URL
+        imageUrl = `${API_BASE_URL}${uploadsPath}`;
+      } else {
+        // Fallback: use as is
+        imageUrl = img.url;
+      }
+      
+      console.log('Converted to:', imageUrl);
 
-            return (
-              <Image
-                key={index}
-                source={{ uri: `${API_BASE_URL}${img.url}` }}
-                style={{ width: 200, height: 200, borderRadius: 8, marginRight: 10 }}
-                onError={() => console.log(`Failed to load image: ${img.url}`)}
-              />
-            );
-          })}
+      return (
+        <Image
+          key={index}
+          source={{ uri: imageUrl }}
+          style={{ width: 200, height: 200, borderRadius: 8, marginRight: 10 }}
+          onError={() => console.log(`Failed to load image: ${imageUrl}`)}
+          onLoad={() => console.log(`Successfully loaded: ${imageUrl}`)}
+        />
+      );
+    })}
   </ScrollView>
 )}
 
@@ -154,13 +284,19 @@ const PostCard = ({ post, onPress }) => {
           }
         />
       )}
+      {post.bindTrip && (
+        <BindTripCard
+          trip={post.bindTrip}
+          onPress={() =>
+          navigation.navigate('TripDetail', { trip: post.bindTrip })
+          }
+        />
+      )}
       <Text style={styles.timestamp}>
         {new Date(post.createdAt).toLocaleString()}
       </Text>
 
-      
-
-      {/* Actions row (like, comment, save) ABOVE comments preview */}
+      {/* Actions row (like, comment, save, share) ABOVE comments preview */}
       <View style={styles.actions}>
         <TouchableOpacity
           onPress={toggleLike}
@@ -188,9 +324,16 @@ const PostCard = ({ post, onPress }) => {
             name={saved ? 'bookmark' : 'bookmark-outline'}
             size={24}
             color={saved ? '#007AFF' : '#444'}
+            style={{ marginRight: 4 }}/>
+        </TouchableOpacity>
+
+        <TouchableOpacity onPress={handleSharePress} style={styles.actionButton}>
+          <Ionicons
+            name="share-outline"
+            size={24}
+            color="#444"
             style={{ marginRight: 4 }}
           />
-          <Text style={styles.actionText}>{savedCount}</Text>
         </TouchableOpacity>
       </View>
 
@@ -226,6 +369,21 @@ const PostCard = ({ post, onPress }) => {
           </TouchableOpacity>
         </View>
       )}
+      
+      {/* Share Modal */}
+      <ShareModal
+        visible={shareModalVisible}
+        onClose={() => {
+          setShareModalVisible(false);
+          setSelectedFollowers([]);
+        }}
+        onConfirm={confirmShare}
+        users={followers}
+        selectedFollowers={selectedFollowers}
+        toggleSelectFollower={toggleSelectFollower}
+        contentType="post"
+        styles={shareModalStyles}
+      />
     </View>
   );
 };
@@ -247,6 +405,86 @@ const styles = StyleSheet.create({
   commentPreviewTextRow: { fontSize: 14, color: '#222', flexShrink: 1 },
   viewAllCommentsRow: { marginTop: 4 },
   viewAllCommentsText: { color: '#888', fontSize: 13, fontWeight: 'bold' },
+});
+
+// Share Modal Styles
+const shareModalStyles = StyleSheet.create({
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 20,
+    width: '85%',
+    maxHeight: '70%',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 4,
+    textAlign: 'center',
+  },
+  modalSubtitle: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  modalUserRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+  },
+  avatarCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#007AFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarInitials: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  modalUserName: {
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  checkboxBox: {
+    marginLeft: 'auto',
+  },
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#007AFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkboxChecked: {
+    backgroundColor: '#007AFF',
+  },
+  modalCloseButton: {
+    backgroundColor: '#007AFF',
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 16,
+  },
+  modalCloseButtonDisabled: {
+    backgroundColor: '#ccc',
+  },
+  modalCloseButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
 });
 
 export default PostCard;

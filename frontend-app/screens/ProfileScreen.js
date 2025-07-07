@@ -10,6 +10,7 @@ import AddPost from '../components/AddPost';
 import PostList from '../components/PostList';
 import debounce from 'lodash.debounce';
 import ItineraryList from '../components/profileComponents/ItineraryList';
+import TripList from '../components/profileComponents/TripList'; 
 
 const ProfileScreen = () => {
   const { user: userInfo, isLoading, refreshUser } = useAuth();
@@ -197,6 +198,15 @@ const ProfileScreen = () => {
           <ItineraryList 
             refreshTrigger={refreshKey}
             onPress={() => navigation.navigate('ItineraryDetail', { itinerary: item })}
+          />
+        </>
+      )}
+      {selectedTab === 'Trip' && (
+        <>
+          <TripList 
+            refreshTrigger={refreshKey}
+            userId={userInfo?._id}
+            onPress={(trip) => navigation.navigate('TripDetail', { trip })}
           />
         </>
       )}

@@ -23,7 +23,10 @@ const ControlPanelScreen = () => {
       <Text style={styles.text}>Control Panel</Text>
       <Button title="Account Settings" onPress={() => navigation.navigate('AccountSettings')} color="#007AFF" />
       <View style={{ height: 20 }} />
+      <Button title="Saved Posts" onPress={() => navigation.navigate('SavedPosts')} color="#007AFF" />
+      <View style={{ height: 20 }} />
       <Button title="Logout" onPress={handleLogout} color="#d9534f" />
+      
     </View>
   );
 };

@@ -28,6 +28,10 @@ import AccountSettingsScreen from './screens/AccountSettingsScreen';
 import { Ionicons, MaterialIcons, FontAwesome } from '@expo/vector-icons';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import SavedPostsScreen from './screens/SavedPostScreen';
+import { size } from 'lodash';
+import CreateTripScreen from './screens/CreateTripScreen';
+import TripDetailScreen from './screens/TripDetailScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -120,9 +124,12 @@ export default function App() {
           <Stack.Screen name="Chat Settings" component={ChatSettingScreen} options={{ headerShown: false }}/>
           <Stack.Screen name="Members" component={GroupChatMembersScreen} />
           <Stack.Screen name="CreateItinerary" component={CreateItineraryScreen} options={{ headerShown: false }}/>
+          <Stack.Screen name="CreateTrip" component={CreateTripScreen} options={{ headerShown: false }}/> 
           <Stack.Screen name="CreatePost" component={CreatePostScreen} options={{ headerShown: false }}/>
           <Stack.Screen name="ItineraryDetail" component={ItineraryDetailScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="TripDetail" component={TripDetailScreen} options={{ headerShown: false }} />
           <Stack.Screen name="AccountSettings" component={AccountSettingsScreen} />
+          <Stack.Screen name="SavedPosts" component={SavedPostsScreen} options={{ title: 'Saved Content' }} />
         </Stack.Navigator>
       </NavigationContainer>
     </AuthProvider>

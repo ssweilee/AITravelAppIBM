@@ -22,14 +22,14 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-
 router.post('/', upload.single('photo'), (req, res) => {
   if (!req.file) {
     return res.status(400).json({ message: 'No file uploaded' });
   }
 
-  const relativePath = `/uploads/${req.file.filename}`;
-  res.status(200).json({ url: relativePath });
+  // 🔧 FIX: Return full URL instead of relative path (like avatar controller)
+  const fullUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
+  res.status(200).json({ url: fullUrl });
 });
 
 module.exports = router;

@@ -178,3 +178,27 @@ exports.changePassword = async (req, res) => {
     res.status(500).json({ message: 'Failed to update password', error: err.message });
   }
 };
+exports.getFollowersAndFollowing = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    
+    const user = await User.findById(userId)
+      .populate('followers', 'firstName lastName')
+      .populate('followings', 'firstName lastName');
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Combine and remove duplicates
+    const combined = [...user.followers, ...user.followings];
+    const unique = combined.filter((user, index, self) => 
+      index === self.findIndex(u => u._id.toString() === user._id.toString())
+    );
+
+    res.status(200).json(unique);
+  } catch (error) {
+    console.error('Error fetching followers/following:', error);
+    res.status(500).json({ message: 'Failed to fetch followers and following', error: error.message });
+  }
+};
