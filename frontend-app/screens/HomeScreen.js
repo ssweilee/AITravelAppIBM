@@ -31,13 +31,12 @@ const HomeScreen = ({ navigation }) => {
       
       <View style={styles.topBar}>
         <View style={styles.logoContainer}>
-          <Image source={require('../assets/icon.png')} style={styles.logo} />
-          <Text style={styles.logoText}>AwayAway</Text>
+          <Image source={require('../assets/AwayTitle.png')} style={styles.logo} />
         </View>
 
         <View style={styles.iconRow}>
           <TouchableOpacity style={styles.iconButton}>
-            <Ionicons name="notifications-outline" size={28} color="black" />
+            <Ionicons name="notifications-outline" size={24} color="white" />
           </TouchableOpacity>
 
           <View style={{ position: 'relative' }}>
@@ -45,11 +44,11 @@ const HomeScreen = ({ navigation }) => {
               style={styles.iconButton}
               onPress={() => setShowDropdown(v => !v)}
             >
-              <MaterialIcons name="add-circle-outline" size={28} color="black" />
+              <MaterialIcons name="add-circle-outline" size={24} color="white" />
             </TouchableOpacity>
 
             {showDropdown && (
-              <View style={[styles.dropdown, { top: 38, right: -10 }]}>
+              <View style={[styles.dropdown, { top: 30, right: -10 }]}>
                 <TouchableOpacity
                   style={styles.dropdownItem}
                   onPress={() => {
@@ -105,7 +104,7 @@ const HomeScreen = ({ navigation }) => {
             style={styles.iconButton}
             onPress={() => navigation.navigate('Messages')}
           >
-            <Ionicons name="chatbubble-outline" size={28} color="black" />
+            <Ionicons name="chatbubble-outline" size={24} color="white" />
           </TouchableOpacity>
         </View>
       </View>
@@ -118,7 +117,7 @@ const HomeScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#00C7BE',//fff
   },
   topBar: {
     flexDirection: 'row',
@@ -127,17 +126,17 @@ const styles = StyleSheet.create({
     width: '100%',
     paddingHorizontal: 10,
     paddingVertical: 8,
-    borderBottomWidth: 1,
+    borderBottomWidth: 0,//1
     borderColor: '#eee',
-    backgroundColor: '#fff',
+    backgroundColor: '#00C7BE',//fff
   },
   logoContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   logo: {
-    width: 36,
-    height: 36,
+    width: 200, //36
+    height: 40, //36
     resizeMode: 'contain',
     marginRight: 8,
   },

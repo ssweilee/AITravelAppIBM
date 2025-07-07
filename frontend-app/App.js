@@ -52,8 +52,16 @@ function MainAppTabs() {
           } else if (route.name === 'Profile') {
             return <Ionicons name="person" size={size} color={color} />;
           }
-          return null;
         },
+        tabBarActiveTintColor: '#00C7BE',
+        tabBarInactiveTintColor: '#aaa',
+        headerStyle: {
+          backgroundColor: '#00C7BE',
+        },
+        headerTintColor: '#fff',
+        headerTitleStyle: {
+          fontWeight: 'bold',
+        }
       })}
     >
       <Tab.Screen name='Home' component={HomeScreen} options={{ headerShown: false }} />

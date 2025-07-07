@@ -12,6 +12,8 @@ import debounce from 'lodash.debounce';
 import ItineraryList from '../components/profileComponents/ItineraryList';
 import TripList from '../components/profileComponents/TripList'; 
 
+
+
 const ProfileScreen = () => {
   const { user: userInfo, isLoading, refreshUser } = useAuth();
   const [refreshKey, setRefreshKey] = useState(0);
@@ -85,14 +87,14 @@ const ProfileScreen = () => {
     return <View style={styles.loadingContainer}><ActivityIndicator size="large" color="#007bff" /></View>;
   }
 
-  if (!userInfo) {
-    return (
-      <View style={styles.loadingContainer}>
-        <Text>Please log in to view your profile.</Text>
-        {/* 可以加一個登入按鈕 */}
-      </View>
-    );
-  }
+  //if (!userInfo) {
+    //return (
+      //<View style={styles.loadingContainer}>
+        //<Text>Please log in to view your profile.</Text>
+        //{/* 可以加一個登入按鈕 */}
+      //</View>
+    //);
+  //}
 
   const navigateToEdit = () => {
     if (!userInfo) {
@@ -112,17 +114,36 @@ const ProfileScreen = () => {
 
       {/* Optional dropdown UI */}
       {showDropdown && (
-        <View style={[styles.dropdown, { top: 10, right: 20, position: 'absolute' }]}>
-          <TouchableOpacity style={styles.dropdownItem}>
-            <MaterialIcons name="forum" size={22} color="#222" style={{ marginRight: 10 }} />
-            <Text>Thread</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.dropdownItem}>
-            <MaterialIcons name="post-add" size={22} color="#222" style={{ marginRight: 10 }} />
+        <View style={[styles.dropdown, { top: 0, right: 40, position: 'absolute' }]}>
+          <TouchableOpacity
+            style={styles.dropdownItem}
+            onPress={() => {
+              setShowDropdown(false);
+              navigation.navigate('CreatePost');
+            }}
+          >
+            <MaterialIcons
+              name="forum"
+              size={22}
+              color="#222"
+              style={{ marginRight: 10 }}
+            />
             <Text>Post</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.dropdownItem}>
-            <MaterialIcons name="event-note" size={22} color="#222" style={{ marginRight: 10 }} />
+
+          <TouchableOpacity
+            style={styles.dropdownItem}
+            onPress={() => {
+              setShowDropdown(false);
+              navigation.navigate('CreateItinerary');
+            }}
+          >
+            <MaterialIcons
+              name="event-note"
+              size={22}
+              color="#222"
+              style={{ marginRight: 10 }}
+            />
             <Text>Itinerary</Text>
           </TouchableOpacity>
         </View>

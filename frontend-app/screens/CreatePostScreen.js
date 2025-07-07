@@ -414,7 +414,7 @@ const styles = StyleSheet.create({
   searchBarContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f3f3f3', borderRadius: 10, marginBottom: 8, paddingHorizontal: 4 },
   searchBar: { flex: 1, height: 38, fontSize: 16, paddingHorizontal: 8, backgroundColor: 'transparent', color: '#222' },
   suggestionsLabel: { fontWeight: 'bold', fontSize: 15, marginBottom: 4, marginTop: 8 },
-  modalCloseButton: { backgroundColor: '#007bff', borderRadius: 8, padding: 10, marginTop: 16, alignItems: 'center' },
+  modalCloseButton: { backgroundColor: '#00C7BE', borderRadius: 25, padding: 10, marginTop: 16, alignItems: 'center' },
   modalCloseButtonText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
 });
 
