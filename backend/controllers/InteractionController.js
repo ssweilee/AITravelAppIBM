@@ -106,34 +106,54 @@ exports.toggleSave = async (req, res) => {
 };
 
 exports.getSaved = async (req, res) => {
-  const { type } = req.params;               // 'post', 'itinerary', or 'trip'
-  const userId   = req.user.userId;          // this comes from your auth middleware
+  const { type } = req.params;
+  const userId = req.user.userId;
 
-  // load the user by their actual ObjectId
-  const user = await User
-    .findById(userId)
-    .populate(
-      type === 'post' ? 'savedPosts' : 
-      type === 'itinerary' ? 'savedItineraries' : 
-      'savedTrips'
-    );
-
-  if (!user) {
-    return res
-      .status(404)
-      .json({ error: 'User not found', message: 'Failed to load user' });
+  // Define the populate path based on type
+  let populatePath;
+  if (type === 'post') {
+    populatePath = {
+      path: 'savedPosts',
+      populate: {
+        path: 'userId',
+        select: 'firstName lastName profilePicture'
+      }
+    };
+  } else if (type === 'itinerary') {
+    populatePath = {
+      path: 'savedItineraries',
+      populate: {
+        path: 'userId',
+        select: 'firstName lastName profilePicture'
+      }
+    };
+  } else {
+    populatePath = {
+      path: 'savedTrips',
+      populate: {
+        path: 'userId',
+        select: 'firstName lastName profilePicture'
+      }
+    };
   }
 
-  // pick the right field
+  const user = await User.findById(userId).populate(populatePath);
+
+  if (!user) {
+    return res.status(404).json({ error: 'User not found', message: 'Failed to load user' });
+  }
+
+  // Pick the right field
   let data = type === 'post'
     ? user.savedPosts
     : type === 'itinerary' 
     ? user.savedItineraries
     : user.savedTrips;
     
+  // Remove duplicates
   data = data.filter((item, idx, arr) =>
     arr.findIndex(i => i._id.toString() === item._id.toString()) === idx
-  );//fix for duplicate items
+  );
 
   res.json(data);
 };
