@@ -9,7 +9,7 @@ exports.getMessagesForChat = async (req, res) => {
   try {
     // Fetch all messages in the chat
     const messages = await Message.find({ chatId })
-      .populate('senderId', 'firstName lastName')
+      .populate('senderId', 'firstName lastName profilePicture')
       .populate('sharedItinerary')
       .populate('sharedTrip')
       .populate({
@@ -83,32 +83,34 @@ exports.sendMessage = async (req, res) => {
     });
 
     const message = await Message.findById(createdMessage._id)
-      .populate('senderId', 'firstName lastName')
+
+      .populate('senderId', 'firstName lastName profilePicture')
       .populate('sharedItinerary')
       .populate({
         path: 'sharedPost',
         populate: [
           {
             path: 'userId',
-            select: 'firstName lastName'
+            select: 'firstName lastName profilePicture'
           },
           {
             path: 'bindItinerary',
             populate: {
               path: 'createdBy',
-              select: 'firstName lastName'
+              select: 'firstName lastName profilePicture'
             }
           },
           {
             path: 'bindTrip',
             populate: {
               path: 'userId',
-              select: 'firstName lastName'
+              select: 'firstName lastName profilePicture'
             }
           }
         ]
       })
       .populate('sharedTrip');
+
 
     // Update the chat's last message reference
     await Chat.findByIdAndUpdate(chatId, { lastMessage: message._id });

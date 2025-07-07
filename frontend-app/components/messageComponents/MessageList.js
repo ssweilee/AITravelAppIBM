@@ -6,19 +6,20 @@ import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import socket from "../../utils/socket";
 import moment from "moment";
 import { Ionicons } from '@expo/vector-icons';
+import { useAuth } from "../../contexts/AuthContext";
 
 const MessageList = ({ searchQuery }) => {
   const [chats, setChats] = useState([]);
-  const [currentUserId, setCurrentUserId] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const navigation = useNavigation();
+  const { user } = useAuth(); 
+  const currentUserId = user?._id;
 
   // Fetch all chats once
   const fetchChats = async () => {
+    setRefreshing(true);
     try {
       const token = await AsyncStorage.getItem("token");
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      setCurrentUserId(payload.userId);
 
       const response = await fetch(`${API_BASE_URL}/api/chats`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -32,6 +33,8 @@ const MessageList = ({ searchQuery }) => {
       }
     } catch (err) {
       console.error("Error fetching chats:", err);
+    } finally {
+      setRefreshing(false); 
     }
   };
 
@@ -48,7 +51,7 @@ const MessageList = ({ searchQuery }) => {
   useFocusEffect(
     React.useCallback(() => {
       fetchChats();
-    }, [])
+    }, [currentUserId])
   );
 
   // Listen for real-time messages
@@ -120,7 +123,7 @@ const MessageList = ({ searchQuery }) => {
       }
       if (user.profilePicture) {
         return (
-          <Image source={{ uri: user.profilePicture }} style={styles.avatarImg} />
+          <Image source={{ uri: user.profilePicture }} style={styles.avatarImg} key={user.profilePicture}/>
         );
       }
       const initials = (user.firstName?.[0] || '') + (user.lastName?.[0] || '');

@@ -53,7 +53,7 @@ exports.getUserItineraries = async (req, res) => {
 
     const itineraries = await Itinerary.find({ createdBy: userId })
       .sort({ createdAt: -1 })
-      .populate('createdBy', 'firstName lastName');
+      .populate('createdBy', 'firstName lastName profilePicture');
     
     res.status(200).json(itineraries);
   } catch (error) {
@@ -68,7 +68,7 @@ exports.getItinerariesByUserId = async (req, res) => {
 
     const itineraries = await Itinerary.find({ createdBy: userId })
       .sort({ createdAt: -1 })
-      .populate('createdBy', 'firstName lastName');
+      .populate('createdBy', 'firstName lastName profilePicture');
 
     res.status(200).json(itineraries);
   } catch (error) {

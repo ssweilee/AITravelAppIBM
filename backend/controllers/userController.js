@@ -51,7 +51,7 @@ exports.followUser = async (req, res) => {
 exports.getUserProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user.userId)
-      .populate('followers', 'firstName lastName')
+      .populate('followers', 'firstName lastName profilePicture')
       .populate('trips')
       .populate('reviews');
     res.json({ user });
@@ -63,7 +63,7 @@ exports.getUserProfile = async (req, res) => {
 exports.getSingleUser = async (req, res) => {
   try {
     const user = await User.findById(req.params.id)
-      .populate('followers', 'firstName lastName')
+      .populate('followers', 'firstName lastName profilePicture')
       .populate('trips')
       .populate('reviews');
     
