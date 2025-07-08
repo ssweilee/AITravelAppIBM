@@ -59,7 +59,7 @@ export default function SearchScreen(){
   const loadUserDetails=async id=>{
     if(userPosts[id]===undefined){
       setUserPosts(u=>({...u,[id]:null}))
-      const all=await safeFetch(`${API_BASE_URL}/api/posts/${id}`)
+      const all=await safeFetch(`${API_BASE_URL}/api/posts/user/${id}`)
       setUserPosts(u=>({...u,[id]:Array.isArray(all)?all.slice(0,3):[]}))  
     }
     if(userItins[id]===undefined){

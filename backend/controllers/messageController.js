@@ -1,5 +1,6 @@
 const Message = require('../models/Message');
 const Chat = require('../models/Chat');
+const sendNotification = require('../utils/notify');
 
 // Get messages and mark messages from other users as read
 exports.getMessagesForChat = async (req, res) => {
@@ -63,6 +64,22 @@ exports.sendMessage = async (req, res) => {
 
     // Update the chat's last message reference
     await Chat.findByIdAndUpdate(chatId, { lastMessage: message._id });
+
+    const chat = await Chat.findById(chatId).select('members');
+    await Promise.all(chat.members.map(async memberId => {
+      if (memberId.toString() !== senderId) {
+        // Notify other participants about the new message
+        await sendNotification({
+          recipient: memberId,
+          sender: senderId,
+          type: 'custom',
+          text: `${message.senderId.firstName} sent you a message.`,
+          entityType: 'Custom',
+          entityId: chatId, // Use chatId for custom notifications
+          link: `/chat/${chatId}` // Link to the chat
+        });
+      }
+    }));
 
     res.status(201).json(message);
   } catch (err) {

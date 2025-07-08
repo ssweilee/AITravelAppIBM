@@ -2,6 +2,7 @@ const User = require('../models/User');
 const Trip = require('../models/Trip');
 const Review = require('../models/Review');
 const bcrypt = require('bcryptjs');
+const sendNotification = require('../utils/notify');
 
 exports.followUser = async (req, res) => {
   try {
@@ -41,6 +42,17 @@ exports.followUser = async (req, res) => {
       }
       await currentUser.save();
       await targetUser.save();
+
+      // Send notification to the target user
+      await sendNotification({
+        recipient: targetUserId,
+        sender: currentUserId,
+        type: 'follow',
+        text: `${currentUser.firstName} ${currentUser.lastName} started following you.`,
+        entityType: 'Custom',
+        entityId: currentUserId,
+        link: `/users/${currentUserId}` // Link to the user's profile
+      });
       return res.status(200).json({ message: "User followed" });
     }
   } catch (err) {

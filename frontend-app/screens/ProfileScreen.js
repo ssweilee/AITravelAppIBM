@@ -60,7 +60,7 @@ const ProfileScreen = () => {
       ),
       headerRight: () => (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingRight: 10 }}>
-          <TouchableOpacity>
+          <TouchableOpacity onPress={() => navigation.navigate('Notifications')}>
             <Ionicons name="notifications-outline" size={24} color="black" />
           </TouchableOpacity>
           <TouchableOpacity onPress={() => setShowDropdown(v => !v)}>
