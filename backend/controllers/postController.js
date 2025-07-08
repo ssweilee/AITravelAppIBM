@@ -3,6 +3,7 @@ const User = require('../models/User');
 const Comment = require('../models/Comment');
 const Itinerary = require('../models/Itinerary');
 const Trip = require('../models/Trip'); // Add this import
+const sendNotification = require('../utils/notify');
 
 exports.createPost = async (req, res) => {
   const { content, images, taggedUsers, bindItinerary, bindTrip} = req.body; // Add bindTrip
@@ -36,8 +37,28 @@ exports.createPost = async (req, res) => {
         $addToSet: { repostCount: userId }
       });
     }
+    
+        // Notify tagged users
+    const tags = Array.isArray(taggedUsers) ? taggedUsers : [];
+    if (tags.length > 0) {
+      const me = await User.findById(userId).select('firstName');
+      await Promise.all(tags.map(async taggedId => {
+        if (taggedId.toString() !== userId) {
+          await sendNotification({
+            recipient:   taggedId,
+            sender:      userId,
+            type:        'custom',
+            text:        `${me.firstName} tagged you in a post.`,
+            entityType:  'Post',
+            entityId:    post._id,
+            link:        `/post/${post._id}`
+          });
+        }
+      }));
+    }
 
     res.status(201).json({ message: 'Post created successfully', post });
+
   } catch (err) {
     res.status(500).json({ message: 'Failed to create post', error: err.message });
   }
@@ -133,6 +154,22 @@ exports.addComment = async (req, res) => {
     const post = await Post.findById(postId);
     post.comments.push(comment._id);
     await post.save();
+
+    // Notify post author
+    const me = await User.findById(userId).select('firstName');
+    
+    if(post.userId.toString() !== userId) {
+      await sendNotification({
+        recipient: post.userId,
+        sender: userId,
+        type: 'comment',
+        text: `${me.firstName} commented on your post.`,
+        entityType: 'Post',
+        entityId: post._id,
+        link: `/post/${postId}` // Link to the post
+      });
+    }
+
     res.status(201).json(comment);
   }catch(err){
     res.status(500).json({ message: 'Failed to add comment', error: err.message });
@@ -151,5 +188,22 @@ exports.getCommentsForPost = async (req, res) => {
     res.json(comments);
   } catch (err) {
     res.status(500).json({ message: 'Failed to retrieve comments', error: err.message });
+  }
+};
+
+// GET /api/posts/:postId
+exports.getPostById = async (req, res) => {
+  try {
+    const post = await Post.findById(req.params.postId)
+      .populate('userId', 'firstName lastName profilePicture')
+      .populate({
+        path: 'comments',
+        populate: { path: 'userId', select: 'firstName lastName' }
+      });
+    if (!post) return res.status(404).json({ message: 'Post not found' });
+    res.json(post);
+  } catch (err) {
+    console.error('Failed to fetch post:', err);
+    res.status(500).json({ message: 'Failed to fetch post', error: err.message });
   }
 };

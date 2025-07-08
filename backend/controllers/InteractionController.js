@@ -2,6 +2,7 @@ const Post = require('../models/Post');
 const User = require('../models/User');
 const Trip = require('../models/Trip');
 const Itinerary = require('../models/Itinerary');
+const sendNotification = require('../utils/notify');
 
  function getModel(type) {
   switch (type) {
@@ -29,6 +30,20 @@ exports.toggleLike = async (req, res) => {
   const idx = arr.findIndex(u=>u.toString()===userId);
   if (idx >= 0) arr.splice(idx,1);
   else          arr.push(userId);
+
+  if (doc.userId.toString() !== userId) {
+    // send notification to the post owner if the user is not the owner
+    const me = await User.findById(userId).select('firstName');
+    await sendNotification({
+      recipient: doc.userId,
+      sender: userId,
+      type: 'like',
+      text: `${me.firstName} liked your ${type}.`,
+      entityType: type.charAt(0).toUpperCase() + type.slice(1), // Capitalize the type
+      entityId: id,
+      link: `/${type}/${id}` // Link to the post, trip, or itinerary
+    });
+  }
 
   await doc.save();
   res.json({ 
@@ -167,6 +182,22 @@ exports.addMention = async (req, res) => {
     if (!doc.taggedUsers.includes(userId)) {
       doc.taggedUsers.push(userId);
       await doc.save();
+
+      // send notification to the user
+      if (doc.userId.toString() !== userId) {
+        const me = await User.findById(userId).select('firstName');
+        // Notify the user who is being mentioned
+        await sendNotification({
+          recipient: doc.userId,
+          sender: userId,
+          type: 'custom',
+          text: `${me.firstName} mentioned you in a ${type}.`,
+          entityType: type.charAt(0).toUpperCase() + type.slice(1), // Capitalize the type
+          entityId: id,
+          link: `/${type}/${id}` // Link to the post, trip, or itinerary
+      }); 
     }
-        res.json({ tagged: true, count: doc.taggedUsers.length });
-    }
+  }
+
+  res.json({ tagged: true, count: doc.taggedUsers.length });
+}
