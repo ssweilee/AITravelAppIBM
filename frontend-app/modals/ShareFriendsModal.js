@@ -15,7 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { API_BASE_URL } from '../config';
 import socket from '../utils/socket';
 
-const ShareFriendsModal = ({ visible, onClose, onShare, selectedItinerary, chatId }) => {
+const ShareFriendsModal = ({ visible, onClose, onShare, selectedItinerary, selectedPost, chatId }) => {
   const [followings, setFollowings] = useState([]);
   const [search, setSearch] = useState('');
   const [selectedUsers, setSelectedUsers] = useState([]);
@@ -54,7 +54,7 @@ const ShareFriendsModal = ({ visible, onClose, onShare, selectedItinerary, chatI
   const handleSend = async () => {
     try {
       const token = await AsyncStorage.getItem('token');
-      if (!token || selectedUsers.length === 0 || !selectedItinerary) return;
+      if (!token || selectedUsers.length === 0 || (!selectedItinerary && !selectedPost)) return;
 
       for (const recipientId of selectedUsers) {
         // 1. Get or create chat
@@ -77,7 +77,7 @@ const ShareFriendsModal = ({ visible, onClose, onShare, selectedItinerary, chatI
 
         const chatId = chatData.chat?._id;
 
-        // 2. Send itinerary message
+        // 2. Send message (itinerary or post)
         const msgRes = await fetch(`${API_BASE_URL}/api/messages/${chatId}`, {
           method: 'POST',
           headers: {
@@ -85,8 +85,13 @@ const ShareFriendsModal = ({ visible, onClose, onShare, selectedItinerary, chatI
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
-            text: "📍Shared an itinerary with you!",
-            sharedItinerary: selectedItinerary._id, // only send the ID
+            text: selectedItinerary
+              ? "📍Shared an itinerary with you!"
+              : selectedPost
+                ? "[shared a post]"
+                : "[shared]",
+            sharedItinerary: selectedItinerary ? selectedItinerary._id : undefined,
+            sharedPost: selectedPost ? selectedPost._id : undefined,
           }),
         });
 

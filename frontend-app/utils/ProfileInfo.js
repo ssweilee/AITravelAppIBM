@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_BASE_URL } from '../config';
 
-export const fetchUserProfile = async () => {
+export const fetchUserProfile = async (navigation) => {
   try {
     const token = await AsyncStorage.getItem('token');
     console.log('fetchUserProfile - Token:', token);
@@ -25,6 +25,12 @@ export const fetchUserProfile = async () => {
     console.log('fetchUserProfile - Response:', JSON.stringify(data, null, 2));
     console.log('fetchUserProfile - Status:', response.status);
 
+    if (response.status === 401 || response.status === 403 || data.message === 'Invalid token') {
+      await AsyncStorage.removeItem('token');
+      if (navigation) navigation.reset?.({ index: 0, routes: [{ name: 'Login' }] });
+      return { success: false, error: 'Invalid token, logged out.' };
+    }
+
     if (response.ok) {
       return { success: true, user: data.user };
     } else {
@@ -36,7 +42,7 @@ export const fetchUserProfile = async () => {
 };
 
 // 👇 NEW: fetch any user by ID
-export const fetchUserById = async (userId) => {
+export const fetchUserById = async (userId, navigation) => {
   try {
     const token = await AsyncStorage.getItem('token');
     console.log('fetchUserById - Token:', token);
@@ -59,6 +65,12 @@ export const fetchUserById = async (userId) => {
     console.log('fetchUserById - Response:', JSON.stringify(data, null, 2));
     console.log('fetchUserById - Status:', response.status);
     
+    if (response.status === 401 || response.status === 403 || data.message === 'Invalid token') {
+      await AsyncStorage.removeItem('token');
+      if (navigation) navigation.reset?.({ index: 0, routes: [{ name: 'Login' }] });
+      return { success: false, error: 'Invalid token, logged out.' };
+    }
+
     if (response.ok) {
       return { success: true, user: data.user };
     } else {

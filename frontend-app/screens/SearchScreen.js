@@ -18,11 +18,15 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_BASE_URL } from '../config';
 import { useNavigation } from '@react-navigation/native';
 import debounce from 'lodash.debounce';
+import { createStackNavigator } from '@react-navigation/stack';
+import HotelSearchScreen from './HotelSearchScreen';
+import FlightSearchScreen from './FlightSearchScreen';
 
-const TABS = ['Users', 'Posts'];
+const TABS = ['Users', 'Posts', 'Hotels', 'Flights'];
 const LIMIT = 20;
 
-const SearchScreen = () => {
+const SearchScreen = ({ navigation: propNav }) => {
+  const navigation = useNavigation();
   const [query, setQuery]           = useState('');
   const [selectedTab, setSelectedTab] = useState('Users');
   const [userResults, setUserResults] = useState([]);
@@ -36,8 +40,6 @@ const SearchScreen = () => {
   // NEW: track which users are expanded & their loaded posts
   const [expandedUsers, setExpandedUsers] = useState({});     // { [userId]: bool }
   const [userPosts, setUserPosts]         = useState({});     // { [userId]: [post, ...] }
-
-  const navigation = useNavigation();
 
   // fetch the normal search results (users or posts)
   const fetchSearchResults = async (searchTerm, tab, pageNum = 1) => {
@@ -129,6 +131,19 @@ const SearchScreen = () => {
     return () => debouncedFetch.cancel();
   }, [query, selectedTab]);
 
+  // Tab navigation logic
+  const handleTabPress = (tab) => {
+    if (tab === 'Hotels') {
+      navigation.navigate('HotelSearch');
+      return;
+    }
+    if (tab === 'Flights') {
+      navigation.navigate('FlightSearch');
+      return;
+    }
+    setSelectedTab(tab);
+  };
+
   // render each user row, with a chevron to expand
   const renderUserItem = ({ item }) => (
     <View>
@@ -217,7 +232,7 @@ const SearchScreen = () => {
         {TABS.map(tab => (
           <TouchableOpacity
             key={tab}
-            onPress={() => setSelectedTab(tab)}
+            onPress={() => handleTabPress(tab)}
             style={[styles.tabItem, selectedTab === tab && styles.tabItemActive]}
           >
             <Text style={[styles.tabText, selectedTab === tab && styles.tabTextActive]}>

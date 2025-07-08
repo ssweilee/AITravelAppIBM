@@ -1,10 +1,12 @@
 import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fetchUserProfile } from '../utils/ProfileInfo'; 
+import { NavigationContainerRefContext } from '@react-navigation/native';
 
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
+  const navigation = React.useContext(NavigationContainerRefContext);
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -14,10 +16,13 @@ export const AuthProvider = ({ children }) => {
       const currentToken = await AsyncStorage.getItem('token');
       if (!currentToken) {
         setUser(null);
+        if (navigation && navigation.reset) {
+          navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+        }
         return null;
       }
 
-      const userData = await fetchUserProfile();
+      const userData = await fetchUserProfile(navigation);
       if (userData?.success && userData.user) {
         setUser(userData.user);
         await AsyncStorage.setItem('userInfoCache', JSON.stringify(userData.user));
@@ -27,17 +32,23 @@ export const AuthProvider = ({ children }) => {
         if (userData.error?.message === 'Invalid token' || userData.error?.message === 'No auth token found') {
           console.log("Invalid token detected, logging out.");
           await logout();
+          if (navigation && navigation.reset) {
+            navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+          }
         } else {
-        setUser(null);
+          setUser(null);
         }
         return null;
       }
     } catch (error) {
       console.error("An unexpected error occurred while refreshing user:", error);
       setUser(null);
+      if (navigation && navigation.reset) {
+        navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+      }
       return null;
     }
-  }, [logout]);
+  }, [logout, navigation]);
 
   useEffect(() => {
     const initializeApp = async () => {
@@ -73,6 +84,15 @@ export const AuthProvider = ({ children }) => {
    setToken(null);
    setUser(null);
  }, []);
+
+  // Always redirect to login if not authenticated
+  useEffect(() => {
+    if (!isLoading && (!user || !token)) {
+      if (navigation && navigation.reset) {
+        navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+      }
+    }
+  }, [user, token, isLoading, navigation]);
 
   const value = { user, token, isLoading, login, logout, refreshUser };
 

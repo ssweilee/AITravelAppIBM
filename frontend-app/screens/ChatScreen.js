@@ -106,6 +106,14 @@ const ChatScreen = () => {
       const token = await AsyncStorage.getItem('token');
       const payload = JSON.parse(atob(token.split('.')[1]));
       const senderId = payload.userId;
+      const optimisticMessage = {
+        _id: `local-${Date.now()}`,
+        chatId,
+        senderId,
+        text,
+        createdAt: new Date().toISOString(),
+      };
+      setMessages((prev) => [...prev, optimisticMessage]);
 
       socket.emit('sendMessage', {
         chatId,
