@@ -33,7 +33,7 @@ exports.getUserChats = async (req, res) => {
   const currentUserId = req.user.userId;
   try {
     const chats = await Chat.find({ members: currentUserId })
-      .populate('members', 'firstName lastName')
+      .populate('members', 'firstName lastName profilePicture') 
       .populate({
         path: 'lastMessage',
         populate: { path: 'senderId', select: 'firstName lastName' }

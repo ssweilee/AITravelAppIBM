@@ -263,20 +263,20 @@ const SearchScreen = ({ navigation: propNav }) => {
 const styles = StyleSheet.create({
   container: { padding: 20, flex: 1, backgroundColor: '#fff' },
   searchInput: {
-    height: 50, borderWidth: 1, borderColor: '#aaa',
-    padding: 10, borderRadius: 5, marginBottom: 10,
+    height: 50, borderWidth: 1, borderColor: '#00C7BE',
+    padding: 10, borderRadius: 25, marginBottom: 10,
   },
   tabRow: {
     flexDirection: 'row', justifyContent: 'space-around',
-    borderBottomWidth: 1, borderColor: '#eee', marginBottom: 10,
+    borderBottomWidth: 1, borderColor: '#fff', marginBottom: 10,
   },
   tabItem: {
     paddingVertical: 10, paddingHorizontal: 16,
     borderBottomWidth: 2, borderColor: 'transparent',
   },
-  tabItemActive: { borderBottomColor: '#007bff' },
+  tabItemActive: { borderBottomColor: '#00C7BE' },
   tabText: { color: '#777', fontSize: 16 },
-  tabTextActive: { color: '#007bff', fontWeight: 'bold' },
+  tabTextActive: { color: '#00C7BE', fontWeight: 'bold' },
 
   resultItem: {
     flexDirection: 'row', justifyContent: 'space-between',

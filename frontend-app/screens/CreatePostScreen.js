@@ -6,7 +6,10 @@ import { decode as atob } from 'base-64';
 import { API_BASE_URL } from '../config';
 import RepostItineraryCard from '../components/ItineraryComponents/RepostItineraryCard';
 import * as ImagePicker from 'expo-image-picker';
+import { useAuth } from '../contexts/AuthContext';
+
 const CreatePostScreen = ({ navigation, route }) => {
+  const { user } = useAuth(); 
   const [content, setContent] = useState('');
   const [username, setUsername] = useState('');
   const [followings, setFollowings] = useState([]); // List of users current user follows
@@ -201,10 +204,17 @@ const CreatePostScreen = ({ navigation, route }) => {
 
       {/* User Row */}
       <View style={styles.userRow}>
-        <View style={styles.avatarDummy}>
-          <Ionicons name="person" size={32} color="#fff" />
-        </View>
-        <Text style={styles.userName}>{username}</Text>
+      {user.profilePicture ? (
+          <Image source={{ uri: user.profilePicture }} style={styles.avatarImg} />
+        ) : (
+          <View style={styles.avatarCircle}>
+            <Text style={styles.avatarInitials}>
+              {user.firstName?.[0]?.toUpperCase() || '?'}
+            </Text>
+          </View>
+        )}
+        {/* 直接使用 context 中的用戶名 */}
+        <Text style={styles.userName}>{`${user.firstName} ${user.lastName}`}</Text>
       </View>
 
       {/* Picture Uploaded */}
@@ -213,7 +223,7 @@ const CreatePostScreen = ({ navigation, route }) => {
         {uploadedImageURL.map((img, index) => (
           <View key={img.url || index} style={{ marginRight: 10 }}>
           <Image
-            source={{ uri: API_BASE_URL + img.url }} 
+            source={{ uri: img.url }} 
             style={{ width: 100, height: 100, borderRadius: 8 }}
           />
           </View>
@@ -361,7 +371,27 @@ const styles = StyleSheet.create({
   postButton: { backgroundColor: '#007bff', borderRadius: 8, paddingHorizontal: 16, paddingVertical: 6 },
   postButtonText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
   userRow: { flexDirection: 'row', alignItems: 'center', padding: 16 },
-  avatarDummy: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#007bff', justifyContent: 'center', alignItems: 'center', marginRight: 12 },
+  //avatarDummy: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#007bff', justifyContent: 'center', alignItems: 'center', marginRight: 12 },
+  avatarImg: { 
+    width: 44, 
+    height: 44, 
+    borderRadius: 22, 
+    marginRight: 12,
+  },
+  avatarCircle: {
+    width: 44, 
+    height: 44, 
+    borderRadius: 22, 
+    backgroundColor: '#007bff', 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    marginRight: 12,
+  },
+  avatarInitials: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 18,
+  },
   userName: { fontWeight: 'bold', fontSize: 16 },
   input: { minHeight: 80, fontSize: 18, paddingHorizontal: 16, paddingVertical: 8, marginBottom: 8 },
   optionsList: { borderTopWidth: 1, borderColor: '#eee', marginTop: 8 },
@@ -384,7 +414,7 @@ const styles = StyleSheet.create({
   searchBarContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f3f3f3', borderRadius: 10, marginBottom: 8, paddingHorizontal: 4 },
   searchBar: { flex: 1, height: 38, fontSize: 16, paddingHorizontal: 8, backgroundColor: 'transparent', color: '#222' },
   suggestionsLabel: { fontWeight: 'bold', fontSize: 15, marginBottom: 4, marginTop: 8 },
-  modalCloseButton: { backgroundColor: '#007bff', borderRadius: 8, padding: 10, marginTop: 16, alignItems: 'center' },
+  modalCloseButton: { backgroundColor: '#00C7BE', borderRadius: 25, padding: 10, marginTop: 16, alignItems: 'center' },
   modalCloseButtonText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
 });
 

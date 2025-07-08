@@ -3,6 +3,8 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import moment from 'moment';
 import ShareItineraryCard from '../ItineraryComponents/ShareItineraryCard.js'
 import PostCard from '../PostCard';
+import ShareTripCard from '../ShareTripCard.js'
+import SharePostCard from '../SharePostCard.js';  
 import { useNavigation } from '@react-navigation/native';
 
 const MessageItem = ({ message, currentUserId, isGroup }) => {
@@ -47,16 +49,34 @@ const MessageItem = ({ message, currentUserId, isGroup }) => {
           ]}
         >
           <Text style={[styles.messageText, isCurrentUser && { color: '#fff' }]}>{message.text}</Text>
-        </View>
+          
+          {/* Render shared content inside bubble with height constraints */}
+          {/* Render shared itinerary */}
+          {message.sharedItinerary && (
+            <ShareItineraryCard itinerary={message.sharedItinerary} />
+          )}
 
         {message.sharedItinerary && (
           <ShareItineraryCard itinerary={message.sharedItinerary} />
         )}
-        {message.sharedPost && (
-          <View style={{ marginTop: 8 }}>
-            <PostCard post={message.sharedPost} />
-          </View>
-        )}
+
+          {/* Render shared post */}
+          {message.sharedPost && (
+            <View style={styles.sharedContentContainer}>
+              <View style={styles.borderlessWrapper}>
+                <SharePostCard post={message.sharedPost} />
+              </View>
+            </View>
+          )}
+
+          {/* Render shared trip */}
+          {message.sharedTrip && (
+            <View style={styles.sharedContentContainer}>
+              <ShareTripCard trip={message.sharedTrip} />
+            </View>
+          )}
+        </View>
+
       </TouchableOpacity>
       <Text style={styles.timestamp}>
         {moment(message.createdAt).format('hh:mm A')}
@@ -83,6 +103,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     borderRadius: 18,
     marginBottom: 2,
+    overflow: 'hidden', // This will clip any content that overflows
   },
   bubbleCurrentUser: {
     backgroundColor: '#1877f2',
@@ -109,6 +130,18 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#888',
     alignSelf: 'flex-end',
+  },
+  sharedContentContainer: {
+    width: '100%',
+    overflow: 'hidden',
+    marginTop: 2,
+    marginBottom: 2,
+  },
+  borderlessWrapper: {
+    marginLeft: -3,
+    borderTopLeftRadius: 10,
+    borderBottomLeftRadius: 10,
+    overflow: 'hidden',
   },
 });
 

@@ -4,6 +4,7 @@ const { authenticateToken } = require('../middleware/authMiddleware');
 const userController = require('../controllers/userController');
 const { body, validationResult } = require('express-validator');
 
+router.get('/followers-following', authenticateToken, userController.getFollowersAndFollowing);
 router.get('/profile', authenticateToken, userController.getUserProfile);
 router.get('/followings', authenticateToken, userController.getUserFollowings)
 router.put('/:id/follow', authenticateToken, userController.followUser);

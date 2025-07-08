@@ -31,6 +31,11 @@ import { Ionicons, MaterialIcons, FontAwesome } from '@expo/vector-icons';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import HotelListScreen from './screens/HotelListScreen';
+import SavedPostsScreen from './screens/SavedPostScreen';
+import { size } from 'lodash';
+import CreateTripScreen from './screens/CreateTripScreen';
+import TripDetailScreen from './screens/TripDetailScreen';
+
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -51,8 +56,16 @@ function MainAppTabs() {
           } else if (route.name === 'Profile') {
             return <Ionicons name="person" size={size} color={color} />;
           }
-          return null;
         },
+        tabBarActiveTintColor: '#00C7BE',
+        tabBarInactiveTintColor: '#aaa',
+        headerStyle: {
+          backgroundColor: '#00C7BE',
+        },
+        headerTintColor: '#fff',
+        headerTitleStyle: {
+          fontWeight: 'bold',
+        }
       })}
     >
       <Tab.Screen name='Home' component={HomeScreen} options={{ headerShown: false }} />
@@ -123,12 +136,15 @@ export default function App() {
           <Stack.Screen name="Chat Settings" component={ChatSettingScreen} options={{ headerShown: false }}/>
           <Stack.Screen name="Members" component={GroupChatMembersScreen} />
           <Stack.Screen name="CreateItinerary" component={CreateItineraryScreen} options={{ headerShown: false }}/>
+          <Stack.Screen name="CreateTrip" component={CreateTripScreen} options={{ headerShown: false }}/> 
           <Stack.Screen name="CreatePost" component={CreatePostScreen} options={{ headerShown: false }}/>
           <Stack.Screen name="ItineraryDetail" component={ItineraryDetailScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="TripDetail" component={TripDetailScreen} options={{ headerShown: false }} />
           <Stack.Screen name="AccountSettings" component={AccountSettingsScreen} />
           <Stack.Screen name="HotelSearch" component={HotelSearchScreen} />
           <Stack.Screen name="FlightSearch" component={FlightSearchScreen} />
           <Stack.Screen name="HotelListScreen" component={HotelListScreen} />
+          <Stack.Screen name="SavedPosts" component={SavedPostsScreen} options={{ title: 'Saved Content' }} />
         </Stack.Navigator>
       </NavigationContainer>
     </AuthProvider>
