@@ -317,7 +317,7 @@ const PostCard = ({ post, onPress, onToggleSave }) => {
           <Ionicons
             name={liked ? 'heart' : 'heart-outline'}
             size={24}
-            color={liked ? '#e74c3c' : '#222'}
+            color={liked ? '#e74c3c' : '#00C7BE'}
             style={{ marginRight: 4 }}
           />
           <Text style={styles.actionText}>{likesCount}</Text>
@@ -327,7 +327,7 @@ const PostCard = ({ post, onPress, onToggleSave }) => {
           onPress={goToComments}
           style={styles.actionButton}
         >
-          <Ionicons name="chatbubble-outline" size={24} color="#007AFF" style={{ marginRight: 4 }} />
+          <Ionicons name="chatbubble-outline" size={24} color="#00C7BE" style={{ marginRight: 4 }} />
           <Text style={styles.actionText}>Comments</Text>
         </TouchableOpacity>
 
@@ -335,7 +335,7 @@ const PostCard = ({ post, onPress, onToggleSave }) => {
           <MaterialIcons
             name={saved ? 'bookmark' : 'bookmark-outline'}
             size={24}
-            color={saved ? '#007AFF' : '#444'}
+            color={saved ? '#FFFF00' : '#00C7BE'}
             style={{ marginRight: 4 }}/>
         </TouchableOpacity>
 
