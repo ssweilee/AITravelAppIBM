@@ -2,10 +2,11 @@ const Post = require('../models/Post');
 const User = require('../models/User');
 const Comment = require('../models/Comment');
 const Itinerary = require('../models/Itinerary');
+const Trip = require('../models/Trip'); // Add this import
 const sendNotification = require('../utils/notify');
 
 exports.createPost = async (req, res) => {
-  const { content, images, taggedUsers, bindItinerary} = req.body;
+  const { content, images, taggedUsers, bindItinerary, bindTrip} = req.body; // Add bindTrip
   const userId = req.user.userId;
 
   console.log("Authenticated user:", req.user);
@@ -13,40 +14,51 @@ exports.createPost = async (req, res) => {
   console.log("Images:", images);
   console.log("Tagged Users:", taggedUsers);
 
-  if (!content && !bindItinerary) {
-    return res.status(400).json({ message: 'Post must contain text or itineraries' });
+  if (!content && !bindItinerary && !bindTrip) {
+    return res.status(400).json({ message: 'Post must contain text, itineraries, or trips' });
   }
 
   console.log('Parsed bindItinerary:', req.body.bindItinerary);
+  console.log('Parsed bindTrip:', req.body.bindTrip); // Add logging
 
   try {
-    const post = await Post.create({ userId, content, bindItinerary, taggedUsers: taggedUsers || [], images: Array.isArray(images) ? images : [] });
+    const post = await Post.create({ userId, content, bindItinerary, taggedUsers: taggedUsers || [], images: Array.isArray(images) ? images : [], bindTrip }); // Add bindTrip
 
+    // Handle itinerary repost count
     if (bindItinerary) {
-    // Push user to 'repostedBy' array only if not already included
       await Itinerary.findByIdAndUpdate(bindItinerary, {
-        $addToSet: { repostCount: userId } // avoids duplicates
+        $addToSet: { repostCount: userId }
       });
     }
 
-    const me = await User.findById(userId).select('firstName');
-    // Notify tagged users
+    // Handle trip repost count
+    if (bindTrip) {
+      await Trip.findByIdAndUpdate(bindTrip, {
+        $addToSet: { repostCount: userId }
+      });
+    }
+    
+        // Notify tagged users
     const tags = Array.isArray(taggedUsers) ? taggedUsers : [];
-    await Promise.all(taggedUsers.map(async (taggedId) => {
-      if (taggedId.toString() !== userId) { // avoid notifying self
-        await sendNotification({
-          recipient: taggedId,
-          sender: userId,
-          type: 'custom',
-          text: `${me.firstName} tagged you in a post.`,
-          entityType: 'Post',
-          entityId: post._id,
-          link: `/post/${post._id}` // Link to the post
-        });
-      }
-    }));
+    if (tags.length > 0) {
+      const me = await User.findById(userId).select('firstName');
+      await Promise.all(tags.map(async taggedId => {
+        if (taggedId.toString() !== userId) {
+          await sendNotification({
+            recipient:   taggedId,
+            sender:      userId,
+            type:        'custom',
+            text:        `${me.firstName} tagged you in a post.`,
+            entityType:  'Post',
+            entityId:    post._id,
+            link:        `/post/${post._id}`
+          });
+        }
+      }));
+    }
 
-    res.status(201).json({ message: 'Post created succesfully', post });
+    res.status(201).json({ message: 'Post created successfully', post });
+
   } catch (err) {
     res.status(500).json({ message: 'Failed to create post', error: err.message });
   }
@@ -57,10 +69,14 @@ exports.getUserPosts = async (req, res) => {
 
   try {
     const posts = await Post.find({ userId })
-      .populate('userId', 'firstName lastName')
+      .populate('userId', 'firstName lastName profilePicture')
       .populate({
         path: 'bindItinerary',
-        populate: { path: 'createdBy', select: 'firstName lastName'}
+        populate: { path: 'createdBy', select: 'firstName lastName profilePicture'}
+      })
+      .populate({
+        path: 'bindTrip', // Add trip population
+        populate: { path: 'userId', select: 'firstName lastName profilePicture'}
       })
       .sort({ createdAt: -1 });
 
@@ -82,10 +98,16 @@ exports.getFeedPosts = async (req, res) => {
     const userAndFollowings = [currentUserId, ...currentUser.followings];
 
     const posts = await Post.find({ userId: { $in: userAndFollowings } })
-      .populate('userId', 'firstName lastName')
+
+      .populate('userId', 'firstName lastName profilePicture')
        .populate({
+
         path: 'bindItinerary',
-        populate: { path: 'createdBy', select: 'firstName lastName'}
+        populate: { path: 'createdBy', select: 'firstName lastName profilePicture'}
+      })
+      .populate({
+        path: 'bindTrip', // Add trip population
+        populate: { path: 'userId', select: 'firstName lastName profilePicture'}
       })
       .sort({ createdAt: -1 });
 
@@ -99,8 +121,17 @@ exports.getPostsByUserId = async (req, res) => {
   try {
     const userId = req.params.userId;
     const posts = await Post.find({ userId })
-      .populate('userId', 'firstName lastName')
-      .populate('bindItinerary')
+
+      .populate('userId', 'firstName lastName profilePicture')
+      .populate({
+        path: 'bindItinerary',
+        populate: { path: 'createdBy', select: 'firstName lastName profilePicture'} // Added profilePicture
+      })
+     .populate({
+       path:'bindTrip',
+       populate:{path:'createdBy',select: 'firstName lastName profilePicture'}
+     })
+
       .sort({ createdAt: -1 });
     res.status(200).json(posts);
   } catch (err) {
@@ -108,31 +139,6 @@ exports.getPostsByUserId = async (req, res) => {
   }
 }
 
-/*exports.toggleLikePost = async (req, res) => {
-  const postId = req.params.postId;        
-  const userId = req.user.userId;
-
-  try {
-    const post = await Post.findById(postId);
-    if (!post) return res.status(404).json({ message: 'Post not found' });
-
-    const liked = post.likes.includes(userId);
-    if (liked) {
-      post.likes = post.likes.filter(u => u.toString() !== userId);
-    } else {
-      post.likes.push(userId);
-    }
-    await post.save();
-
-    return res.json({
-      liked: !liked,
-      likesCount: post.likes.length,
-    });
-  } catch (err) {
-    return res.status(500).json({ message: 'Failed to toggle like', error: err.message });
-  }
-};
-*/
 exports.addComment = async (req, res) => {
   const {postId} = req.params;
   const {text} = req.body;
@@ -169,6 +175,7 @@ exports.addComment = async (req, res) => {
     res.status(500).json({ message: 'Failed to add comment', error: err.message });
   }
 };
+
 exports.getCommentsForPost = async (req, res) => {
   const { postId } = req.params;
 

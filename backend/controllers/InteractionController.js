@@ -54,24 +54,125 @@ exports.toggleLike = async (req, res) => {
 
 exports.toggleSave = async (req, res) => {
   const { type, id } = req.params;
-  const userId       = req.user.userId;
-  // only support saving posts for now:
-  if (type !== 'post') 
-    return res.status(400).json({ message: 'Can only save posts' });
+  const userId = req.user.userId;
+  
+  try {
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: 'User not found' });
 
-  const user = await User.findById(userId);
-  if (!user) return res.status(404).json({ message: 'User not found' });
+    let userArray;
+    if (type === 'post') {
+      userArray = user.savedPosts;
+    } else if (type === 'itinerary') {
+      userArray = user.savedItineraries;
+    } else if (type === 'trip') {
+      userArray = user.savedTrips;
+    } else {
+      return res.status(400).json({ message: 'Can only save posts, itineraries, or trips' });
+    }
 
-  const idx = user.savedPosts.findIndex(p=>p.toString()===id);
-  if (idx >= 0) user.savedPosts.splice(idx,1);
-  else          user.savedPosts.push(id);
+    const userIdx = userArray.findIndex(item => item.toString() === id);
+    const isSaving = userIdx < 0; // true if we're saving, false if unsaving
 
-  await user.save();
-  res.json({
-    saved: idx<0,
-    count: user.savedPosts.length
-  });
+    // Update User's saved array
+    if (isSaving) {
+      userArray.push(id);
+    } else {
+      userArray.splice(userIdx, 1);
+    }
+    await user.save();
+
+    // For posts and trips, also update the document's savedBy array
+    if (type === 'post') {
+      const post = await Post.findById(id);
+      if (post) {
+        const postIdx = post.savedBy.findIndex(uid => uid.toString() === userId);
+        
+        if (isSaving && postIdx < 0) {
+          // Add user to post's savedBy array
+          post.savedBy.push(userId);
+        } else if (!isSaving && postIdx >= 0) {
+          // Remove user from post's savedBy array
+          post.savedBy.splice(postIdx, 1);
+        }
+        await post.save();
+      }
+    } else if (type === 'trip') {
+      const trip = await Trip.findById(id);
+      if (trip) {
+        const tripIdx = trip.savedBy.findIndex(uid => uid.toString() === userId);
+        
+        if (isSaving && tripIdx < 0) {
+          // Add user to trip's savedBy array
+          trip.savedBy.push(userId);
+        } else if (!isSaving && tripIdx >= 0) {
+          // Remove user from trip's savedBy array
+          trip.savedBy.splice(tripIdx, 1);
+        }
+        await trip.save();
+      }
+    }
+    
+    res.json({ saved: isSaving, count: userArray.length });
+  } catch (error) {
+    console.error('Error toggling save:', error);
+    res.status(500).json({ message: 'Error toggling save', error: error.message });
+  }
 };
+
+exports.getSaved = async (req, res) => {
+  const { type } = req.params;
+  const userId = req.user.userId;
+
+  // Define the populate path based on type
+  let populatePath;
+  if (type === 'post') {
+    populatePath = {
+      path: 'savedPosts',
+      populate: {
+        path: 'userId',
+        select: 'firstName lastName profilePicture'
+      }
+    };
+  } else if (type === 'itinerary') {
+    populatePath = {
+      path: 'savedItineraries',
+      populate: {
+        path: 'userId',
+        select: 'firstName lastName profilePicture'
+      }
+    };
+  } else {
+    populatePath = {
+      path: 'savedTrips',
+      populate: {
+        path: 'userId',
+        select: 'firstName lastName profilePicture'
+      }
+    };
+  }
+
+  const user = await User.findById(userId).populate(populatePath);
+
+  if (!user) {
+    return res.status(404).json({ error: 'User not found', message: 'Failed to load user' });
+  }
+
+  // Pick the right field
+  let data = type === 'post'
+    ? user.savedPosts
+    : type === 'itinerary' 
+    ? user.savedItineraries
+    : user.savedTrips;
+    
+  // Remove duplicates
+  data = data.filter((item, idx, arr) =>
+    arr.findIndex(i => i._id.toString() === item._id.toString()) === idx
+  );
+
+  res.json(data);
+};
+
 exports.addMention = async (req, res) => {
     const { type, id } = req.params;
     const userId       = req.user.userId;
@@ -100,4 +201,3 @@ exports.addMention = async (req, res) => {
 
   res.json({ tagged: true, count: doc.taggedUsers.length });
 }
-
