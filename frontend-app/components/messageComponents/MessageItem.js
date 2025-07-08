@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import moment from 'moment';
 import ShareItineraryCard from '../ItineraryComponents/ShareItineraryCard.js'
+import PostCard from '../PostCard';
 import ShareTripCard from '../ShareTripCard.js'
 import SharePostCard from '../SharePostCard.js';  
-
 import { useNavigation } from '@react-navigation/native';
 
 const MessageItem = ({ message, currentUserId, isGroup }) => {
@@ -56,6 +56,10 @@ const MessageItem = ({ message, currentUserId, isGroup }) => {
             <ShareItineraryCard itinerary={message.sharedItinerary} />
           )}
 
+        {message.sharedItinerary && (
+          <ShareItineraryCard itinerary={message.sharedItinerary} />
+        )}
+
           {/* Render shared post */}
           {message.sharedPost && (
             <View style={styles.sharedContentContainer}>
@@ -72,6 +76,7 @@ const MessageItem = ({ message, currentUserId, isGroup }) => {
             </View>
           )}
         </View>
+
       </TouchableOpacity>
       <Text style={styles.timestamp}>
         {moment(message.createdAt).format('hh:mm A')}

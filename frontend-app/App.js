@@ -25,13 +25,17 @@ import ControlPanelScreen from './screens/ControlPanelScreen';
 import BookingsScreen from './screens/BookingsScreen';
 import ItineraryDetailScreen from './screens/ItineraryDetailScreen';
 import AccountSettingsScreen from './screens/AccountSettingsScreen';
+import HotelSearchScreen from './screens/HotelSearchScreen';
+import FlightSearchScreen from './screens/FlightSearchScreen';
 import { Ionicons, MaterialIcons, FontAwesome } from '@expo/vector-icons';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import HotelListScreen from './screens/HotelListScreen';
 import SavedPostsScreen from './screens/SavedPostScreen';
 import { size } from 'lodash';
 import CreateTripScreen from './screens/CreateTripScreen';
 import TripDetailScreen from './screens/TripDetailScreen';
+
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -137,6 +141,9 @@ export default function App() {
           <Stack.Screen name="ItineraryDetail" component={ItineraryDetailScreen} options={{ headerShown: false }} />
           <Stack.Screen name="TripDetail" component={TripDetailScreen} options={{ headerShown: false }} />
           <Stack.Screen name="AccountSettings" component={AccountSettingsScreen} />
+          <Stack.Screen name="HotelSearch" component={HotelSearchScreen} />
+          <Stack.Screen name="FlightSearch" component={FlightSearchScreen} />
+          <Stack.Screen name="HotelListScreen" component={HotelListScreen} />
           <Stack.Screen name="SavedPosts" component={SavedPostsScreen} options={{ title: 'Saved Content' }} />
         </Stack.Navigator>
       </NavigationContainer>
