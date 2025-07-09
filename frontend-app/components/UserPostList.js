@@ -12,7 +12,7 @@ const UserPostList = ({ userId }) => {
   const fetchPosts = async () => {
     try {
       const token = await AsyncStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/api/posts/${userId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/posts/user/${userId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
