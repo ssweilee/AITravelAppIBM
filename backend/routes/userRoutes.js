@@ -3,6 +3,7 @@ const router = express.Router();
 const { authenticateToken } = require('../middleware/authMiddleware');
 const userController = require('../controllers/userController');
 const { body, validationResult } = require('express-validator');
+const User = require('../models/User');
 
 router.get('/followers-following', authenticateToken, userController.getFollowersAndFollowing);
 router.get('/profile', authenticateToken, userController.getUserProfile);
@@ -14,6 +15,27 @@ router.get('/savedPosts', authenticateToken, async (req, res) => {
   const user = await User.findById(req.user.userId)
     .populate('savedPosts', 'content userId createdAt');
   res.json(user.savedPosts);
+});
+router.get('/:id/followers', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const user = await User.findById(id)
+      .populate('followers', 'firstName lastName profilePicture bio location')
+      .populate('followings', 'firstName lastName profilePicture bio location');
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.json({
+      followers: user.followers,
+      following: user.followings
+    });
+  } catch (error) {
+    console.error('Error fetching followers:', error);
+    res.status(500).json({ message: 'Error fetching followers', error: error.message });
+  }
 });
 
 // Edit user profile route

@@ -9,6 +9,7 @@ import {
   Alert,
   ActivityIndicator,
   Switch,
+  Platform,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -357,12 +358,12 @@ const CreateTripScreen = ({ navigation }) => {
         </View>
       </ScrollView>
 
-      {/* Date Pickers */}
+      {/* Date Pickers - FIXED FOR BOTH PLATFORMS */}
       {showStartPicker && (
         <DateTimePicker
           value={startDate}
           mode="date"
-          display="default"
+          display={Platform.OS === 'ios' ? 'calendar' : 'default'}
           onChange={(event, date) => handleDateChange(event, date, 'start')}
           minimumDate={new Date()}
         />
@@ -372,7 +373,7 @@ const CreateTripScreen = ({ navigation }) => {
         <DateTimePicker
           value={endDate}
           mode="date"
-          display="default"
+          display={Platform.OS === 'ios' ? 'calendar' : 'default'}
           onChange={(event, date) => handleDateChange(event, date, 'end')}
           minimumDate={startDate}
         />

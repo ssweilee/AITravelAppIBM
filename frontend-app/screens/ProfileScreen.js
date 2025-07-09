@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useLayoutEffect, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, Platform, Image, StatusBar as RNStatusBar } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Platform, Image, StatusBar as RNStatusBar, ActivityIndicator } from 'react-native';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
@@ -11,8 +11,7 @@ import PostList from '../components/PostList';
 import debounce from 'lodash.debounce';
 import ItineraryList from '../components/profileComponents/ItineraryList';
 import TripList from '../components/profileComponents/TripList'; 
-
-
+import FollowersModal from '../modals/FollowersModal';
 
 const ProfileScreen = () => {
   const { user: userInfo, isLoading, refreshUser } = useAuth();
@@ -20,6 +19,8 @@ const ProfileScreen = () => {
   const [showDropdown, setShowDropdown] = useState(false);
   const [selectedTab, setSelectedTab] = useState('Post');
   
+  // Modal state (simplified for followers only)
+  const [followersModalVisible, setFollowersModalVisible] = useState(false);
 
   const navigation = useNavigation();
   const route = useRoute();
@@ -42,16 +43,6 @@ const ProfileScreen = () => {
     const [countryCode, city] = locationString.split('|');
     return `${city}, ${countryCode}`;
   };
-
-  if (isLoading) {
-    return <View style={styles.loadingContainer}><ActivityIndicator size="large" color="#007bff" /></View>;
-  }
-
-  if (!userInfo) {
-    return <View style={styles.loadingContainer}><Text>Please log in to view your profile.</Text></View>;
-  }
-
-  
 
   // 👇 Place name and buttons in header
   useLayoutEffect(() => {
@@ -87,15 +78,6 @@ const ProfileScreen = () => {
     return <View style={styles.loadingContainer}><ActivityIndicator size="large" color="#007bff" /></View>;
   }
 
-  //if (!userInfo) {
-    //return (
-      //<View style={styles.loadingContainer}>
-        //<Text>Please log in to view your profile.</Text>
-        //{/* 可以加一個登入按鈕 */}
-      //</View>
-    //);
-  //}
-
   const navigateToEdit = () => {
     if (!userInfo) {
         console.warn("User info is not available yet, cannot navigate to edit.");
@@ -106,7 +88,7 @@ const ProfileScreen = () => {
         userId: userInfo._id,
         currentUserInfo: userInfo, 
     });
-};
+  };
 
   return (
     <View style={[styles.container, { paddingTop: Platform.OS === 'android' ? RNStatusBar.currentHeight : 30 }]}>
@@ -150,33 +132,40 @@ const ProfileScreen = () => {
       )}
 
       <View style={styles.profileSection}>
-      <TouchableOpacity 
-    style={styles.profilePictureWrapper} 
-    onPress={navigateToEdit}  
-    >
-    {userInfo?.profilePicture ? (
-      <Image
-      source={{ uri: userInfo.profilePicture }}
-      style={styles.profilePicture}
-      key={userInfo.profilePicture} 
-    />
-    ) : (
-      <Ionicons name="person" size={40} color="#999" />
-    )}
-  </TouchableOpacity>
+        <TouchableOpacity 
+          style={styles.profilePictureWrapper} 
+          onPress={navigateToEdit}  
+        >
+          {userInfo?.profilePicture ? (
+            <Image
+              source={{ uri: userInfo.profilePicture }}
+              style={styles.profilePicture}
+              key={userInfo.profilePicture} 
+            />
+          ) : (
+            <Ionicons name="person" size={40} color="#999" />
+          )}
+        </TouchableOpacity>
+        
         <View style={styles.profileStatsColumn}>
-          <View style={styles.statRow}>
+          <TouchableOpacity 
+            style={styles.statRow}
+            onPress={() => setFollowersModalVisible(true)}
+            activeOpacity={0.7}
+          >
             <Text>
               <Text style={styles.statNumber}>{userInfo?.followers?.length || 0}</Text>
               <Text style={styles.statLabel}> Followers</Text>
             </Text>
-          </View>
+          </TouchableOpacity>
+          
           <View style={styles.statRow}>
             <Text>
               <Text style={styles.statNumber}>{userInfo?.trips?.length || 0}</Text>
               <Text style={styles.statLabel}> Trips</Text>
             </Text>
           </View>
+          
           <View style={styles.statRow}>
             <Text>
               <Text style={styles.statNumber}>{userInfo?.reviews?.length || 0}</Text>
@@ -188,8 +177,8 @@ const ProfileScreen = () => {
 
       <View style={styles.profileInfoRow}>
         <View style={styles.profileTextBlock}>
-        <Text style={styles.locationText}>{formatLocation(userInfo?.location)}</Text>
-        <Text style={styles.bioText}>{userInfo?.bio || ''}</Text>
+          <Text style={styles.locationText}>{formatLocation(userInfo?.location)}</Text>
+          <Text style={styles.bioText}>{userInfo?.bio || ''}</Text>
         </View>
         <TouchableOpacity style={styles.editButton} onPress={navigateToEdit} >
           <Text style={styles.editButtonText}>Edit</Text>
@@ -222,6 +211,7 @@ const ProfileScreen = () => {
           />
         </>
       )}
+      
       {selectedTab === 'Trip' && (
         <>
           <TripList 
@@ -231,6 +221,15 @@ const ProfileScreen = () => {
           />
         </>
       )}
+
+      {/* Followers Modal */}
+      <FollowersModal
+        visible={followersModalVisible}
+        onClose={() => setFollowersModalVisible(false)}
+        userId={userInfo?._id}
+        title="Followers"
+        type="followers"
+      />
     </View>
   );
 };
