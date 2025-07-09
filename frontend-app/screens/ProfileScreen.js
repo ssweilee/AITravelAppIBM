@@ -47,9 +47,9 @@ const ProfileScreen = () => {
     return <View style={styles.loadingContainer}><ActivityIndicator size="large" color="#007bff" /></View>;
   }
 
-  if (!userInfo) {
-    return <View style={styles.loadingContainer}><Text>Please log in to view your profile.</Text></View>;
-  }
+  //if (!userInfo) {
+   // return <View style={styles.loadingContainer}><Text>Please log in to view your profile.</Text></View>;
+  //}
 
   
 
