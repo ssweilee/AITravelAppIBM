@@ -6,6 +6,7 @@ import UserPostList from '../components/UserPostList';
 import FollowButton from '../components/FollowButton';
 import { API_BASE_URL } from '../config';
 import ItineraryList from '../components/profileComponents/ItineraryList';
+import FollowersModal from '../modals/FollowersModal';
 
 const UserProfileScreen = ({ route, navigation }) => {
   const { userId } = route.params;
@@ -13,6 +14,9 @@ const UserProfileScreen = ({ route, navigation }) => {
   const [user, setUser] = useState(null);
   const [currentUserId, setCurrentUserId] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // Modal state (simplified for followers only)
+  const [followersModalVisible, setFollowersModalVisible] = useState(false);
 
   const decodeUserIdFromToken = async () => {
     const token = await AsyncStorage.getItem('token');
@@ -105,9 +109,19 @@ const UserProfileScreen = ({ route, navigation }) => {
       <Text style={styles.name}>
         {user.firstName} {user.lastName}
       </Text>
-      <Text style={styles.info}>
-        Followers: {user?.followers?.length || 0} | Trips: {user?.trips?.length || 0} | Reviews: {user?.reviews?.length || 0}
-      </Text>
+      
+      <View style={styles.infoRow}>
+        <TouchableOpacity 
+          onPress={() => setFollowersModalVisible(true)}
+          style={styles.infoButton}
+        >
+          <Text style={styles.clickableInfo}>
+            Followers: {user?.followers?.length || 0}
+          </Text>
+        </TouchableOpacity>
+        
+        <Text style={styles.infoText}> | Trips: {user?.trips?.length || 0} | Reviews: {user?.reviews?.length || 0}</Text>
+      </View>
 
       {currentUserId && currentUserId !== user._id && (
         <FollowButton
@@ -154,7 +168,14 @@ const UserProfileScreen = ({ route, navigation }) => {
         </>
       )}
 
-      
+      {/* Followers Modal */}
+      <FollowersModal
+        visible={followersModalVisible}
+        onClose={() => setFollowersModalVisible(false)}
+        userId={user?._id}
+        title="Followers"
+        type="followers"
+      />
     </View>
   );
 };
@@ -173,7 +194,23 @@ const styles = StyleSheet.create({
   },
   avatarPlaceholderText: { color: '#fff', fontWeight: 'bold', fontSize: 24 },
   name: { fontSize: 24, fontWeight: 'bold', marginBottom: 10 },
-  info: { fontSize: 18, marginBottom: 5 },
+  infoRow: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    flexWrap: 'wrap',
+    marginBottom: 5 
+  },
+  infoButton: {
+    paddingVertical: 2,
+  },
+  clickableInfo: { 
+    color: '#007AFF', 
+    fontSize: 18,
+    fontWeight: '500'
+  },
+  infoText: { 
+    fontSize: 18 
+  },
   tabRow: {
     flexDirection: 'row', justifyContent: 'space-around',
     marginTop: 20, borderBottomWidth: 1, borderColor: '#eee'
