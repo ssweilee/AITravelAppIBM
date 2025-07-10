@@ -41,7 +41,7 @@ const ProfileScreen = () => {
   };
 
   if (isLoading) {
-    return <View style={styles.loadingContainer}><ActivityIndicator size="large" color="#007bff" /></View>;
+    return <View style={styles.loadingContainer}><ActivityIndicator size="large" color="#00c7be" /></View>;
   }
 
   if (!userInfo) {
@@ -54,25 +54,28 @@ const ProfileScreen = () => {
   useLayoutEffect(() => {
     navigation.setOptions({
       headerLeft: () => (
-        <Text style={{ fontSize: 20, fontWeight: 'bold', marginLeft: 20 }}>
+        <Text style={{ fontSize: 20, fontWeight: 'bold', marginLeft: 20, color: 'white' }}>
           {userInfo?.firstName || 'Profile'} {userInfo?.lastName || ''}
         </Text>
       ),
       headerRight: () => (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingRight: 10 }}>
           <TouchableOpacity>
-            <Ionicons name="notifications-outline" size={24} color="black" />
+            <Ionicons name="notifications-outline" size={28} color="white" />
           </TouchableOpacity>
           <TouchableOpacity onPress={() => setShowDropdown(v => !v)}>
-            <MaterialIcons name="add-circle-outline" size={24} color="black" />
+            <MaterialIcons name="add-circle-outline" size={28} color="white" />
           </TouchableOpacity>
-          <TouchableOpacity>
-            <Ionicons name="chatbubble-outline" size={24} color="black" />
+          <TouchableOpacity
+            style={styles.iconButton}
+            onPress={() => navigation.navigate('Messages')}
+          >
+            <Ionicons name="chatbubble-outline" size={28} color="white" />
           </TouchableOpacity>
         </View>
       ),
       headerStyle: {
-        backgroundColor: '#fff',
+        backgroundColor: '#00c7be',
         elevation: 0, // Remove shadow on Android
         shadowOpacity: 0, // Remove shadow on iOS
         borderBottomWidth: 0, // Remove border on iOS
@@ -81,17 +84,17 @@ const ProfileScreen = () => {
   }, [navigation, userInfo]);
 
   if (isLoading) {
-    return <View style={styles.loadingContainer}><ActivityIndicator size="large" color="#007bff" /></View>;
+    return <View style={styles.loadingContainer}><ActivityIndicator size="large" color="#00c7be" /></View>;
   }
 
-  if (!userInfo) {
+  /*if (!userInfo) {
     return (
       <View style={styles.loadingContainer}>
         <Text>Please log in to view your profile.</Text>
-        {/* 可以加一個登入按鈕 */}
+        {/* 可以加一個登入按鈕 }
       </View>
     );
-  }
+  }*/
 
   const navigateToEdit = () => {
     if (!userInfo) {
@@ -112,15 +115,23 @@ const ProfileScreen = () => {
       {/* Optional dropdown UI */}
       {showDropdown && (
         <View style={[styles.dropdown, { top: 10, right: 20, position: 'absolute' }]}>
-          <TouchableOpacity style={styles.dropdownItem}>
-            <MaterialIcons name="forum" size={22} color="#222" style={{ marginRight: 10 }} />
-            <Text>Thread</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.dropdownItem}>
+          <TouchableOpacity 
+            style={styles.dropdownItem}
+            onPress={() => {
+              setShowDropdown(false);
+              navigation.navigate('CreatePost');
+            }}
+          >
             <MaterialIcons name="post-add" size={22} color="#222" style={{ marginRight: 10 }} />
             <Text>Post</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.dropdownItem}>
+          <TouchableOpacity 
+            style={styles.dropdownItem}
+            onPress={() => {
+              setShowDropdown(false);
+              navigation.navigate('CreateItinerary');
+            }}
+          >
             <MaterialIcons name="event-note" size={22} color="#222" style={{ marginRight: 10 }} />
             <Text>Itinerary</Text>
           </TouchableOpacity>
@@ -207,7 +218,7 @@ const ProfileScreen = () => {
 const styles = StyleSheet.create({
   container: { padding: 20, flex: 1, backgroundColor: '#fff' },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  profileSection: { flexDirection: 'row', alignItems: 'center', marginTop: 15 },
+  profileSection: { flexDirection: 'row', alignItems: 'center', marginTop: 15},
   profilePictureWrapper: {
     width: 100, height: 100, borderRadius: 60,
     backgroundColor: '#eee', justifyContent: 'center', alignItems: 'center', marginRight: 12
@@ -232,8 +243,8 @@ const styles = StyleSheet.create({
   locationText: { fontSize: 16, color: '#000', marginBottom: 6 },
   bioText: { fontSize: 14, color: '#444' },
   editButton: {
-    backgroundColor: '#007bff', paddingVertical: 6,
-    paddingHorizontal: 12, borderRadius: 6
+    backgroundColor: '#00c7be', paddingVertical: 8,
+    paddingHorizontal: 16, borderRadius: 20
   },
   editButtonText: { color: 'white', fontWeight: 'bold', fontSize: 14 },
   tabRow: {
@@ -241,9 +252,9 @@ const styles = StyleSheet.create({
     marginTop: 20, borderBottomWidth: 1, borderColor: '#eee'
   },
   tabItem: { paddingVertical: 10, paddingHorizontal: 12, borderBottomWidth: 2, borderColor: 'transparent' },
-  tabItemActive: { borderBottomColor: '#007bff' },
+  tabItemActive: { borderBottomColor: '#00c7be' },
   tabText: { color: '#777', fontSize: 16 },
-  tabTextActive: { color: '#007bff', fontWeight: 'bold' },
+  tabTextActive: { color: '#00c7be', fontWeight: 'bold' },
   subHeader: { fontSize: 20, marginTop: 20, marginBottom: 10 },
   dropdown: {
     backgroundColor: '#fff', borderRadius: 12,

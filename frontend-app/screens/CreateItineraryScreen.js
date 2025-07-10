@@ -291,12 +291,13 @@ const CreateItineraryScreen = ({ navigation }) => {
         })}
 
         <TouchableOpacity style={styles.addDayBtn} onPress={handleAddDay}>
-          <Ionicons name="add-circle" size={22} color="#007bff" />
+          <Ionicons name="add-circle" size={22} color="#00c7be" />
           <Text style={styles.addDayText}>Add Day</Text>
         </TouchableOpacity>
 
-        
-        <Button title="Create Itinerary" onPress={handleCreate} color="#007bff" />
+        <TouchableOpacity style={styles.submitButton} onPress={handleCreate}>
+          <Text style={styles.submitButtonText}>Create Itinerary</Text>
+        </TouchableOpacity>
       </ScrollView>
 
       <TripDateModal
@@ -313,8 +314,8 @@ const CreateItineraryScreen = ({ navigation }) => {
 
 const styles = StyleSheet.create({
   container: { padding: 10, backgroundColor: '#fff', flexGrow: 1 },
-  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 },
-  headerTitle: { fontSize: 20, fontWeight: 'bold', textAlign: 'center', flex: 1 },
+  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 12, marginBottom: 20, position: 'relative' },
+  headerTitle: { fontSize: 18, fontWeight: 'bold', position: 'absolute', left: 0, right: 0, textAlign: 'center', zIndex: 1},
   input: {
     borderWidth: 1, borderColor: '#ccc', borderRadius: 8, padding: 12,
     marginBottom: 14, fontSize: 16, backgroundColor: '#fafbfc',
@@ -341,11 +342,11 @@ const styles = StyleSheet.create({
     marginBottom: 14
   },
   addDayBtn: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
-  addDayText: { color: '#007bff', fontWeight: 'bold', marginLeft: 6, fontSize: 16 },
+  addDayText: { color: '#00c7be', fontWeight: 'bold', marginLeft: 6, fontSize: 16 },
   activitiesLabel: { fontWeight: 'bold', fontSize: 15, marginBottom: 4, marginTop: 2 },
   addActivityBtn: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
-  addActivityText: { color: '#007bff', fontWeight: 'bold', marginLeft: 6, fontSize: 15 },
-  saveButton: { backgroundColor: '#007bff', borderRadius: 8, paddingHorizontal: 16, paddingVertical: 6 },
+  addActivityText: { color: '#00c7be', fontWeight: 'bold', marginLeft: 6, fontSize: 15 },
+  saveButton: { backgroundColor: '#00c7be', borderRadius: 20, paddingHorizontal: 16, paddingVertical: 8 },
   saveButtonText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.3)', justifyContent: 'center', alignItems: 'center' },
   modalContent: { backgroundColor: '#fff', borderRadius: 16, padding: 20, width: '85%', maxHeight: '70%' },
@@ -355,10 +356,22 @@ const styles = StyleSheet.create({
   avatarInitials: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
   checkboxBox: { marginLeft: 8 },
   checkbox: { width: 22, height: 22, borderRadius: 6, borderWidth: 2, borderColor: '#bbb', backgroundColor: '#fff', justifyContent: 'center', alignItems: 'center' },
-  checkboxChecked: { backgroundColor: '#007bff', borderColor: '#007bff' },
-  modalCloseButton: { backgroundColor: '#007bff', borderRadius: 8, padding: 10, marginTop: 16, alignItems: 'center' },
+  checkboxChecked: { backgroundColor: '#00c7be', borderColor: '#00c7be' },
+  modalCloseButton: { backgroundColor: '#00c7be', borderRadius: 8, padding: 10, marginTop: 16, alignItems: 'center' },
   modalCloseButtonText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
   modalUserName: { fontSize: 16, marginLeft: 10 },
+  submitButton: {
+    backgroundColor: '#00c7be',
+    paddingVertical: 12,
+    borderRadius: 20,
+    alignItems: 'center',
+    marginTop: 10
+  },
+  submitButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16
+  }
 });
 
 export default CreateItineraryScreen;

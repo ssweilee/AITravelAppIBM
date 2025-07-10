@@ -55,6 +55,8 @@ const loadProfileData = useCallback(async () => {
     if (user && currentUserId && currentUserId !== user._id) {
       navigation.setOptions({
         headerTitle: `${user.firstName} ${user.lastName}`,
+        headerTitleStyle: { color: 'white' },
+        headerTintColor: 'white',
         headerLeft: () => null,
         headerRight: () =>
           currentUserId !== user._id ? (
@@ -86,11 +88,11 @@ const loadProfileData = useCallback(async () => {
             }}
             style={{ marginRight: 16 }}
           >
-            <Feather name="send" size={24} color="black" />
+            <Feather name="send" size={28} color="white" />
           </TouchableOpacity>
         ) : null,
         headerStyle: {
-          backgroundColor: '#fff',
+          backgroundColor: '#00c7be',
           elevation: 0,
           shadowOpacity: 0,
           borderBottomWidth: 0
@@ -167,14 +169,12 @@ const loadProfileData = useCallback(async () => {
 
       {selectedTab === 'Post' && (
         <>
-          <Text style={styles.subHeader}>Recent Posts:</Text>
           <UserPostList userId={user._id} />
         </>
       )}
 
       {selectedTab === 'Itinerary' && (
         <>
-          <Text style={styles.subHeader}>Your Itineraries:</Text>
           <ItineraryList 
             userId={user._id} 
             onPress={() => navigation.navigate('ItineraryDetail', { itinerary: item })}
@@ -187,7 +187,7 @@ const loadProfileData = useCallback(async () => {
 
 const styles = StyleSheet.create({
   container: { padding: 20, flex: 1, backgroundColor: '#fff' },
-  profileSection: { flexDirection: 'row', alignItems: 'center', marginTop: 15 },
+  profileSection: { flexDirection: 'row', alignItems: 'center', marginTop: 15},
   profilePictureWrapper: {
     width: 100, height: 100, borderRadius: 60,
     backgroundColor: '#eee', justifyContent: 'center', alignItems: 'center', marginRight: 12
@@ -221,14 +221,14 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
   tabItemActive: {
-    borderBottomColor: '#007bff',
+    borderBottomColor: '#00c7be',
   },
   tabText: {
     color: '#777',
     fontSize: 16,
   },
   tabTextActive: {
-    color: '#007bff',
+    color: '#00c7be',
     fontWeight: 'bold',
   },
 });

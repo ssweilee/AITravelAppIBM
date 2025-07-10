@@ -80,14 +80,14 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   bubbleCurrentUser: {
-    backgroundColor: '#1877f2',
+    backgroundColor: '#00c7be',
     borderTopRightRadius: 6,
   },
   bubbleOtherUser: {
-    backgroundColor: '#f0f0f0',
+    backgroundColor: '#fff',
     borderTopLeftRadius: 6,
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.08)', // Mostly transparent black border
+    //borderWidth: 1,
+    //borderColor: 'rgba(0,0,0,0.08)', // Mostly transparent black border
   },
   messageText: {
     fontSize: 16,

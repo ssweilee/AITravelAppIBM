@@ -20,10 +20,11 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     height: 40,
-    borderColor: "#ccc",
+    borderColor: "#00c7be",
     borderWidth: 1,
     borderRadius: 8,
     paddingHorizontal: 10,
+    borderRadius: 20,
   },
 });
 
