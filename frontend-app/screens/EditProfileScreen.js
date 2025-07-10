@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { View, Text, TextInput, Button, StyleSheet, Alert, ActivityIndicator, TouchableOpacity, KeyboardAvoidingView, ScrollView, Platform, Keyboard, Linking } from 'react-native';
-import { useIsFocused } from '@react-navigation/native';
+import { useIsFocused, useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_BASE_URL } from '../config';
 import Autocomplete from 'react-native-autocomplete-input';
@@ -14,6 +14,7 @@ import { useAuth } from '../contexts/AuthContext';
 const EditProfileScreen = ({ route, navigation }) => {
   const { userId, currentUserInfo } = route.params;
   const { refreshUser } = useAuth();
+  const nav = useNavigation();
   const [firstName, setFirstName] = useState(currentUserInfo?.firstName || '');
   const [lastName, setLastName] = useState(currentUserInfo?.lastName || '');
   const [location, setLocation] = useState(''); 
@@ -49,6 +50,16 @@ const EditProfileScreen = ({ route, navigation }) => {
   const [isPicking, setIsPicking] = useState(false);
     */}
 
+    useEffect(() => {
+    nav.setOptions({
+      headerStyle: { backgroundColor: '#00c7be' },
+      headerTintColor: '#fff',
+      headerTitleStyle: {
+        fontWeight: 'bold',
+      },
+    });
+  }, [nav]);
+    
     useEffect(() => {
       const checkLimitedAlert = async () => {
         try {
@@ -423,7 +434,7 @@ const EditProfileScreen = ({ route, navigation }) => {
         </TouchableOpacity>
       ),
     }}
-    inputContainerStyle={{ borderWidth: 0, padding: 0, margin: 0 }}
+    inputContainerStyle={styles.autocompleteInputContainer}
     listContainerStyle={styles.listContainer}
   />
 </View>
@@ -437,7 +448,17 @@ const EditProfileScreen = ({ route, navigation }) => {
         returnKeyType="done" 
         onSubmitEditing={() => { Keyboard.dismiss() }} 
       />
-      <Button title="Save" onPress={handleSave} disabled={loading} />
+      <TouchableOpacity
+          style={[styles.saveButton, loading && styles.saveButtonDisabled]}
+          onPress={handleSave}
+          disabled={loading}
+        >
+          {loading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.saveButtonText}>Save</Text>
+          )}
+        </TouchableOpacity>
       {loading && <ActivityIndicator size="small" color="#0000ff" />}
       </ScrollView>
       </KeyboardAvoidingView>
@@ -468,11 +489,14 @@ const styles = StyleSheet.create({
   removeAvatarText: { color: '#fff', fontWeight: 'bold', },
   avatarSpinner: { position: 'absolute', left: '50%', top: '50%', marginLeft: -10, marginTop: -10, zIndex: 1 },  
   label: { fontSize: 16, marginBottom: 8 },
-  input: { borderWidth: 1, borderColor: '#ccc', padding: 8, marginBottom: 16 },
+  input: { borderWidth: 1, borderColor: '#00c7be', borderRadius: 20, padding: 8, marginBottom: 16 },
   multilineInput: { height: 100, textAlignVertical: 'top' },
   autocompleteContainer: { zIndex: 1, marginBottom: 16 },
-  listContainer: { maxHeight: 150, borderWidth: 1, borderColor: '#ccc' },
+  autocompleteInputContainer: { borderWidth: 1, borderColor: '#00c7be', borderRadius: 20, paddingHorizontal: 8, paddingVertical: 4 },
+  listContainer: { maxHeight: 150, borderWidth: 0, borderColor: '#00c7be' },
   item: { padding: 10, borderBottomWidth: 1, borderBottomColor: '#eee' },
+  saveButton: { backgroundColor: '#00c7be', paddingVertical: 12, borderRadius: 20, alignItems: 'center', marginTop: 10,},
+  saveButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold'},
 });
 
 export default EditProfileScreen;

@@ -61,7 +61,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   follow: {
-    backgroundColor: '#007bff',
+    backgroundColor: '#00c7be',
   },
   unfollow: {
     backgroundColor: '#999',

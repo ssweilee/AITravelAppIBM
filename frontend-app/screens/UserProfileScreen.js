@@ -56,11 +56,9 @@ const UserProfileScreen = ({ route }) => {
     if (user && currentUserId && currentUserId !== user._id) {
       navigation.setOptions({
         headerTitle: `${user.firstName} ${user.lastName}`,
-        headerLeft: () => (
-          <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginLeft: 16 }}>
-            <Ionicons name="arrow-back" size={24} color="black" />
-          </TouchableOpacity>
-        ),
+        headerTitleStyle: { color: 'white' },
+        headerTintColor: 'white',
+        headerLeft: () => null,
         headerRight: () => (
           <TouchableOpacity
             style={{ marginRight: 16 }}
@@ -91,11 +89,11 @@ const UserProfileScreen = ({ route }) => {
               }
             }}
           >
-            <Feather name="send" size={24} color="black" />
+            <Feather name="send" size={24} color="white" />
           </TouchableOpacity>
         ),
         headerStyle: {
-          backgroundColor: '#fff',
+          backgroundColor: '#00c7be',
           elevation: 0,
           shadowOpacity: 0,
           borderBottomWidth: 0,
@@ -113,7 +111,7 @@ const UserProfileScreen = ({ route }) => {
   }
 
   return (
-    <View style={[styles.container, { paddingTop: Platform.OS === 'android' ? RNStatusBar.currentHeight : 30 }]}>
+    <View style={[styles.container, { paddingTop: Platform.OS === 'android' ? RNStatusBar.currentHeight : 15 }]}>
       <StatusBar style="dark" />
 
       <View style={styles.profileSection}>
@@ -272,9 +270,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: 2,
     borderColor: 'transparent'
   },
-  tabItemActive: { borderBottomColor: '#007bff' },
+  tabItemActive: { borderBottomColor: '#00c7be' },
   tabText: { color: '#777', fontSize: 16 },
-  tabTextActive: { color: '#007bff', fontWeight: 'bold' }
+  tabTextActive: { color: '#00c7be', fontWeight: 'bold' }
 });
 
 export default UserProfileScreen;

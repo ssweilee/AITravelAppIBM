@@ -1,4 +1,4 @@
 // config.js
 // insert your ngrok address here 
 
-export const API_BASE_URL = "http://10.118.42.188:3001";
+export const API_BASE_URL = "https://7057f704e1a0.ngrok-free.app";
