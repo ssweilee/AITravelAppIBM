@@ -20,7 +20,6 @@ const ChatScreen = () => {
   const flatListRef = useRef(null);
   const insets = useSafeAreaInsets();
 
-  // 🧠 Header Setup with Touchable Title
   useLayoutEffect(() => {
     navigation.setOptions({
       headerTitle: () => (
@@ -86,35 +85,39 @@ const ChatScreen = () => {
     const handleIncoming = (message) => {
       if (message.chatId === chatId) {
         setMessages((prev) => {
-          const exists = prev.some((m) => m._id === message._id);
-          return exists ? prev : [...prev, message];
+          // Remove optimistic message if it matches sender, text, and is recent
+          let filtered = prev.filter((m) => {
+            if (
+              m._id && m._id.startsWith('local-') &&
+              m.senderId === message.senderId &&
+              m.text === message.text &&
+              m.senderId === currentUserId &&
+              Math.abs(new Date(m.createdAt) - new Date(message.createdAt)) < 10000
+            ) {
+              return false;
+            }
+            return true;
+          });
+          // Only add if not already present (by real _id)
+          const exists = filtered.some((m) => m._id === message._id);
+          return exists ? filtered : [...filtered, message];
         });
       }
     };
-
     socket.on('receiveMessage', handleIncoming);
     return () => {
       socket.off('receiveMessage', handleIncoming);
     };
-  }, [chatId]);
+  }, [chatId, currentUserId]);
 
-  // ✅ Socket-only send
+  // ✅ Socket-only send (no optimistic UI)
   const handleSend = async () => {
     if (!text.trim()) return;
-
     try {
       const token = await AsyncStorage.getItem('token');
       const payload = JSON.parse(atob(token.split('.')[1]));
       const senderId = payload.userId;
-      const optimisticMessage = {
-        _id: `local-${Date.now()}`,
-        chatId,
-        senderId,
-        text,
-        createdAt: new Date().toISOString(),
-      };
-      setMessages((prev) => [...prev, optimisticMessage]);
-
+      // Do NOT add optimistic message to state
       socket.emit('sendMessage', {
         chatId,
         message: {
@@ -122,7 +125,6 @@ const ChatScreen = () => {
           text,
         },
       });
-
       setText('');
     } catch (err) {
       console.error('Send error:', err);
@@ -133,7 +135,7 @@ const ChatScreen = () => {
     <KeyboardAvoidingView
       style={{ flex: 1 }}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? insets.bottom : 80}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? (insets.top + 64) : 84}
     >
       <View style={{ flex: 1, flexDirection: 'column' }}>
         <KeyboardAwareFlatList

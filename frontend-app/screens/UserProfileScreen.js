@@ -28,12 +28,21 @@ const UserProfileScreen = ({ route, navigation }) => {
   };
 
   useEffect(() => {
+    let didRetry = false;
     const loadProfileData = async () => {
       setLoading(true);
       const decodedUserId = await decodeUserIdFromToken();
       setCurrentUserId(decodedUserId);
 
-      const result = await fetchUserById(userId);
+      let result = await fetchUserById(userId);
+      // If token missing, retry once after short delay
+      if (!result.success && result.error?.toLowerCase().includes('token')) {
+        if (!didRetry) {
+          didRetry = true;
+          setTimeout(loadProfileData, 300); // Retry after 300ms
+          return;
+        }
+      }
       if (result.success) {
         setUser(result.user);
       } else {
