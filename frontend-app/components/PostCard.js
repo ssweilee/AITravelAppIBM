@@ -36,6 +36,15 @@ const PostCard = ({ post, onPress, onToggleSave }) => {
     })();
   }, [post]);
 
+  //  Update state when post object changes (reactive to external updates)
+  useEffect(() => {
+    if (userId) {
+      setLiked(post.likes?.includes(userId) || false);
+      setLikesCount(post.likes?.length || 0);
+      setSaved(post.savedBy?.includes(userId) || false);
+    }
+  }, [post.likes, post.savedBy, userId]);
+
   // Fetch latest comments for this post (show top 2, no mutual filter)
   useEffect(() => {
     let isMounted = true;
@@ -73,6 +82,21 @@ const PostCard = ({ post, onPress, onToggleSave }) => {
       if (res.ok) {
         setLiked(result.liked);
         setLikesCount(result.count);
+        
+        // Update the post object to keep it in sync
+        if (userId) {
+          if (!post.likes) {
+            post.likes = [];
+          }
+          
+          if (result.liked) {
+            if (!post.likes.includes(userId)) {
+              post.likes.push(userId);
+            }
+          } else {
+            post.likes = post.likes.filter(id => id !== userId);
+          }
+        }
       } else {
         console.error('Failed to toggle like:', result);
       }

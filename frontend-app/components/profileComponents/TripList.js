@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, FlatList, StyleSheet } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_BASE_URL } from '../../config';
 import TripCard from '../TripCard';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 
-const TripList = ({ refreshTrigger, userId }) => {
+const TripList = ({ refreshTrigger, userId, onPress }) => {
   const [trips, setTrips] = useState([]);
   const navigation = useNavigation();
 
@@ -14,9 +14,10 @@ const TripList = ({ refreshTrigger, userId }) => {
       const token = await AsyncStorage.getItem('token');
       if (!token) return;
 
-      const endpoint = userId
-        ? `${API_BASE_URL}/api/trips/user/${userId}`
-        : `${API_BASE_URL}/api/trips/mine`;
+      // If userId is provided, fetch trips for specific user, otherwise fetch all trips for current user
+      const endpoint = userId ? 
+        `${API_BASE_URL}/api/trips/user/${userId}` : 
+        `${API_BASE_URL}/api/trips`;
 
       const response = await fetch(endpoint, {
         headers: {
@@ -39,10 +40,18 @@ const TripList = ({ refreshTrigger, userId }) => {
     fetchTrips();
   }, [refreshTrigger, userId]);
 
+  // Refetch trips when screen comes into focus (after returning from detail screen)
+  useFocusEffect(
+    useCallback(() => {
+      console.log('[TripList] Screen focused, refreshing trips...');
+      fetchTrips();
+    }, [userId])
+  );
+
   const renderItem = ({ item }) => (
     <TripCard
       trip={item}
-      onPress={(trip) => navigation.navigate('TripDetail', { trip })}
+      onPress={onPress || ((trip) => navigation.navigate('TripDetail', { trip }))}
     />
   );
 
