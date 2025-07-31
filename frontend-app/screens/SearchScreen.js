@@ -1,4 +1,4 @@
-// screens/SearchScreen.js
+// frontend-app/screens/SearchScreen.js
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { StatusBar } from 'expo-status-bar';
@@ -12,68 +12,108 @@ import {
   Platform,
   StatusBar as RNStatusBar,
   ActivityIndicator,
+  Image,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { API_BASE_URL } from '../config';
-import { useNavigation } from '@react-navigation/native';
 import debounce from 'lodash.debounce';
-import { createStackNavigator } from '@react-navigation/stack';
+import { useNavigation } from '@react-navigation/native';
+
+import { API_BASE_URL } from '../config';
 import HotelSearchScreen from './HotelSearchScreen';
 import FlightSearchScreen from './FlightSearchScreen';
 
 const TABS = ['Users', 'Posts', 'Hotels', 'Flights'];
 const LIMIT = 20;
 
-const SearchScreen = ({ navigation: propNav }) => {
+const formatLocation = loc =>
+  loc?.includes('|') ? loc.split('|').reverse().join(', ') : loc || '';
+
+const formatDate = date =>
+  new Date(date).toLocaleDateString('en-UK', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+
+export default function SearchScreen() {
   const navigation = useNavigation();
-  const [query, setQuery]           = useState('');
+
+  // search inputs + pagination flags
+  const [query, setQuery]             = useState('');
   const [selectedTab, setSelectedTab] = useState('Users');
-  const [userResults, setUserResults] = useState([]);
-  const [postResults, setPostResults] = useState([]);
   const [userPage, setUserPage]       = useState(1);
   const [postPage, setPostPage]       = useState(1);
+
+  // results
+  const [userResults, setUserResults] = useState([]);
+  const [postResults, setPostResults] = useState([]);
+  const [itinResults, setItinResults] = useState([]);
+
+  // more‐to‐load flags
   const [userHasMore, setUserHasMore] = useState(false);
   const [postHasMore, setPostHasMore] = useState(false);
-  const [loading, setLoading]         = useState(false);
+  const [itinHasMore, setItinHasMore] = useState(false);
 
-  // NEW: track which users are expanded & their loaded posts
-  const [expandedUsers, setExpandedUsers] = useState({});     // { [userId]: bool }
-  const [userPosts, setUserPosts]         = useState({});     // { [userId]: [post, ...] }
+  const [loading, setLoading] = useState(false);
 
-  // fetch the normal search results (users or posts)
+  // per‐user expansion state & caches
+  const [expandedUsers, setExpandedUsers] = useState({}); // { [userId]: bool }
+  const [userPosts, setUserPosts]         = useState({}); // { [userId]: [post,…] }
+  const [userItins, setUserItins]         = useState({}); // { [userId]: [itin,…] }
+
+  // helper to auto‐attach your Bearer token
+  const safeFetch = async url => {
+    const token = await AsyncStorage.getItem('token');
+    const res = await fetch(url, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (res.status === 403) {
+      await AsyncStorage.removeItem('token');
+      navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+      return null;
+    }
+    const data = await res.json();
+    return res.ok ? data : null;
+  };
+
+  // main search: users vs posts (+ itineraries)
   const fetchSearchResults = async (searchTerm, tab, pageNum = 1) => {
     if (!searchTerm) {
-      setUserResults([]);
-      setPostResults([]);
+      setUserResults([]); setPostResults([]); setItinResults([]);
       return;
     }
     setLoading(true);
     try {
-      const token = await AsyncStorage.getItem('token');
-      const endpoint =
-        tab === 'Users'
-          ? `/api/search/users?q=${encodeURIComponent(searchTerm)}&page=${pageNum}&limit=${LIMIT}`
-          : `/api/search/posts?q=${encodeURIComponent(searchTerm)}&page=${pageNum}&limit=${LIMIT}`;
-      const url = `${API_BASE_URL}${endpoint}`;
-      console.log('Calling endpoint:', url);
-      const response = await fetch(url, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await response.json();
-      if (response.ok) {
-        const results = data.results || [];
-        if (tab === 'Users') {
-          setUserResults(prev => (pageNum === 1 ? results : [...prev, ...results]));
-          setUserHasMore(results.length === LIMIT);
-          setUserPage(pageNum);
-        } else {
-          setPostResults(prev => (pageNum === 1 ? results : [...prev, ...results]));
-          setPostHasMore(results.length === LIMIT);
-          setPostPage(pageNum);
-        }
-      } else {
-        console.warn('Search failed:', data);
+      // USERS
+      if (tab === 'Users') {
+        const data = await safeFetch(
+          `${API_BASE_URL}/api/search/users?q=${encodeURIComponent(searchTerm)}&page=${pageNum}&limit=${LIMIT}`
+        );
+        const results = data?.results || [];
+        setUserResults(prev => pageNum === 1 ? results : [...prev, ...results]);
+        setUserHasMore(results.length === LIMIT);
+        setUserPage(pageNum);
+
+      // POSTS + ITINERARIES
+      } else if (tab === 'Posts') {
+        // fetch posts
+        const postData = await safeFetch(
+          `${API_BASE_URL}/api/search/posts?q=${encodeURIComponent(searchTerm)}&page=${pageNum}&limit=${LIMIT}`
+        );
+        const posts = postData?.results || [];
+        setPostResults(prev => pageNum === 1 ? posts : [...prev, ...posts]);
+        setPostHasMore(posts.length === LIMIT);
+
+        // fetch itineraries
+        const itinData = await safeFetch(
+          `${API_BASE_URL}/api/search/itineraries?q=${encodeURIComponent(searchTerm)}&page=${pageNum}&limit=${LIMIT}`
+        );
+        const itins = itinData?.results || [];
+        setItinResults(prev => pageNum === 1 ? itins : [...prev, ...itins]);
+        setItinHasMore(itins.length === LIMIT);
+
+        setPostPage(pageNum);
       }
     } catch (err) {
       console.error('Search error:', err);
@@ -82,156 +122,258 @@ const SearchScreen = ({ navigation: propNav }) => {
     }
   };
 
-  // fetch a specific user's posts when expanding
-  const fetchUserPosts = async (userId) => {
-    try {
-      const token = await AsyncStorage.getItem('token');
-      const url = `${API_BASE_URL}/api/posts/${userId}`;
-      console.log('Fetching posts for user:', url);
-      const res = await fetch(url, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const posts = await res.json();
-      if (res.ok) {
-        setUserPosts(prev => ({ ...prev, [userId]: posts }));
-      } else {
-        console.warn('User posts fetch failed:', posts);
-      }
-    } catch (err) {
-      console.error('Error fetching user posts:', err);
-    }
-  };
-
-  // toggle expand/collapse
-  const toggleExpand = (userId) => {
-    setExpandedUsers(prev => {
-      const isNow = !prev[userId];
-      // if expanding for first time, load posts
-      if (isNow && !userPosts[userId]) {
-        fetchUserPosts(userId);
-      }
-      return { ...prev, [userId]: isNow };
-    });
-  };
-
-  // debounce main search
-  const debouncedFetch = useMemo(
-    () => debounce((q, t) => fetchSearchResults(q, t, 1), 300),
-    []
-  );
-
+  // debounce typing
+  const debouncedFetch = useMemo(() => debounce(fetchSearchResults, 300), []);
   useEffect(() => {
-    // reset on tab/change
-    if (selectedTab === 'Users') {
-      setUserResults([]); setUserPage(1); setUserHasMore(false);
-    } else {
-      setPostResults([]); setPostPage(1); setPostHasMore(false);
-    }
     debouncedFetch(query, selectedTab);
     return () => debouncedFetch.cancel();
   }, [query, selectedTab]);
 
-  // Tab navigation logic
-  const handleTabPress = (tab) => {
-    if (tab === 'Hotels') {
-      navigation.navigate('HotelSearch');
-      return;
+  // load more on scroll
+  const handleLoadMore = () => {
+    if (selectedTab === 'Users' && userHasMore)
+      fetchSearchResults(query, 'Users', userPage + 1);
+    if (selectedTab === 'Posts') {
+      if (postHasMore) fetchSearchResults(query, 'Posts', postPage + 1);
     }
-    if (tab === 'Flights') {
-      navigation.navigate('FlightSearch');
-      return;
+  };
+
+  // when a user row expands, grab their top 3 posts + top 3 itins
+  const loadUserDetails = async userId => {
+    if (userPosts[userId] === undefined) {
+      setUserPosts(u => ({ ...u, [userId]: null }));
+      setUserItins(u => ({ ...u, [userId]: null }));
+
+      const postsData = await safeFetch(`${API_BASE_URL}/api/posts/user/${userId}`);
+      const posts     = Array.isArray(postsData) ? postsData.slice(0, 3) : [];
+      setUserPosts(u => ({ ...u, [userId]: posts }));
+
+      const itinsData = await safeFetch(`${API_BASE_URL}/api/itineraries/${userId}`);
+      const itins     = Array.isArray(itinsData) ? itinsData.slice(0, 3) : [];
+      setUserItins(u => ({ ...u, [userId]: itins }));
     }
+  };
+
+  const toggleExpand = userId => {
+    setExpandedUsers(e => {
+      const now = !e[userId];
+      if (now) loadUserDetails(userId);
+      return { ...e, [userId]: now };
+    });
+  };
+
+  const handleTabPress = tab => {
+    if (tab === 'Hotels') return navigation.navigate('HotelSearch');
+    if (tab === 'Flights') return navigation.navigate('FlightSearch');
     setSelectedTab(tab);
   };
 
-  // render each user row, with a chevron to expand
-  const renderUserItem = ({ item }) => (
-    <View>
-      <TouchableOpacity
-        style={styles.resultItem}
-        onPress={() => navigation.navigate('UserProfile', { userId: item._id })}
-      >
-        <Text style={styles.nameText}>
-          {item.firstName} {item.lastName}
-        </Text>
-        <Ionicons
-          name={expandedUsers[item._id] ? 'chevron-up-outline' : 'chevron-down-outline'}
-          size={24}
-          color="#555"
-          onPress={() => toggleExpand(item._id)}
-        />
-      </TouchableOpacity>
-      {expandedUsers[item._id] && (
-        <View style={styles.dropdown}>
-          { !userPosts[item._id] ? (
-            <ActivityIndicator style={{ margin: 10 }} />
-          ) : (
-            userPosts[item._id].map(post => (
-              <View key={post._id} style={styles.postDropdownItem}>
-                <Text numberOfLines={2}>{post.content}</Text>
-              </View>
-            ))
-          )}
-        </View>
-      )}
-    </View>
-  );
+  // ——— RENDERERS ———
 
-  // render global posts (when on Posts tab)
-  const renderPostItem = ({ item }) => (
-    <TouchableOpacity
-      style={styles.resultItem}
-      onPress={() => navigation.navigate('PostDetail', { post: item })}
-    >
-      <Text style={styles.postContent} numberOfLines={2}>
-        {item.content}
-      </Text>
-      <Text style={styles.postAuthor}>
-        — {item.userId.firstName} {item.userId.lastName}
-      </Text>
-    </TouchableOpacity>
-  );
+  const renderUserItem = ({ item, index }) => {
+    const loc   = formatLocation(item.location);
+    const posts = userPosts[item._id];
+    const itins = userItins[item._id];
 
-  // load more button logic (unchanged)…
-  const handleLoadMore = () => {
-    if (selectedTab === 'Users' && userHasMore) {
-      fetchSearchResults(query, 'Users', userPage + 1);
-    }
-    if (selectedTab === 'Posts' && postHasMore) {
-      fetchSearchResults(query, 'Posts', postPage + 1);
-    }
-  };
-  const ListFooter = () => {
-    if (loading) return <ActivityIndicator style={{ margin: 20 }} />;
-    const hasMore = selectedTab === 'Users' ? userHasMore : postHasMore;
-    if (!hasMore) return null;
     return (
-      <TouchableOpacity style={styles.loadMoreBtn} onPress={handleLoadMore}>
-        <Text style={styles.loadMoreText}>Load More</Text>
-      </TouchableOpacity>
+      <View style={styles.card} key={`userRow-${item._id}-${index}`}>
+        <TouchableOpacity
+          style={styles.cardRow}
+          onPress={() => navigation.navigate('UserProfile', { userId: item._id })}
+        >
+          {item.profilePicture
+            ? <Image source={{ uri: item.profilePicture }} style={styles.avatar} />
+            : <View style={styles.avatarPlaceholder}>
+                <Ionicons name="person" size={24} color="#fff" />
+              </View>}
+          <View style={styles.info}>
+            <Text style={styles.name}>{item.firstName} {item.lastName}</Text>
+            {!!loc && <Text style={styles.meta}>{loc}</Text>}
+            <Text style={styles.meta}>
+              {item.followers?.length || 0} follower{ (item.followers?.length||0)!==1 && 's' }
+            </Text>
+          </View>
+          <TouchableOpacity
+            style={styles.chevron}
+            onPress={e => { e.stopPropagation(); toggleExpand(item._id); }}
+          >
+            <Ionicons
+              name={expandedUsers[item._id] ? 'chevron-up' : 'chevron-down'}
+              size={20}
+              color="#555"
+            />
+          </TouchableOpacity>
+        </TouchableOpacity>
+
+        {expandedUsers[item._id] && (
+          <View style={styles.dropdown}>
+            {/* — Itineraries first — */}
+            {itins === null ? (
+              <ActivityIndicator style={{ margin: 8 }} />
+            ) : itins.length > 0 ? (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Itineraries</Text>
+                <FlatList
+                  data={itins}
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  keyExtractor={(it, i) => `uItin-${it._id}-${i}`}
+                  renderItem={({ item: itin }) => {
+                    const likes   = itin.likes?.length || 0;
+                    const reposts = itin.repostedBy?.length || 0;
+                    const shares  = itin.shareCount?.length || 0;
+                    return (
+                      <TouchableOpacity
+                        style={styles.itinPill}
+                        onPress={() =>
+                          navigation.navigate('ItineraryDetail', { itinerary: itin })
+                        }
+                      >
+                        <Text style={styles.itinName} numberOfLines={1}>
+                          {itin.title}
+                        </Text>
+                        <View style={styles.itinIcons}>
+                          <MaterialIcons name="favorite-border" size={12} />
+                          <Text style={styles.itinCount}>{likes}</Text>
+                          <MaterialIcons name="repeat" size={12} />
+                          <Text style={styles.itinCount}>{reposts}</Text>
+                          <MaterialIcons name="share" size={12} />
+                          <Text style={styles.itinCount}>{shares}</Text>
+                        </View>
+                      </TouchableOpacity>
+                    );
+                  }}
+                />
+              </View>
+            ) : null}
+
+            {/* — Then Recent Posts — */}
+            {posts === null ? (
+              <ActivityIndicator style={{ margin: 8 }} />
+            ) : posts.length > 0 ? (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Recent Posts</Text>
+                {posts.map((p, idx) => (
+                  <View key={`uPost-${p._id}-${idx}`} style={styles.postItem}>
+                    <Text numberOfLines={2}>{p.content}</Text>
+                  </View>
+                ))}
+              </View>
+            ) : null}
+          </View>
+        )}
+      </View>
     );
   };
 
-  return (
-    <View
-      style={[
-        styles.container,
-        { paddingTop: Platform.OS === 'android' ? RNStatusBar.currentHeight : 30 },
-      ]}
-    >
-      <StatusBar style="dark" />
+  const renderPostsTab = () => (
+    <View style={{ flex: 1 }}>
+      {loading && itinResults.length === 0
+        ? <ActivityIndicator style={{ margin: 12 }} />
+        : itinResults.length > 0 && (
+            <>
+              <Text style={styles.sectionTitle}>Itineraries</Text>
+              <FlatList
+                data={itinResults}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ paddingLeft: 16, paddingBottom: 8 }}
+                keyExtractor={(it, i) => `gItin-${it._id}-${i}`}
+                renderItem={({ item: itin }) => {
+                  const likes   = itin.likes?.length || 0;
+                  const reposts = itin.repostedBy?.length || 0;
+                  const shares  = itin.shareCount?.length || 0;
+                  return (
+                    <TouchableOpacity
+                      style={[styles.itinPill, { paddingVertical: 16 }]}
+                      onPress={() => navigation.navigate('ItineraryDetail', { itinerary: itin })}
+                    >
+                      <Text style={styles.itinName} numberOfLines={1}>{itin.title}</Text>
+                      <View style={styles.itinIcons}>
+                        <MaterialIcons name="favorite-border" size={12} />
+                        <Text style={styles.itinCount}>{likes}</Text>
+                        <MaterialIcons name="repeat" size={12} />
+                        <Text style={styles.itinCount}>{reposts}</Text>
+                        <MaterialIcons name="share" size={12} />
+                        <Text style={styles.itinCount}>{shares}</Text>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                }}
+              />
+            </>
+          )
+      }
 
-      <TextInput
-        placeholder={`Search for ${selectedTab.toLowerCase()}...`}
-        value={query}
-        onChangeText={setQuery}
-        style={styles.searchInput}
+      <FlatList
+        data={postResults}
+        keyExtractor={(item, idx) => `post-${item._id}-${idx}`}
+        renderItem={({ item }) => {
+          const likes   = item.likes?.length || 0;
+          const reposts = item.repostCount?.length || 0;
+          const imgUrl  = item.images?.[0]?.url
+            ? `${API_BASE_URL}${item.images[0].url}`
+            : null;
+
+          return (
+            <TouchableOpacity
+              style={styles.card}
+              onPress={() => navigation.navigate('PostDetail', { post: item })}
+            >
+              <View style={styles.postHeader}>
+                {item.userId.profilePicture
+                  ? <Image source={{ uri: item.userId.profilePicture }} style={styles.avatarSmall}/>
+                  : <View style={styles.avatarSmallPlaceholder}>
+                      <Ionicons name="person" size={16} color="#fff"/>
+                    </View>
+                }
+                <Text style={styles.postAuthorName}>
+                  {item.userId.firstName} {item.userId.lastName}
+                </Text>
+              </View>
+              {imgUrl && <Image source={{ uri: imgUrl }} style={styles.postImage}/>}
+              <Text style={styles.postContent} numberOfLines={2}>{item.content}</Text>
+              <View style={styles.postFooter}>
+                <View style={styles.footerStats}>
+                  <Ionicons name="heart-outline" size={14} color="#555"/><Text style={styles.footerText}>{likes}</Text>
+                  <Ionicons name="repeat-outline" size={14} color="#555"/><Text style={styles.footerText}>{reposts}</Text>
+                </View>
+                <Text style={styles.postDate}>{formatDate(item.createdAt)}</Text>
+              </View>
+            </TouchableOpacity>
+          );
+        }}
+        ListEmptyComponent={!loading && <Text style={styles.emptyText}>No posts found.</Text>}
+        ListFooterComponent={loading && <ActivityIndicator style={{ margin: 20 }} />}
+        contentContainerStyle={{ paddingBottom: 30 }}
+        onEndReached={handleLoadMore}
+        onEndReachedThreshold={0.5}
       />
+    </View>
+  );
 
-      <View style={styles.tabRow}>
+
+  return (
+    <View style={[styles.container, {
+      paddingTop: Platform.OS === 'android'
+        ? RNStatusBar.currentHeight
+        : 20
+    }]}>
+      <StatusBar style="dark"/>
+      <View style={styles.searchBar}>
+        <Ionicons name="search" size={20} color="#888"/>
+        <TextInput
+          style={styles.searchInput}
+          placeholder={`Search ${selectedTab.toLowerCase()}...`}
+          value={query}
+          onChangeText={setQuery}
+        />
+      </View>
+
+      <View style={styles.tabContainer}>
         {TABS.map(tab => (
           <TouchableOpacity
-            key={tab}
+            key={`tab-${tab}`}
             onPress={() => handleTabPress(tab)}
             style={[styles.tabItem, selectedTab === tab && styles.tabItemActive]}
           >
@@ -242,68 +384,99 @@ const SearchScreen = ({ navigation: propNav }) => {
         ))}
       </View>
 
-      <FlatList
-        data={selectedTab === 'Users' ? userResults : postResults}
-        keyExtractor={item => item._id}
-        renderItem={selectedTab === 'Users' ? renderUserItem : renderPostItem}
-        ListEmptyComponent={
-          !loading && (
-            <Text style={styles.emptyText}>
-              No {selectedTab.toLowerCase()} found.
-            </Text>
-          )
-        }
-        ListFooterComponent={<ListFooter />}
-        contentContainerStyle={{ paddingBottom: 30 }}
-      />
+      {selectedTab === 'Users'
+        ? <FlatList
+            data={userResults}
+            keyExtractor={(item, i) => `usr-${item._id}-${i}`}
+            renderItem={renderUserItem}
+            ListEmptyComponent={!loading && <Text style={styles.emptyText}>No users found.</Text>}
+            ListFooterComponent={loading && <ActivityIndicator style={{ margin: 20 }} />}
+            contentContainerStyle={{ paddingBottom: 30 }}
+            onEndReached={handleLoadMore}
+            onEndReachedThreshold={0.5}
+          />
+        : selectedTab === 'Posts'
+          ? renderPostsTab()
+          : <View style={styles.emptyTextContainer}>
+              <Text style={styles.emptyText}>Tap {selectedTab} above to start searching.</Text>
+            </View>
+      }
     </View>
   );
-};
+}
 
 const styles = StyleSheet.create({
-  container: { padding: 20, flex: 1, backgroundColor: '#fff' },
-  searchInput: {
-    height: 50, borderWidth: 1, borderColor: '#00C7BE',
-    padding: 10, borderRadius: 25, marginBottom: 10,
+  container: { flex: 1, backgroundColor: '#fff' },
+  searchBar: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: '#f3f3f3',
+    marginHorizontal: 16, marginVertical: 10,
+    borderRadius: 12, paddingHorizontal: 12, height: 40
   },
-  tabRow: {
-    flexDirection: 'row', justifyContent: 'space-around',
-    borderBottomWidth: 1, borderColor: '#fff', marginBottom: 10,
+  searchInput: { flex: 1, marginLeft: 8, fontSize: 16 },
+  tabContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#e0e0e0',
+    borderRadius: 25,
+    marginHorizontal: 16,
+    marginBottom: 8,
+    padding: 2
   },
-  tabItem: {
-    paddingVertical: 10, paddingHorizontal: 16,
-    borderBottomWidth: 2, borderColor: 'transparent',
-  },
-  tabItemActive: { borderBottomColor: '#00C7BE' },
-  tabText: { color: '#777', fontSize: 16 },
-  tabTextActive: { color: '#00C7BE', fontWeight: 'bold' },
+  tabItem: { flex: 1, alignItems: 'center', paddingVertical: 6, borderRadius: 20 },
+  tabItemActive: { backgroundColor: '#fff' },
+  tabText: { fontSize: 16, color: '#555' },
+  tabTextActive: { color: '#007bff', fontWeight: 'bold' },
 
-  resultItem: {
+  card: {
+    backgroundColor: '#fff', marginHorizontal: 16,
+    marginVertical: 8, borderRadius: 12,
+    borderWidth: 1, borderColor: '#eee', overflow: 'hidden'
+  },
+  cardRow: { flexDirection: 'row', alignItems: 'center', padding: 12 },
+  avatar: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#eee' },
+  avatarPlaceholder: {
+    width: 48, height: 48, borderRadius: 24,
+    backgroundColor: '#007bff', justifyContent: 'center', alignItems: 'center'
+  },
+  info: { flex: 1, marginLeft: 12 },
+  name: { fontSize: 16, fontWeight: 'bold' },
+  meta: { fontSize: 13, color: '#555', marginTop: 2 },
+  chevron: { padding: 8 },
+  dropdown: { backgroundColor: '#fafafa', margin: 12, borderRadius: 8, padding: 12 },
+  postItem: { backgroundColor: '#f9f9f9', padding: 8, borderRadius: 8, marginBottom: 6 },
+  section: { marginBottom: 12 },
+  sectionTitle: { fontWeight: '600', fontSize: 16, marginHorizontal: 16, marginBottom: 8 },
+
+  itinPill: {
+    backgroundColor: '#E0F7FA', // light cyan
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 16,
+    marginRight: 8,
+    minWidth: 100,
+  },
+  itinName: { fontSize: 14, fontWeight: '500' },
+  itinIcons: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
+  itinCount: { marginHorizontal: 4, fontSize: 12, color: '#555' },
+
+  postHeader: { flexDirection: 'row', alignItems: 'center', padding: 12 },
+  avatarSmall: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#eee' },
+  avatarSmallPlaceholder: {
+    width: 32, height: 32, borderRadius: 16,
+    backgroundColor: '#007bff', justifyContent: 'center', alignItems: 'center'
+  },
+  postAuthorName: { marginLeft: 8, fontSize: 16, fontWeight: 'bold' },
+  postImage: { width: '100%', height: 180, resizeMode: 'cover' },
+  postContent: { fontSize: 15, marginHorizontal: 12, marginVertical: 8 },
+  postFooter: {
     flexDirection: 'row', justifyContent: 'space-between',
-    alignItems: 'center', paddingVertical: 12,
-    borderBottomWidth: 1, borderColor: '#ddd',
+    alignItems: 'center', padding: 12, borderTopWidth: 1, borderColor: '#eee'
   },
-  nameText: { fontSize: 18 },
+  footerStats: { flexDirection: 'row', alignItems: 'center' },
+  footerText: { marginHorizontal: 4, fontSize: 12, color: '#555' },
+  postDate: { fontSize: 12, color: '#777' },
 
-  dropdown: {
-    backgroundColor: '#f9f9f9', paddingVertical: 8,
-    paddingHorizontal: 12, marginBottom: 8,
-  },
-  postDropdownItem: {
-    paddingVertical: 6, borderBottomWidth: 1, borderColor: '#eee',
-  },
-
-  postContent: { fontSize: 16, marginBottom: 4 },
-  postAuthor: { fontSize: 14, color: '#555' },
-
-  emptyText: { textAlign: 'center', marginTop: 20, fontSize: 16 },
-
-  loadMoreBtn: {
-    marginVertical: 15, paddingVertical: 12,
-    backgroundColor: '#007bff', borderRadius: 6,
-    alignItems: 'center', marginHorizontal: 50,
-  },
-  loadMoreText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
+  emptyText: { textAlign: 'center', marginTop: 20, color: '#999' },
+  emptyTextContainer: { flex: 1, justifyContent: 'center' },
 });
 
-export default SearchScreen;

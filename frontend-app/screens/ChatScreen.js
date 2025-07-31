@@ -32,11 +32,17 @@ const ChatScreen = () => {
             })
           }
         >
-          <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#007AFF' }}>
+          <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#fff' }}>
             {otherUserName}
           </Text>
         </TouchableOpacity>
       ),
+      headerStyle: {
+        backgroundColor: '#00c7be',
+        elevation: 0,
+        shadowOpacity: 0,
+        borderBottomWidth: 0,
+      },
     });
   }, [navigation, chatId, otherUserName]);
 

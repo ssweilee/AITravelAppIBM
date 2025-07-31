@@ -52,6 +52,10 @@
     "react-native-screens": "~4.11.1",
     "react-native-svg": "^15.11.2",
     "react-native-web": "^0.20.0",
+
+    "socket.io-client": "^4.8.1",
+    "expo-image-picker": "~16.1.4",
+
     "sharp": "^0.34.2",
     "socket.io-client": "^4.8.1"
   }
