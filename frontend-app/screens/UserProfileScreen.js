@@ -34,10 +34,31 @@ const UserProfileScreen = ({ route }) => {
     return null;
   };
 
-  const loadProfileData = useCallback(async () => {
-    setLoading(true);
-    const decodedUserId = await decodeUserIdFromToken();
-    setCurrentUserId(decodedUserId);
+
+  useEffect(() => {
+    let didRetry = false;
+    const loadProfileData = async () => {
+      setLoading(true);
+      const decodedUserId = await decodeUserIdFromToken();
+      setCurrentUserId(decodedUserId);
+
+      let result = await fetchUserById(userId);
+      // If token missing, retry once after short delay
+      if (!result.success && result.error?.toLowerCase().includes('token')) {
+        if (!didRetry) {
+          didRetry = true;
+          setTimeout(loadProfileData, 300); // Retry after 300ms
+          return;
+        }
+      }
+      if (result.success) {
+        setUser(result.user);
+      } else {
+        console.error('Failed to fetch user:', result.error);
+      }
+      setLoading(false);
+    };
+
 
     const result = await fetchUserById(userId);
     if (result.success) {

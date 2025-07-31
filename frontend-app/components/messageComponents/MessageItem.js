@@ -56,10 +56,6 @@ const MessageItem = ({ message, currentUserId, isGroup }) => {
             <ShareItineraryCard itinerary={message.sharedItinerary} />
           )}
 
-        {message.sharedItinerary && (
-          <ShareItineraryCard itinerary={message.sharedItinerary} />
-        )}
-
           {/* Render shared post */}
           {message.sharedPost && (
             <View style={styles.sharedContentContainer}>
