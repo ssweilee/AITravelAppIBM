@@ -14,10 +14,18 @@ const TripList = ({ refreshTrigger, userId, onPress }) => {
       const token = await AsyncStorage.getItem('token');
       if (!token) return;
 
-      // If userId is provided, fetch trips for specific user, otherwise fetch all trips for current user
-      const endpoint = userId ? 
-        `${API_BASE_URL}/api/trips/user/${userId}` : 
-        `${API_BASE_URL}/api/trips`;
+      // Choose the correct endpoint based on whether we're viewing own profile or another user's profile
+      let endpoint;
+      if (userId) {
+        // Viewing someone else's profile - get their public trips
+        endpoint = `${API_BASE_URL}/api/trips/user/${userId}`;
+      } else {
+        // Viewing your own profile - get your trips (both public and private)
+        endpoint = `${API_BASE_URL}/api/trips/mine`;
+      }
+
+      console.log('🔗 TripList - Calling endpoint:', endpoint);
+      console.log('🔗 TripList - userId prop:', userId);
 
       const response = await fetch(endpoint, {
         headers: {
