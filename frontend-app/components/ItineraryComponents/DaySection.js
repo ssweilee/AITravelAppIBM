@@ -73,7 +73,7 @@ const DaySection = ({
           ))}
 
           <TouchableOpacity style={styles.addActivityBtn} onPress={() => handleAddActivity(idx)}>
-            <Ionicons name="add-circle" size={20} color="#007bff" />
+            <Ionicons name="add-circle" size={20} color="#00c7be" />
             <Text style={styles.addActivityText}>Add Activity</Text>
           </TouchableOpacity>
 
