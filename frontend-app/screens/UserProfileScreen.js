@@ -6,6 +6,7 @@ import UserPostList from '../components/UserPostList';
 import FollowButton from '../components/FollowButton';
 import { API_BASE_URL } from '../config';
 import ItineraryList from '../components/profileComponents/ItineraryList';
+import TripList from '../components/profileComponents/TripList';
 import FollowersModal from '../modals/FollowersModal';
 import { StatusBar } from 'expo-status-bar';
 import Feather from 'react-native-vector-icons/Feather';
@@ -34,7 +35,6 @@ const UserProfileScreen = ({ route }) => {
     return null;
   };
 
-
   useEffect(() => {
     let didRetry = false;
     const loadProfileData = async () => {
@@ -59,19 +59,9 @@ const UserProfileScreen = ({ route }) => {
       setLoading(false);
     };
 
-
-    const result = await fetchUserById(userId);
-    if (result.success) {
-      setUser(result.user);
-    } else {
-      console.error('Failed to fetch user:', result.error);
-    }
-    setLoading(false);
-  }, [userId]);
-
-  useEffect(() => {
+    // Call the async function
     loadProfileData();
-  }, [loadProfileData]);
+  }, [userId]);
 
   useLayoutEffect(() => {
     if (user && currentUserId && currentUserId !== user._id) {
@@ -213,6 +203,12 @@ const UserProfileScreen = ({ route }) => {
         <ItineraryList
           userId={user._id}
           onPress={(item) => navigation.navigate('ItineraryDetail', { itinerary: item })}
+        />
+      )}
+      {selectedTab === 'Trip' && (
+        <TripList
+          userId={user._id}
+          onPress={(trip) => navigation.navigate('TripDetail', { trip })}
         />
       )}
 
