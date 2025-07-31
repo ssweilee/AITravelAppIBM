@@ -15,7 +15,7 @@ function MessagesScreen() {
   navigation.setOptions({
     headerTitle: () => (
       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-        <Text style={{ marginLeft: 16, fontSize: 22, fontWeight: 'bold', color: '#222', letterSpacing: 0.2 }}>Messages</Text>
+        <Text style={{ marginLeft: 16, fontSize: 22, fontWeight: 'bold', color: '#fff', letterSpacing: 0.2 }}>Messages</Text>
       </View>
     ),
     headerRight: () => (
@@ -24,7 +24,7 @@ function MessagesScreen() {
         style={{ marginRight: 4, padding: 0, borderRadius: 50 }}
         activeOpacity={0.7}
       >
-        <Ionicons name="add-circle-outline" size={28} color="#222" />
+        <Ionicons name="add-circle-outline" size={28} color="#fff" />
       </TouchableOpacity>
     ),
     headerLeft: () => (
@@ -33,11 +33,11 @@ function MessagesScreen() {
         style={{ marginLeft:0, padding: 0, borderRadius: 50 }}
         activeOpacity={0.7}
       >
-        <Ionicons name="arrow-back" size={26} color="#222" />
+        <Ionicons name="arrow-back" size={26} color="#fff" />
       </TouchableOpacity>
     ),
     headerStyle: {
-      backgroundColor: '#fff',
+      backgroundColor: '#00c7be',
       elevation: 0,
       shadowOpacity: 0,
       borderBottomWidth: 0,

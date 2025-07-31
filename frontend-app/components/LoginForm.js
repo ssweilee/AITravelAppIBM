@@ -23,7 +23,9 @@ function LoginForm() {
       const data = await reponse.json();
       if (reponse.ok) {
         await AsyncStorage.setItem('token', data.token);
-        
+        if (data.refreshToken) {
+          await AsyncStorage.setItem('refreshToken', data.refreshToken);
+        }
         if (data.user) {
           await AsyncStorage.setItem('userInfoCache', JSON.stringify(data.user));
         }
