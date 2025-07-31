@@ -34,6 +34,16 @@ const TripCard = ({ trip, onPress, onToggleSave }) => {
     })();
   }, [trip]);
 
+  // Update state when trip object changes (reactive to external updates)
+  useEffect(() => {
+    if (userId) {
+      setLiked(trip.likes?.includes(userId) || false);
+      setLikesCount(trip.likes?.length || 0);
+      setSaved(trip.savedBy?.includes(userId) || false);
+      setCommentsCount(trip.comments?.length || 0);
+    }
+  }, [trip.likes, trip.savedBy, trip.comments, userId]);
+
   const toggleLike = async () => {
     try {
       const token = await AsyncStorage.getItem('token');
@@ -48,6 +58,21 @@ const TripCard = ({ trip, onPress, onToggleSave }) => {
       if (res.ok) {
         setLiked(result.liked);
         setLikesCount(result.count);
+        
+        //  Update the trip object to keep it in sync
+        if (userId) {
+          if (!trip.likes) {
+            trip.likes = [];
+          }
+          
+          if (result.liked) {
+            if (!trip.likes.includes(userId)) {
+              trip.likes.push(userId);
+            }
+          } else {
+            trip.likes = trip.likes.filter(id => id !== userId);
+          }
+        }
       } else {
         console.error('Failed to toggle like:', result);
       }

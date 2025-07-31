@@ -42,7 +42,6 @@ const FollowersModal = ({ visible, onClose, userId, title = 'Followers', type = 
 
       if (response.ok) {
         const data = await response.json();
-        // Use either followers or following based on type
         const userList = type === 'followers' ? data.followers : data.following;
         setUsers(userList || []);
       } else {

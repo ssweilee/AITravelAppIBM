@@ -1,13 +1,14 @@
 // components/UserPostList.js
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, FlatList, StyleSheet } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_BASE_URL } from '../config';
 import PostCard from './PostCard';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 
 const UserPostList = ({ userId }) => {
   const [posts, setPosts] = useState([]);
+  const navigation = useNavigation();
 
   const fetchPosts = async () => {
     try {
@@ -33,13 +34,22 @@ const UserPostList = ({ userId }) => {
     }
   }, [userId]);
 
-  const navigation = useNavigation();
-const renderItem = ({item}) => (
-  <PostCard
-    post={item}
-    onPress={p => navigation.navigate('PostDetail', {post: p})}
-  />
-);
+  // 🔥 NEW: Refetch posts when screen comes into focus (after returning from detail screen)
+  useFocusEffect(
+    useCallback(() => {
+      if (userId) {
+        console.log('[UserPostList] Screen focused, refreshing user posts...');
+        fetchPosts();
+      }
+    }, [userId])
+  );
+
+  const renderItem = ({item}) => (
+    <PostCard
+      post={item}
+      onPress={p => navigation.navigate('PostDetail', {post: p})}
+    />
+  );
 
   return (
     <FlatList

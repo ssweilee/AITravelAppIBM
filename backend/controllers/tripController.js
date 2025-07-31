@@ -2,7 +2,7 @@ const Trip = require('../models/Trip');
 const User = require('../models/User');
 const Post = require('../models/Post');
 const Itinerary = require('../models/Itinerary');
-const Comment = require('../models/Comment');  // Add this import
+const Comment = require('../models/Comment');
 
 exports.createTrip = async (req, res) => {
   try {
@@ -44,8 +44,6 @@ exports.createTrip = async (req, res) => {
       startDate: new Date(startDate),
       endDate: new Date(endDate),
       posts: selectedPosts || [],
-      // Note: Your Trip schema doesn't have itineraries field, you might want to add it
-      // or handle itineraries differently
     });
 
     // Add trip to user's trips array
@@ -53,7 +51,7 @@ exports.createTrip = async (req, res) => {
       $push: { trips: trip._id }
     });
 
-    // Populate the response
+    // Populate the response (no likes population)
     const populatedTrip = await Trip.findById(trip._id)
       .populate('userId', 'firstName lastName')
       .populate('posts');
@@ -75,7 +73,7 @@ exports.getUserTrips = async (req, res) => {
     const trips = await Trip.find({ userId })
       .populate('userId', 'firstName lastName')
       .populate('posts')
-      .populate('likes', 'firstName lastName')
+      // REMOVED: .populate('likes', 'firstName lastName') - This was causing the issue
       .populate('comments')
       .sort({ createdAt: -1 });
 
@@ -93,7 +91,7 @@ exports.getTripsByUserId = async (req, res) => {
     const trips = await Trip.find({ userId, isPublic: true })
       .populate('userId', 'firstName lastName')
       .populate('posts')
-      .populate('likes', 'firstName lastName')
+      // REMOVED: .populate('likes', 'firstName lastName') - This was causing the issue
       .populate('comments')
       .sort({ createdAt: -1 });
 
@@ -109,7 +107,7 @@ exports.getAllTrips = async (req, res) => {
     const trips = await Trip.find({ isPublic: true })
       .populate('userId', 'firstName lastName')
       .populate('posts')
-      .populate('likes', 'firstName lastName')
+      // REMOVED: .populate('likes', 'firstName lastName') - This was causing the issue
       .populate('comments')
       .sort({ createdAt: -1 });
 
@@ -127,7 +125,7 @@ exports.getTripById = async (req, res) => {
     const trip = await Trip.findById(tripId)
       .populate('userId', 'firstName lastName')
       .populate('posts')
-      .populate('likes', 'firstName lastName')
+      // REMOVED: .populate('likes', 'firstName lastName') - This was causing the issue
       .populate({
         path: 'comments',
         populate: {
