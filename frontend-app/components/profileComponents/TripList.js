@@ -14,7 +14,6 @@ const TripList = ({ refreshTrigger, userId, onPress }) => {
       const token = await AsyncStorage.getItem('token');
       if (!token) return;
 
-      // Choose the correct endpoint based on whether we're viewing own profile or another user's profile
       let endpoint;
       if (userId) {
         // Viewing someone else's profile - get their public trips
@@ -23,9 +22,6 @@ const TripList = ({ refreshTrigger, userId, onPress }) => {
         // Viewing your own profile - get your trips (both public and private)
         endpoint = `${API_BASE_URL}/api/trips/mine`;
       }
-
-      console.log('🔗 TripList - Calling endpoint:', endpoint);
-      console.log('🔗 TripList - userId prop:', userId);
 
       const response = await fetch(endpoint, {
         headers: {
@@ -51,7 +47,6 @@ const TripList = ({ refreshTrigger, userId, onPress }) => {
   // Refetch trips when screen comes into focus (after returning from detail screen)
   useFocusEffect(
     useCallback(() => {
-      console.log('[TripList] Screen focused, refreshing trips...');
       fetchTrips();
     }, [userId])
   );

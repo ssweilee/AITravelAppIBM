@@ -34,11 +34,10 @@ const UserPostList = ({ userId }) => {
     }
   }, [userId]);
 
-  // 🔥 NEW: Refetch posts when screen comes into focus (after returning from detail screen)
+  // Refetch posts when screen comes into focus (after returning from detail screen)
   useFocusEffect(
     useCallback(() => {
       if (userId) {
-        console.log('[UserPostList] Screen focused, refreshing user posts...');
         fetchPosts();
       }
     }, [userId])

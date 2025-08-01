@@ -280,7 +280,7 @@ const PostCard = ({ post, onPress, onToggleSave }) => {
      {post.images && post.images.length > 0 && (
   <ScrollView horizontal style={{ marginTop: 8 }}>
     {post.images.map((img, index) => {
-      console.log('Original image url:', img.url);
+    
       
       // Smart URL conversion: use current user's API_BASE_URL with the filename
       let imageUrl;
@@ -295,7 +295,7 @@ const PostCard = ({ post, onPress, onToggleSave }) => {
         imageUrl = img.url;
       }
       
-      console.log('Converted to:', imageUrl);
+      
 
       return (
         <Image

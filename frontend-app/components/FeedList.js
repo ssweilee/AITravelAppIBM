@@ -19,7 +19,7 @@ const FeedList = ({ refreshTrigger }) => {
         return;
       }
 
-      // Use your existing endpoints - no new backend code needed!
+      
       const [postsResponse, tripsResponse] = await Promise.all([
         fetch(`${API_BASE_URL}/api/posts/feed`, {
           headers: { Authorization: `Bearer ${token}` }
@@ -60,10 +60,10 @@ const FeedList = ({ refreshTrigger }) => {
     fetchFeedContent();
   }, [refreshTrigger]);
 
-  // Refetch feed when screen comes into focus (after returning from detail screen)
+  
   useFocusEffect(
     useCallback(() => {
-      console.log('[FeedList] Screen focused, refreshing feed...');
+      
       fetchFeedContent();
     }, [])
   );
