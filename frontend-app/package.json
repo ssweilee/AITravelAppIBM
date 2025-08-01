@@ -44,8 +44,6 @@
     "react-native-swipe-list-view": "^3.2.9",
     "react-native-ui-datepicker": "^3.1.2",
     "react-native-vector-icons": "^10.2.0",
-    "socket.io-client": "^4.8.1",
-    "expo-linear-gradient": "~14.1.5",
     "sharp": "^0.34.2",
     "socket.io-client": "^4.8.1",
     "usermanagementsystem": "file:.."
