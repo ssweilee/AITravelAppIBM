@@ -58,6 +58,7 @@ const userSchema = new mongoose.Schema({
   savedPosts: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Post' }],
   savedTrips: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Trip' }],
   savedItineraries: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Itinerary' }],
+  unreadNotificationCount: { type: Number, default: 0 },
   refreshToken: {
     type: String,
     default: ''

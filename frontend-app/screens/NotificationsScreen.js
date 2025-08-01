@@ -1,144 +1,137 @@
 // screens/NotificationsScreen.js
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useLayoutEffect } from 'react';
 import {
   View,
   Text,
   FlatList,
-  TouchableOpacity,
-  ActivityIndicator,
   Image,
-  StyleSheet,
+  ActivityIndicator,
   Alert,
-  Button
+  StyleSheet,
+  Pressable,
+  TouchableOpacity,
+  useWindowDimensions,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
-import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { Swipeable, RectButton } from 'react-native-gesture-handler';
-import socket from '../utils/socket';
+import { getSocket } from '../utils/socket';
 import { API_BASE_URL } from '../config';
+import { useNotifications } from '../contexts/NotificationsContext';
 
 export default function NotificationsScreen() {
   const [notifications, setNotifications] = useState([]);
-  const [loading, setLoading]             = useState(true);
-  const navigation                         = useNavigation();
+  const [loading, setLoading] = useState(true);
+  const navigation = useNavigation();
+  const { setUnreadCount } = useNotifications();
+  const { width } = useWindowDimensions();
+  const HORIZONTAL_INSET = 16;
+  const cardWidth = width - HORIZONTAL_INSET * 2;
 
-  // Fetch existing notifications
-  const fetchNotifications = async () => {
+  const fetchNotifications = useCallback(async () => {
     setLoading(true);
     try {
       const token = await AsyncStorage.getItem('token');
-      const res   = await fetch(`${API_BASE_URL}/api/notifications`, {
+      const res = await fetch(`${API_BASE_URL}/api/notifications`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
       if (res.ok) setNotifications(data);
-      else console.warn('Failed to load notifications', data);
-    } catch (err) {
-      console.error('Error fetching notifications:', err);
+      else console.warn('Load failed', data);
+    } catch (e) {
+      console.error(e);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  // Delete one notification
   const deleteNotification = useCallback(async (id) => {
     try {
       const token = await AsyncStorage.getItem('token');
-      const res   = await fetch(`${API_BASE_URL}/api/notifications/${id}`, {
+      const res = await fetch(`${API_BASE_URL}/api/notifications/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });
+      const data = await res.json();
       if (res.ok) {
         setNotifications(ns => ns.filter(n => n._id !== id));
+        if (typeof data.unreadCount === 'number') setUnreadCount(data.unreadCount);
       } else {
-        const err = await res.json();
-        console.warn('Failed to delete notification:', err);
+        console.warn('Delete failed', data);
       }
-    } catch (err) {
-      console.error('Error deleting notification:', err);
+    } catch (e) {
+      console.error(e);
     }
-  }, []);
+  }, [setUnreadCount]);
 
-  // Swipe action: red “Delete” button
-  const renderRightActions = (id) => (
-    <RectButton
-      style={styles.deleteButton}
-      onPress={() => {
-        Alert.alert(
-          'Delete Notification',
-          'Are you sure you want to delete this notification?',
-          [
-            { text: 'Cancel', style: 'cancel' },
-            { text: 'Delete', style: 'destructive', onPress: () => deleteNotification(id) }
-          ]
-        );
-      }}
-    >
-      <Text style={styles.deleteButtonText}>Delete</Text>
-    </RectButton>
-  );
-
-  // Mark as read
   const markAsRead = async (id) => {
     try {
       const token = await AsyncStorage.getItem('token');
-      await fetch(`${API_BASE_URL}/api/notifications/${id}/read`, {
+      const res = await fetch(`${API_BASE_URL}/api/notifications/${id}/read`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
       });
-      setNotifications(ns =>
-        ns.map(n => n._id === id ? { ...n, isRead: true } : n)
-      );
-    } catch (err) {
-      console.error('Error marking notification read:', err);
+      const data = await res.json();
+      if (res.ok) {
+        setNotifications(ns =>
+          ns.map(n => (n._id === id ? { ...n, isRead: true } : n))
+        );
+        if (typeof data.unreadCount === 'number') setUnreadCount(data.unreadCount);
+      } else {
+        console.warn('Mark read failed', data);
+      }
+    } catch (e) {
+      console.error(e);
     }
   };
 
-  // Clear all notifications
-  const clearAllNotifications = () => {
-    Alert.alert(
-      'Clear All',
-      'Are you sure you want to delete all notifications?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Yes, clear', style: 'destructive',
-          onPress: async () => {
-            try {
-              const token = await AsyncStorage.getItem('token');
-              const res   = await fetch(`${API_BASE_URL}/api/notifications/clear`, {
-                method: 'POST',
-                headers: { Authorization: `Bearer ${token}` },
-              });
-              if (res.ok) setNotifications([]);
-              else console.warn('Failed to clear notifications');
-            } catch (err) {
-              console.error('Error clearing notifications:', err);
-            }
-          }
-        }
-      ]
-    );
-  };
+  const performDeleteAll = useCallback(async () => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+      if (!token) return;
+      const res = await fetch(`${API_BASE_URL}/api/notifications/clear-all`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const text = await res.text();
+      let data = {};
+      try { data = text ? JSON.parse(text) : {}; } catch {}
+      if (res.ok) {
+        setNotifications([]);
+        setUnreadCount(typeof data.unreadCount === 'number' ? data.unreadCount : 0);
+      } else {
+        console.warn('Clear all failed', res.status, data);
+        fetchNotifications();
+      }
+    } catch (e) {
+      console.error(e);
+      fetchNotifications();
+    }
+  }, [fetchNotifications, setUnreadCount]);
 
-  // Handle tap
+  const clearAllNotifications = () =>
+    Alert.alert('Clear All', 'Are you sure you want to delete all notifications?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Yes, clear', style: 'destructive', onPress: performDeleteAll },
+    ]);
+
   const handlePress = async (n) => {
     if (!n.isRead) await markAsRead(n._id);
     const token = await AsyncStorage.getItem('token');
-
+    if (!token) return;
     switch (n.entityType) {
       case 'Post': {
         try {
-          const res  = await fetch(`${API_BASE_URL}/api/posts/${n.entityId}`, {
-            headers: { Authorization: `Bearer ${token}` }
+          const res = await fetch(`${API_BASE_URL}/api/posts/${n.entityId}`, {
+            headers: { Authorization: `Bearer ${token}` },
           });
           const post = await res.json();
           if (res.ok) navigation.navigate('PostDetail', { post });
-          else console.warn('Failed to load post:', post);
-        } catch (err) {
-          console.error(err);
+          else console.warn('Load post failed', post);
+        } catch (e) {
+          console.error(e);
         }
         break;
       }
@@ -146,110 +139,183 @@ export default function NotificationsScreen() {
         navigation.navigate('Chat', { chatId: n.entityId });
         break;
       default:
-        console.warn('Unhandled notification type:', n.entityType);
+        console.warn('Unhandled type', n.entityType);
     }
   };
 
-  // Initial load, real-time subscribe, header button
   useEffect(() => {
     fetchNotifications();
-    const onNotification = newNotif => {
-      setNotifications(ns => [newNotif, ...ns]);
-    };
-    socket.on('notification', onNotification);
-
-    navigation.setOptions({
-      headerRight: () => <Button title="Clear All" onPress={clearAllNotifications} />
-    });
-
+    let socket;
+    (async () => {
+      socket = await getSocket();
+      const handlers = {
+        notification: p => {
+          const newNotif = p.payload || p;
+          setNotifications(ns => [newNotif, ...ns]);
+          if (typeof p.unreadCount === 'number') setUnreadCount(p.unreadCount);
+        },
+        'notification-read': p => {
+          if (p.notificationId) {
+            setNotifications(ns =>
+              ns.map(n => (n._id === p.notificationId ? { ...n, isRead: true } : n))
+            );
+          }
+          if (typeof p.unreadCount === 'number') setUnreadCount(p.unreadCount);
+        },
+        'notifications-cleared': p => {
+          setNotifications([]);
+          if (typeof p.unreadCount === 'number') setUnreadCount(p.unreadCount);
+        },
+        'notification-deleted': p => {
+          if (p.notificationId) setNotifications(ns => ns.filter(n => n._id !== p.notificationId));
+          if (typeof p.unreadCount === 'number') setUnreadCount(p.unreadCount);
+        },
+        'bootstrap-unread-count': ({ unreadCount: bc }) => {
+          if (typeof bc === 'number') setUnreadCount(bc);
+        },
+      };
+      Object.entries(handlers).forEach(([e, fn]) => socket.on(e, fn));
+    })();
     return () => {
-      socket.off('notification', onNotification);
+      getSocket()
+        .then(s => {
+          ['notification', 'notification-read', 'notifications-cleared', 'notification-deleted', 'bootstrap-unread-count'].forEach(e =>
+            s.off(e)
+          );
+        })
+        .catch(() => {});
     };
-  }, [navigation, deleteNotification]);
+  }, [fetchNotifications, setUnreadCount]);
 
-  if (loading) {
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <TouchableOpacity onPress={clearAllNotifications} style={styles.headerClearBtn}>
+          <Text style={styles.headerClearText}>Clear All</Text>
+        </TouchableOpacity>
+      ),
+    });
+  }, [navigation, clearAllNotifications]);
+
+  const renderEmpty = () => (
+    <View style={styles.emptyContainer}>
+      <Text style={styles.emptyText}>No notifications yet.</Text>
+    </View>
+  );
+
+  const renderItem = ({ item }) => {
+    const time = new Date(item.createdAt).toLocaleString();
+    const avatar = item.sender?.profilePicture;
     return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" />
+      <View style={[styles.cardWrapper, { paddingHorizontal: HORIZONTAL_INSET }]}>
+        <Swipeable
+          renderRightActions={() => (
+            <RectButton
+              style={styles.deleteButton}
+              onPress={() =>
+                Alert.alert('Delete Notification', 'Are you sure?', [
+                  { text: 'Cancel', style: 'cancel' },
+                  { text: 'Delete', style: 'destructive', onPress: () => deleteNotification(item._id) },
+                ])
+              }
+            >
+              <Text style={styles.deleteButtonText}>Delete</Text>
+            </RectButton>
+          )}
+        >
+          <View style={[styles.card, !item.isRead && styles.unreadCard, { width: cardWidth }]}>
+            <Pressable onPress={() => handlePress(item)} style={styles.innerRow}>
+              <View style={styles.avatarContainer}>
+                {avatar ? (
+                  <Image source={{ uri: avatar }} style={styles.avatar} />
+                ) : (
+                  <View style={[styles.avatar, styles.placeholder]}>
+                    <Ionicons name="person" size={20} color="#fff" />
+                  </View>
+                )}
+                {!item.isRead && <View style={styles.unreadDot} />}
+              </View>
+              <View style={styles.content}>
+                <Text style={styles.text} numberOfLines={2}>
+                  {item.text}
+                </Text>
+                <Text style={styles.time}>{time}</Text>
+              </View>
+            </Pressable>
+          </View>
+        </Swipeable>
       </View>
     );
-  }
-  if (!notifications.length) {
-    return (
-      <View style={styles.center}>
-        <Text>No notifications</Text>
-      </View>
-    );
-  }
+  };
+
+  if (loading) return (
+    <View style={styles.center}>
+      <ActivityIndicator size="large" />
+    </View>
+  );
 
   return (
     <FlatList
       data={notifications}
       keyExtractor={n => n._id}
-      contentContainerStyle={{ padding: 16 }}
-      renderItem={({ item }) => {
-        const time   = new Date(item.createdAt).toLocaleString();
-        const avatar = item.sender?.profilePicture;
-
-        return (
-          <Swipeable renderRightActions={() => renderRightActions(item._id)}>
-            <TouchableOpacity
-              style={[styles.row, !item.isRead && styles.unread]}
-              onPress={() => handlePress(item)}
-            >
-              {avatar ? (
-                <Image source={{ uri: avatar }} style={styles.avatar} />
-              ) : (
-                <View style={[styles.avatar, styles.placeholder]}>
-                  <Ionicons name="person" size={20} color="#fff" />
-                </View>
-              )}
-              <View style={styles.content}>
-                <Text style={styles.text}>{item.text}</Text>
-                <Text style={styles.time}>{time}</Text>
-              </View>
-              <MaterialIcons
-                name={item.isRead ? 'mark-email-read' : 'mark-email-unread'}
-                size={24}
-                color="#555"
-              />
-            </TouchableOpacity>
-          </Swipeable>
-        );
-      }}
+      contentContainerStyle={{ paddingTop: 16, paddingBottom: 32 }}
+      ListEmptyComponent={renderEmpty}
+      renderItem={renderItem}
+      showsVerticalScrollIndicator={false}
     />
   );
 }
 
 const styles = StyleSheet.create({
-  center: { flex:1, justifyContent:'center', alignItems:'center' },
-  row: {
-    flexDirection:'row',
-    alignItems:'center',
-    padding:12,
-    borderBottomWidth:1,
-    borderColor:'#eee',
-    backgroundColor:'#fff'
+  center: { flex:1, justifyContent:'center', alignItems:'center', backgroundColor: '#f5f7fa' },
+  cardWrapper: { marginBottom: 12 },
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    padding: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 3,
+    position: 'relative',
   },
-  unread:      { backgroundColor:'#eef' },
-  avatar:      { width:40, height:40, borderRadius:20 },
-  placeholder: { backgroundColor:'#888', justifyContent:'center', alignItems:'center' },
-  content:     { flex:1, marginHorizontal:12 },
-  text:        { fontSize:16 },
-  time:        { fontSize:12, color:'#777', marginTop:4 },
+  unreadCard: { borderLeftWidth: 4, borderLeftColor: '#00c7be' },
+  innerRow: { flexDirection: 'row', alignItems: 'center', flex: 1 },
+  avatarContainer: { position: 'relative', marginRight: 12 },
+  avatar: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#eee' },
+  placeholder: { backgroundColor: '#bbb', justifyContent: 'center', alignItems: 'center' },
+  unreadDot: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#00c7be',
+    borderWidth: 2,
+    borderColor: '#fff',
+  },
+  content: { flex: 1, paddingRight: 8 },
+  text: { fontSize: 15, color: '#1f2937', marginBottom: 4, fontWeight: '500' },
+  time: { fontSize: 12, color: '#8a94a6' },
+  emptyContainer: { marginTop: 80, alignItems: 'center', padding: 20 },
+  emptyText: { fontSize: 16, color: '#666' },
+  headerClearBtn: { paddingHorizontal: 12, paddingVertical: 6, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 16, marginRight: 8 },
+  headerClearText: { color: '#fff', fontWeight: '600' },
   deleteButton: {
     backgroundColor: '#D11A2A',
     justifyContent: 'center',
     alignItems: 'flex-end',
     paddingHorizontal: 20,
     marginVertical: 4,
-    borderRadius: 4
+    borderRadius: 8,
   },
-  deleteButtonText: {
-    color: '#fff',
-    fontWeight: 'bold'
-  },
+  deleteButtonText: { color: '#fff', fontWeight: 'bold' },
 });
+
 
 
 

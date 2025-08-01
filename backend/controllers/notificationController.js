@@ -1,12 +1,15 @@
 // controllers/notificationController.js
+const mongoose = require('mongoose');
 const Notification = require('../models/Notification');
+const User = require('../models/User');
+const { getIo } = require('../utils/getIo');
 
 exports.getNotifications = async (req, res) => {
   try {
     const notifications = await Notification
       .find({ recipient: req.user.userId })
       .sort({ createdAt: -1 })
-      .populate('sender', 'firstName lastName profilePicture')  // include sender info
+      .populate('sender', 'firstName lastName profilePicture')
       .lean();
 
     res.json(notifications);
@@ -17,48 +20,194 @@ exports.getNotifications = async (req, res) => {
 };
 
 exports.markAsRead = async (req, res) => {
+  const { id } = req.params;
+  const session = await mongoose.startSession();
   try {
-    const { id } = req.params;
-    const notif = await Notification.findOneAndUpdate(
-      { _id: id, recipient: req.user.userId },
-      { $set: { isRead: true } },
-      { new: true }
-    );
-    if (!notif) return res.status(404).json({ message: 'Notification not found' });
-    res.json({ success: true, notification: notif });
+    session.startTransaction();
+
+    const notif = await Notification.findOne({ _id: id, recipient: req.user.userId }).session(session);
+    if (!notif) {
+      await session.abortTransaction();
+      return res.status(404).json({ message: 'Notification not found' });
+    }
+
+    let updatedCount;
+    if (!notif.isRead) {
+      notif.isRead = true;
+      await notif.save({ session });
+
+      const updatedUser = await User.findByIdAndUpdate(
+        req.user.userId,
+        { $inc: { unreadNotificationCount: -1 } },
+        { new: true, session }
+      );
+      updatedCount = updatedUser.unreadNotificationCount;
+    } else {
+      const user = await User.findById(req.user.userId).select('unreadNotificationCount').session(session);
+      updatedCount = user.unreadNotificationCount;
+    }
+
+    await session.commitTransaction();
+
+    try {
+      const io = getIo();
+      io.to(req.user.userId.toString()).emit('notification-read', {
+        type: 'notification-read',
+        notificationId: id,
+        unreadCount: updatedCount,
+      });
+    } catch (e) {
+      console.warn('Could not emit notification-read:', e);
+    }
+
+    const populatedNotif = await Notification.findById(id)
+      .populate('sender', 'firstName lastName profilePicture')
+      .lean();
+
+    return res.json({ success: true, notification: populatedNotif, unreadCount: updatedCount });
   } catch (err) {
-    console.error('Failed to mark notification read:', err);
-    res.status(500).json({ message: 'Failed to mark as read', error: err.message });
+    try { await session.abortTransaction(); } catch (_) {}
+    console.error('markAsRead error:', err);
+    return res.status(500).json({ message: 'Failed to mark as read', error: err.message });
+  } finally {
+    session.endSession();
   }
 };
 
-// controllers/notificationController.js
 exports.clearNotifications = async (req, res) => {
+  // legacy: mark all as read
+  const session = await mongoose.startSession();
   try {
-    // Delete (or you could update isRead=true for all) for this user
-    await Notification.deleteMany({ recipient: req.user.userId });
-    return res.json({ success: true, message: 'All notifications cleared' });
+    session.startTransaction();
+
+    await Notification.updateMany(
+      { recipient: req.user.userId, isRead: false },
+      { $set: { isRead: true } },
+      { session }
+    );
+
+    await User.findByIdAndUpdate(
+      req.user.userId,
+      { $set: { unreadNotificationCount: 0 } },
+      { session }
+    );
+
+    await session.commitTransaction();
+
+    try {
+      const io = getIo();
+      io.to(req.user.userId.toString()).emit('notifications-cleared', {
+        type: 'notifications-cleared',
+        unreadCount: 0,
+      });
+    } catch (e) {
+      console.warn('Could not emit notifications-cleared:', e);
+    }
+
+    return res.json({ success: true, unreadCount: 0, message: 'All notifications marked read' });
   } catch (err) {
-    console.error('Failed to clear notifications:', err);
-    return res.status(500).json({ success: false, message: 'Could not clear notifications' });
+    try { await session.abortTransaction(); } catch (_) {}
+    console.error('clearNotifications error:', err);
+    return res.status(500).json({ success: false, message: 'Could not clear notifications', error: err.message });
+  } finally {
+    session.endSession();
+  }
+};
+
+// NEW: delete all notifications entirely
+exports.deleteAllNotifications = async (req, res) => {
+  try {
+    await Notification.deleteMany({ recipient: req.user.userId });
+    await User.findByIdAndUpdate(req.user.userId, { $set: { unreadNotificationCount: 0 } });
+
+    try {
+      const io = getIo();
+      io.to(req.user.userId.toString()).emit('notifications-cleared', {
+        type: 'notifications-cleared',
+        unreadCount: 0,
+      });
+    } catch (e) {
+      console.warn('Emit failed in deleteAllNotifications:', e);
+    }
+
+    return res.json({ success: true, unreadCount: 0, message: 'All notifications deleted' });
+  } catch (err) {
+    console.error('deleteAllNotifications error:', err);
+    return res.status(500).json({
+      success: false,
+      message: 'Could not delete all notifications',
+      error: err.message
+    });
   }
 };
 
 exports.deleteNotification = async (req, res) => {
+  const session = await mongoose.startSession();
   try {
+    session.startTransaction();
     const { id } = req.params;
-    // Only delete notifications belonging to the current user
-    const notif = await Notification.findOneAndDelete({
+
+    // Load the notification to know if it was unread
+    const notif = await Notification.findOne({
       _id: id,
       recipient: req.user.userId
-    });
+    }).session(session);
+
     if (!notif) {
+      await session.abortTransaction();
       return res.status(404).json({ message: 'Notification not found' });
     }
-    res.json({ success: true });
+
+    let updatedCount;
+    if (!notif.isRead) {
+      const updatedUser = await User.findByIdAndUpdate(
+        req.user.userId,
+        { $inc: { unreadNotificationCount: -1 } },
+        { new: true, session }
+      );
+      updatedCount = updatedUser.unreadNotificationCount;
+    } else {
+      const user = await User.findById(req.user.userId)
+        .select('unreadNotificationCount')
+        .session(session);
+      updatedCount = user.unreadNotificationCount;
+    }
+
+    // Delete it
+    await Notification.deleteOne({ _id: id, recipient: req.user.userId }).session(session);
+
+    await session.commitTransaction();
+
+    // Emit to socket(s)
+    try {
+      const io = getIo();
+      io.to(req.user.userId.toString()).emit('notification-deleted', {
+        type: 'notification-deleted',
+        notificationId: id,
+        unreadCount: updatedCount,
+      });
+    } catch (e) {
+      console.warn('Could not emit notification-deleted:', e);
+    }
+
+    return res.json({ success: true, unreadCount: updatedCount });
   } catch (err) {
-    console.error('Failed to delete notification:', err);
-    res.status(500).json({ message: 'Failed to delete notification', error: err.message });
+    try { await session.abortTransaction(); } catch (_) {}
+    console.error('deleteNotification error:', err);
+    return res.status(500).json({ message: 'Failed to delete notification', error: err.message });
+  } finally {
+    session.endSession();
+  }
+};
+
+
+exports.getUnreadCount = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.userId).select('unreadNotificationCount');
+    res.json({ unreadCount: user?.unreadNotificationCount || 0 });
+  } catch (err) {
+    console.error('Failed to get unread count:', err);
+    res.status(500).json({ message: 'Failed to get unread count' });
   }
 };
 

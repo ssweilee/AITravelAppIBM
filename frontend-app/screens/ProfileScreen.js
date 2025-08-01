@@ -1,11 +1,12 @@
-import React, { useState, useCallback, useLayoutEffect, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, Platform, Image, StatusBar as RNStatusBar, ActivityIndicator } from 'react-native';
+import React, { useState, useCallback, useLayoutEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Platform, Image, StatusBar as RNStatusBar, ActivityIndicator } from 'react-native';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fetchUserProfile } from '../utils/ProfileInfo';
 import { useAuth } from '../contexts/AuthContext';
+import { useNotifications } from '../contexts/NotificationsContext';
 import AddPost from '../components/AddPost';
 import PostList from '../components/PostList';
 import debounce from 'lodash.debounce';
@@ -15,11 +16,10 @@ import FollowersModal from '../modals/FollowersModal';
 
 const ProfileScreen = () => {
   const { user: userInfo, isLoading, refreshUser } = useAuth();
+  const { unreadCount } = useNotifications();
   const [refreshKey, setRefreshKey] = useState(0);
   const [showDropdown, setShowDropdown] = useState(false);
   const [selectedTab, setSelectedTab] = useState('Post');
-  
-  // Modal state (simplified for followers only)
   const [followersModalVisible, setFollowersModalVisible] = useState(false);
 
   const navigation = useNavigation();
@@ -44,7 +44,6 @@ const ProfileScreen = () => {
     return `${city}, ${countryCode}`;
   };
 
-  // 👇 Place name and buttons in header
   useLayoutEffect(() => {
     navigation.setOptions({
       headerLeft: () => (
@@ -54,8 +53,15 @@ const ProfileScreen = () => {
       ),
       headerRight: () => (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingRight: 10 }}>
-          <TouchableOpacity onPress={() => navigation.navigate('Notifications')}>
-            <Ionicons name="notifications-outline" size={24} color="white" />
+          <TouchableOpacity onPress={() => navigation.navigate('Notifications')} style={{ marginRight: 8 }}>
+            <View style={{ position: 'relative' }}>
+              <Ionicons name="notifications-outline" size={24} color="white" />
+              {unreadCount > 0 && (
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>{unreadCount > 99 ? '99+' : unreadCount}</Text>
+                </View>
+              )}
+            </View>
           </TouchableOpacity>
           <TouchableOpacity onPress={() => setShowDropdown(v => !v)}>
             <MaterialIcons name="add-circle-outline" size={24} color="white" />
@@ -70,12 +76,12 @@ const ProfileScreen = () => {
       ),
       headerStyle: {
         backgroundColor: '#00c7be',
-        elevation: 0, // Remove shadow on Android
-        shadowOpacity: 0, // Remove shadow on iOS
-        borderBottomWidth: 0, // Remove border on iOS
+        elevation: 0,
+        shadowOpacity: 0,
+        borderBottomWidth: 0,
       },
     });
-  }, [navigation, userInfo]);
+  }, [navigation, userInfo, unreadCount]);
 
   if (isLoading) {
     return <View style={styles.loadingContainer}><ActivityIndicator size="large" color="#00c7be" /></View>;
@@ -97,7 +103,6 @@ const ProfileScreen = () => {
     <View style={[styles.container, { paddingTop: Platform.OS === 'android' ? RNStatusBar.currentHeight :10 }]}>
       <StatusBar style="dark" />
 
-      {/* Optional dropdown UI */}
       {showDropdown && (
         <View style={[styles.dropdown, { top: 0, right: 40, position: 'absolute' }]}>
           <TouchableOpacity
@@ -201,31 +206,24 @@ const ProfileScreen = () => {
       </View>
 
       {selectedTab === 'Post' && (
-        <>
-          <PostList refreshTrigger={refreshKey} />
-        </>
+        <PostList refreshTrigger={refreshKey} />
       )}
 
       {selectedTab === 'Itinerary' && (
-        <>
-          <ItineraryList 
-            refreshTrigger={refreshKey}
-            onPress={() => navigation.navigate('ItineraryDetail', { itinerary: item })}
-          />
-        </>
+        <ItineraryList 
+          refreshTrigger={refreshKey}
+          onPress={() => navigation.navigate('ItineraryDetail', { itinerary: item })}
+        />
       )}
       
       {selectedTab === 'Trip' && (
-        <>
-          <TripList 
-            refreshTrigger={refreshKey}
-            userId={userInfo?._id}
-            onPress={(trip) => navigation.navigate('TripDetail', { trip })}
-          />
-        </>
+        <TripList 
+          refreshTrigger={refreshKey}
+          userId={userInfo?._id}
+          onPress={(trip) => navigation.navigate('TripDetail', { trip })}
+        />
       )}
 
-      {/* Followers Modal */}
       <FollowersModal
         visible={followersModalVisible}
         onClose={() => setFollowersModalVisible(false)}
@@ -288,6 +286,23 @@ const styles = StyleSheet.create({
   dropdownItem: {
     flexDirection: 'row', alignItems: 'center',
     paddingVertical: 10, paddingHorizontal: 18
+  },
+  badge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: 'red',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+  },
+  badgeText: {
+    color: 'white',
+    fontSize: 10,
+    fontWeight: 'bold',
   }
 });
 

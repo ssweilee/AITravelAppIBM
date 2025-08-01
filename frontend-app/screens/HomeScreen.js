@@ -11,10 +11,12 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context'; // ✅ SafeAreaView for both platforms
 import FeedList from '../components/FeedList';
 import { useFocusEffect } from '@react-navigation/native';
+import { useNotifications } from '../contexts/NotificationsContext';
 
 const HomeScreen = ({ navigation }) => {
   const [refreshKey, setRefreshKey] = useState(0);
   const [showDropdown, setShowDropdown] = useState(false);
+  const { unreadCount } = useNotifications();
 
   const triggerRefresh = () => setRefreshKey(prev => prev + 1);
 
@@ -28,15 +30,27 @@ const HomeScreen = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <StatusBar style="dark" />
-      
+
       <View style={styles.topBar}>
         <View style={styles.logoContainer}>
           <Image source={require('../assets/AwayTitle.png')} style={styles.logo} />
         </View>
 
         <View style={styles.iconRow}>
-          <TouchableOpacity style={styles.iconButton}>
-            <Ionicons name="notifications-outline" size={24} color="white" />
+          <TouchableOpacity
+            onPress={() => navigation.navigate('Notifications')}
+            style={{ marginRight: 8 }}
+          >
+            <View style={{ position: 'relative' }}>
+              <Ionicons name="notifications-outline" size={24} color="white" />
+              {unreadCount > 0 && (
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </Text>
+                </View>
+              )}
+            </View>
           </TouchableOpacity>
 
           <View style={{ position: 'relative' }}>
@@ -80,7 +94,7 @@ const HomeScreen = ({ navigation }) => {
                   />
                   <Text>Itinerary</Text>
                 </TouchableOpacity>
-              
+
                 <TouchableOpacity
                   style={styles.dropdownItem}
                   onPress={() => {
@@ -117,7 +131,7 @@ const HomeScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#00C7BE',//fff
+    backgroundColor: '#00C7BE',
   },
   topBar: {
     flexDirection: 'row',
@@ -126,24 +140,19 @@ const styles = StyleSheet.create({
     width: '100%',
     paddingHorizontal: 10,
     paddingVertical: 8,
-    borderBottomWidth: 0,//1
+    borderBottomWidth: 0,
     borderColor: '#eee',
-    backgroundColor: '#00C7BE',//fff
+    backgroundColor: '#00C7BE',
   },
   logoContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   logo: {
-    width: 200, //36
-    height: 40, //36
+    width: 200,
+    height: 40,
     resizeMode: 'contain',
     marginRight: 8,
-  },
-  logoText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#222',
   },
   iconRow: {
     flexDirection: 'row',
@@ -170,6 +179,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 10,
     paddingHorizontal: 18,
+  },
+  badge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: 'red',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+  },
+  badgeText: {
+    color: 'white',
+    fontSize: 10,
+    fontWeight: 'bold',
   },
 });
 
