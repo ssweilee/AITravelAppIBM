@@ -58,6 +58,10 @@ const userSchema = new mongoose.Schema({
   savedPosts: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Post' }],
   savedTrips: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Trip' }],
   savedItineraries: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Itinerary' }],
+  refreshToken: {
+    type: String,
+    default: ''
+  }
 });
 
 module.exports = mongoose.model('User', userSchema);

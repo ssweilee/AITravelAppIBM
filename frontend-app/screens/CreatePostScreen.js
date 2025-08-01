@@ -134,7 +134,7 @@ const CreatePostScreen = ({ navigation, route }) => {
     const initials = (user.firstName?.[0] || '') + (user.lastName?.[0] || '');
     return (
       <View style={styles.avatarCircle}>
-        <Text style={styles.avatarInitials}>{initials || <Ionicons name="person" size={20} color="#fff" />}</Text>
+        <Text style={styles.avatarInitials}>{initials || <Ionicons name="person" size={20} color="#999" />}</Text>
       </View>
     );
   };
@@ -197,8 +197,8 @@ const CreatePostScreen = ({ navigation, route }) => {
           <Ionicons name="arrow-back" size={26} color="#222" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Create Post</Text>
-        <TouchableOpacity style={[styles.postButton, { backgroundColor: '#007bff' }]} onPress={handlePostSubmit}>
-          <Text style={[styles.postButtonText, { color: '#fff' }]}>POST</Text>
+        <TouchableOpacity style={[styles.postButton, { backgroundColor: '#00c7be' }]} onPress={handlePostSubmit}>
+          <Text style={[styles.postButtonText, { color: '#fff' }]}>Post</Text>
         </TouchableOpacity>
       </View>
 
@@ -366,10 +366,9 @@ const CreatePostScreen = ({ navigation, route }) => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
-  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 12, borderBottomWidth: 1, borderColor: '#eee' },
-  headerTitle: { fontSize: 18, fontWeight: 'bold', marginLeft: 8 },
-  postButton: { backgroundColor: '#007bff', borderRadius: 8, paddingHorizontal: 16, paddingVertical: 6 },
-  postButtonText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
+  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 12, borderBottomWidth: 1, borderColor: '#eee', position: 'relative' },
+  headerTitle: { fontSize: 18, fontWeight: 'bold', position: 'absolute', left: 0, right: 0, textAlign: 'center', zIndex: 1,},
+  postButton: { backgroundColor: '#00c7be', borderRadius: 20, paddingVertical: 8, paddingHorizontal: 16},  postButtonText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
   userRow: { flexDirection: 'row', alignItems: 'center', padding: 16 },
   //avatarDummy: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#007bff', justifyContent: 'center', alignItems: 'center', marginRight: 12 },
   avatarImg: { 
@@ -392,7 +391,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 18,
   },
-  userName: { fontWeight: 'bold', fontSize: 16 },
+  userName: { fontWeight: 'bold', fontSize: 16, marginLeft: 8 },
   input: { minHeight: 80, fontSize: 18, paddingHorizontal: 16, paddingVertical: 8, marginBottom: 8 },
   optionsList: { borderTopWidth: 1, borderColor: '#eee', marginTop: 8 },
   optionRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 16, paddingHorizontal: 20, borderBottomWidth: 1, borderColor: '#f0f0f0' },

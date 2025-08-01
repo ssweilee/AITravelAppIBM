@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, FlatList, StyleSheet } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_BASE_URL } from '../../config';
 import TripCard from '../TripCard';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 
-const TripList = ({ refreshTrigger, userId }) => {
+const TripList = ({ refreshTrigger, userId, onPress }) => {
   const [trips, setTrips] = useState([]);
   const navigation = useNavigation();
 
@@ -14,9 +14,18 @@ const TripList = ({ refreshTrigger, userId }) => {
       const token = await AsyncStorage.getItem('token');
       if (!token) return;
 
-      const endpoint = userId
-        ? `${API_BASE_URL}/api/trips/user/${userId}`
-        : `${API_BASE_URL}/api/trips/mine`;
+      // Choose the correct endpoint based on whether we're viewing own profile or another user's profile
+      let endpoint;
+      if (userId) {
+        // Viewing someone else's profile - get their public trips
+        endpoint = `${API_BASE_URL}/api/trips/user/${userId}`;
+      } else {
+        // Viewing your own profile - get your trips (both public and private)
+        endpoint = `${API_BASE_URL}/api/trips/mine`;
+      }
+
+      console.log('🔗 TripList - Calling endpoint:', endpoint);
+      console.log('🔗 TripList - userId prop:', userId);
 
       const response = await fetch(endpoint, {
         headers: {
@@ -39,10 +48,18 @@ const TripList = ({ refreshTrigger, userId }) => {
     fetchTrips();
   }, [refreshTrigger, userId]);
 
+  // Refetch trips when screen comes into focus (after returning from detail screen)
+  useFocusEffect(
+    useCallback(() => {
+      console.log('[TripList] Screen focused, refreshing trips...');
+      fetchTrips();
+    }, [userId])
+  );
+
   const renderItem = ({ item }) => (
     <TripCard
       trip={item}
-      onPress={(trip) => navigation.navigate('TripDetail', { trip })}
+      onPress={onPress || ((trip) => navigation.navigate('TripDetail', { trip }))}
     />
   );
 

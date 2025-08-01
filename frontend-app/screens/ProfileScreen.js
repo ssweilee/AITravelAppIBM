@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useLayoutEffect, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, Platform, Image, StatusBar as RNStatusBar } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Platform, Image, StatusBar as RNStatusBar, ActivityIndicator } from 'react-native';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
@@ -11,8 +11,7 @@ import PostList from '../components/PostList';
 import debounce from 'lodash.debounce';
 import ItineraryList from '../components/profileComponents/ItineraryList';
 import TripList from '../components/profileComponents/TripList'; 
-
-
+import FollowersModal from '../modals/FollowersModal';
 
 const ProfileScreen = () => {
   const { user: userInfo, isLoading, refreshUser } = useAuth();
@@ -20,6 +19,8 @@ const ProfileScreen = () => {
   const [showDropdown, setShowDropdown] = useState(false);
   const [selectedTab, setSelectedTab] = useState('Post');
   
+  // Modal state (simplified for followers only)
+  const [followersModalVisible, setFollowersModalVisible] = useState(false);
 
   const navigation = useNavigation();
   const route = useRoute();
@@ -43,39 +44,32 @@ const ProfileScreen = () => {
     return `${city}, ${countryCode}`;
   };
 
-  if (isLoading) {
-    return <View style={styles.loadingContainer}><ActivityIndicator size="large" color="#007bff" /></View>;
-  }
-
-  if (!userInfo) {
-    return <View style={styles.loadingContainer}><Text>Please log in to view your profile.</Text></View>;
-  }
-
-  
-
   // 👇 Place name and buttons in header
   useLayoutEffect(() => {
     navigation.setOptions({
       headerLeft: () => (
-        <Text style={{ fontSize: 20, fontWeight: 'bold', marginLeft: 20 }}>
+        <Text style={{ fontSize: 20, fontWeight: 'bold', marginLeft: 20, color: 'white' }}>
           {userInfo?.firstName || 'Profile'} {userInfo?.lastName || ''}
         </Text>
       ),
       headerRight: () => (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingRight: 10 }}>
           <TouchableOpacity onPress={() => navigation.navigate('Notifications')}>
-            <Ionicons name="notifications-outline" size={24} color="black" />
+            <Ionicons name="notifications-outline" size={24} color="white" />
           </TouchableOpacity>
           <TouchableOpacity onPress={() => setShowDropdown(v => !v)}>
-            <MaterialIcons name="add-circle-outline" size={24} color="black" />
+            <MaterialIcons name="add-circle-outline" size={24} color="white" />
           </TouchableOpacity>
-          <TouchableOpacity>
-            <Ionicons name="chatbubble-outline" size={24} color="black" />
+          <TouchableOpacity
+            style={styles.iconButton}
+            onPress={() => navigation.navigate('Messages')}
+          >
+            <Ionicons name="chatbubble-outline" size={24} color="white" />
           </TouchableOpacity>
         </View>
       ),
       headerStyle: {
-        backgroundColor: '#fff',
+        backgroundColor: '#00c7be',
         elevation: 0, // Remove shadow on Android
         shadowOpacity: 0, // Remove shadow on iOS
         borderBottomWidth: 0, // Remove border on iOS
@@ -84,17 +78,8 @@ const ProfileScreen = () => {
   }, [navigation, userInfo]);
 
   if (isLoading) {
-    return <View style={styles.loadingContainer}><ActivityIndicator size="large" color="#007bff" /></View>;
+    return <View style={styles.loadingContainer}><ActivityIndicator size="large" color="#00c7be" /></View>;
   }
-
-  //if (!userInfo) {
-    //return (
-      //<View style={styles.loadingContainer}>
-        //<Text>Please log in to view your profile.</Text>
-        //{/* 可以加一個登入按鈕 */}
-      //</View>
-    //);
-  //}
 
   const navigateToEdit = () => {
     if (!userInfo) {
@@ -106,10 +91,10 @@ const ProfileScreen = () => {
         userId: userInfo._id,
         currentUserInfo: userInfo, 
     });
-};
+  };
 
   return (
-    <View style={[styles.container, { paddingTop: Platform.OS === 'android' ? RNStatusBar.currentHeight : 30 }]}>
+    <View style={[styles.container, { paddingTop: Platform.OS === 'android' ? RNStatusBar.currentHeight :10 }]}>
       <StatusBar style="dark" />
 
       {/* Optional dropdown UI */}
@@ -150,33 +135,40 @@ const ProfileScreen = () => {
       )}
 
       <View style={styles.profileSection}>
-      <TouchableOpacity 
-    style={styles.profilePictureWrapper} 
-    onPress={navigateToEdit}  
-    >
-    {userInfo?.profilePicture ? (
-      <Image
-      source={{ uri: userInfo.profilePicture }}
-      style={styles.profilePicture}
-      key={userInfo.profilePicture} 
-    />
-    ) : (
-      <Ionicons name="person" size={40} color="#999" />
-    )}
-  </TouchableOpacity>
+        <TouchableOpacity 
+          style={styles.profilePictureWrapper} 
+          onPress={navigateToEdit}  
+        >
+          {userInfo?.profilePicture ? (
+            <Image
+              source={{ uri: userInfo.profilePicture }}
+              style={styles.profilePicture}
+              key={userInfo.profilePicture} 
+            />
+          ) : (
+            <Ionicons name="person" size={40} color="#999" />
+          )}
+        </TouchableOpacity>
+        
         <View style={styles.profileStatsColumn}>
-          <View style={styles.statRow}>
+          <TouchableOpacity 
+            style={styles.statRow}
+            onPress={() => setFollowersModalVisible(true)}
+            activeOpacity={0.7}
+          >
             <Text>
               <Text style={styles.statNumber}>{userInfo?.followers?.length || 0}</Text>
               <Text style={styles.statLabel}> Followers</Text>
             </Text>
-          </View>
+          </TouchableOpacity>
+          
           <View style={styles.statRow}>
             <Text>
               <Text style={styles.statNumber}>{userInfo?.trips?.length || 0}</Text>
               <Text style={styles.statLabel}> Trips</Text>
             </Text>
           </View>
+          
           <View style={styles.statRow}>
             <Text>
               <Text style={styles.statNumber}>{userInfo?.reviews?.length || 0}</Text>
@@ -188,8 +180,8 @@ const ProfileScreen = () => {
 
       <View style={styles.profileInfoRow}>
         <View style={styles.profileTextBlock}>
-        <Text style={styles.locationText}>{formatLocation(userInfo?.location)}</Text>
-        <Text style={styles.bioText}>{userInfo?.bio || ''}</Text>
+          <Text style={styles.locationText}>{formatLocation(userInfo?.location)}</Text>
+          <Text style={styles.bioText}>{userInfo?.bio || ''}</Text>
         </View>
         <TouchableOpacity style={styles.editButton} onPress={navigateToEdit} >
           <Text style={styles.editButtonText}>Edit</Text>
@@ -222,6 +214,7 @@ const ProfileScreen = () => {
           />
         </>
       )}
+      
       {selectedTab === 'Trip' && (
         <>
           <TripList 
@@ -231,6 +224,15 @@ const ProfileScreen = () => {
           />
         </>
       )}
+
+      {/* Followers Modal */}
+      <FollowersModal
+        visible={followersModalVisible}
+        onClose={() => setFollowersModalVisible(false)}
+        userId={userInfo?._id}
+        title="Followers"
+        type="followers"
+      />
     </View>
   );
 };
@@ -263,8 +265,8 @@ const styles = StyleSheet.create({
   locationText: { fontSize: 16, color: '#000', marginBottom: 6 },
   bioText: { fontSize: 14, color: '#444' },
   editButton: {
-    backgroundColor: '#007bff', paddingVertical: 6,
-    paddingHorizontal: 12, borderRadius: 6
+    backgroundColor: '#00c7be', paddingVertical: 8,
+    paddingHorizontal: 16, borderRadius: 20
   },
   editButtonText: { color: 'white', fontWeight: 'bold', fontSize: 14 },
   tabRow: {
@@ -272,9 +274,9 @@ const styles = StyleSheet.create({
     marginTop: 20, borderBottomWidth: 1, borderColor: '#eee'
   },
   tabItem: { paddingVertical: 10, paddingHorizontal: 12, borderBottomWidth: 2, borderColor: 'transparent' },
-  tabItemActive: { borderBottomColor: '#007bff' },
+  tabItemActive: { borderBottomColor: '#00c7be' },
   tabText: { color: '#777', fontSize: 16 },
-  tabTextActive: { color: '#007bff', fontWeight: 'bold' },
+  tabTextActive: { color: '#00c7be', fontWeight: 'bold' },
   subHeader: { fontSize: 20, marginTop: 20, marginBottom: 10 },
   dropdown: {
     backgroundColor: '#fff', borderRadius: 12,

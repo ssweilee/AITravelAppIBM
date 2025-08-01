@@ -4,7 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_BASE_URL } from '../config';
 import PostCard from './PostCard'; 
 import TripCard from './TripCard';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 
 const FeedList = ({ refreshTrigger }) => {
   const [feedItems, setFeedItems] = useState([]);
@@ -59,6 +59,14 @@ const FeedList = ({ refreshTrigger }) => {
   useEffect(() => {
     fetchFeedContent();
   }, [refreshTrigger]);
+
+  // Refetch feed when screen comes into focus (after returning from detail screen)
+  useFocusEffect(
+    useCallback(() => {
+      console.log('[FeedList] Screen focused, refreshing feed...');
+      fetchFeedContent();
+    }, [])
+  );
 
   const renderItem = ({ item }) => {
     if (item.contentType === 'trip') {

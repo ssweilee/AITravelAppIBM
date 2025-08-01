@@ -1,6 +1,12 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const User = require('../models/User.js');
+
+// Helper to generate a random refresh token
+function generateRefreshToken() {
+  return crypto.randomBytes(32).toString('hex');
+}
 
 const signup = async (req, res) => {
   const { email, password, firstName, lastName, dob, country, travelStyle } = req.body;
@@ -55,11 +61,53 @@ const login = async (req, res) => {
       { expiresIn: '1h' }
     );
 
-    res.json({ message: 'Login successul', token });
+    // Generate and save refresh token
+    const refreshToken = generateRefreshToken();
+    currentUser.refreshToken = refreshToken;
+    await currentUser.save();
+
+    res.json({ message: 'Login successul', token, refreshToken });
   } catch (err) {
     console.error('Error during login:', err);
     res.status(500).json({ message: 'Internal server error' });
   }
 };
 
-module.exports = { signup, login };
+// Endpoint to refresh JWT using refresh token
+const refresh = async (req, res) => {
+  const { refreshToken } = req.body;
+  if (!refreshToken) {
+    return res.status(400).json({ message: 'Refresh token required' });
+  }
+  try {
+    const user = await User.findOne({ refreshToken });
+    if (!user) {
+      return res.status(401).json({ message: 'Invalid refresh token' });
+    }
+    // Log when refresh token is used
+    console.log(`Refresh token used for user: ${user.email} (${user._id})`);
+    // Issue new JWT
+    const token = jwt.sign(
+      { userId: user._id, email: user.email },
+      process.env.JWT_SECRET || 'dev_secret',
+      { expiresIn: '1h' }
+    );
+    res.json({ token });
+  } catch (err) {
+    console.error('Error refreshing token:', err);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+// Catch-all for unknown API routes
+// This should be added in your main app.js or server.js, not in the controller.
+// But for reference, here is the code to add:
+// app.use('/api/*', (req, res) => {
+//   res.status(404).json({ message: 'API endpoint not found' });
+// });
+// app.use((err, req, res, next) => {
+//   console.error('Unhandled error:', err);
+//   res.status(500).json({ message: 'Internal server error' });
+// });
+
+module.exports = { signup, login, refresh };

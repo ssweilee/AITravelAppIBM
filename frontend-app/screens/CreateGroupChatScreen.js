@@ -1,13 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import {
-  View,
-  Text,
-  FlatList,
-  TouchableOpacity,
-  StyleSheet,
-  Alert,
-  TextInput,
-} from 'react-native';
+import React, { useEffect, useState, useLayoutEffect } from 'react';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, Alert, TextInput,} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation, CommonActions } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -32,6 +24,22 @@ const CreateGroupChatScreen = () => {
     };
     getUserId();
   }, []);
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerStyle: {
+        backgroundColor: '#00c7be',
+        elevation: 0,
+        shadowOpacity: 0,
+        borderBottomWidth: 0,
+      },
+      headerTintColor: '#fff',
+      headerTitleStyle: {
+        fontWeight: 'bold',
+        color: '#fff',
+      },
+    });
+  }, [navigation]);
 
   const [followings, setFollowings] = useState([]);
 
@@ -196,11 +204,12 @@ const styles = StyleSheet.create({
   container: { flex: 1, padding: 15, backgroundColor: '#fff' },
   groupNameInput: {
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: '#00c7be',
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
     marginBottom: 10,
+    borderRadius: 20,
   },
   userItem: {
     padding: 12,
@@ -215,10 +224,11 @@ const styles = StyleSheet.create({
   },
   createButton: {
     marginTop: 15,
-    backgroundColor: '#007AFF',
+    backgroundColor: '#00c7be',
     paddingVertical: 14,
     borderRadius: 8,
     alignItems: 'center',
+    borderRadius: 20,
   },
   createButtonText: {
     color: '#fff',

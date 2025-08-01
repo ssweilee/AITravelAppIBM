@@ -129,10 +129,46 @@ exports.getSaved = async (req, res) => {
   if (type === 'post') {
     populatePath = {
       path: 'savedPosts',
-      populate: {
-        path: 'userId',
-        select: 'firstName lastName profilePicture'
-      }
+      populate: [
+        {
+          path: 'userId',
+          select: 'firstName lastName profilePicture'
+        },
+        {
+          path: 'bindTrip', // Populate the bound trip
+          populate: [
+            {
+              path: 'userId',
+              select: 'firstName lastName profilePicture'
+            },
+            {
+              path: 'posts', // Also populate posts within the bound trip
+              populate: {
+                path: 'userId',
+                select: 'firstName lastName profilePicture'
+              }
+            },
+            {
+              path: 'likes',
+              select: 'firstName lastName'
+            },
+            {
+              path: 'comments',
+              populate: {
+                path: 'userId',
+                select: 'firstName lastName'
+              }
+            }
+          ]
+        },
+        {
+          path: 'bindItinerary', // Also populate bound itineraries if any
+          populate: {
+            path: 'createdBy',
+            select: 'firstName lastName profilePicture'
+          }
+        }
+      ]
     };
   } else if (type === 'itinerary') {
     populatePath = {
@@ -142,14 +178,34 @@ exports.getSaved = async (req, res) => {
         select: 'firstName lastName profilePicture'
       }
     };
-  } else {
+  } else if (type === 'trip') {
+    // THIS IS THE KEY FIX - populate posts within trips
     populatePath = {
       path: 'savedTrips',
-      populate: {
-        path: 'userId',
-        select: 'firstName lastName profilePicture'
-      }
+      populate: [
+        {
+          path: 'userId',
+          select: 'firstName lastName profilePicture'
+        },
+        {
+          path: 'posts', // Populate the posts within trips
+          populate: {
+            path: 'userId',
+            select: 'firstName lastName profilePicture'
+          }
+        },
+
+        {
+          path: 'comments',
+          populate: {
+            path: 'userId',
+            select: 'firstName lastName'
+          }
+        }
+      ]
     };
+  } else {
+    return res.status(400).json({ message: 'Invalid type. Use post, itinerary, or trip' });
   }
 
   const user = await User.findById(userId).populate(populatePath);

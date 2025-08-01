@@ -11,9 +11,48 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  const logout = useCallback(async () => { 
+   await AsyncStorage.removeItem('token');
+   await AsyncStorage.removeItem('userInfoCache');
+   setToken(null);
+   setUser(null);
+ }, []);
+
   const refreshUser = useCallback(async () => {
     try {
-      const currentToken = await AsyncStorage.getItem('token');
+      let currentToken = await AsyncStorage.getItem('token');
+      let refreshToken = await AsyncStorage.getItem('refreshToken');
+      if (!currentToken && !refreshToken) {
+        setUser(null);
+        if (navigation && navigation.reset) {
+          navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+        }
+        return null;
+      }
+      if (!currentToken && refreshToken) {
+        // Try to refresh JWT using refresh token
+        console.log('Attempting to refresh token with refreshToken:', refreshToken);
+        const res = await fetch(`${API_BASE_URL}/api/refresh`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refreshToken })
+        });
+        const data = await res.json();
+        console.log('Refresh response:', data);
+        if (res.ok && data.token) {
+          currentToken = data.token;
+          await AsyncStorage.setItem('token', currentToken);
+          setToken(currentToken);
+        } else {
+          // Refresh failed, log out and go to Login
+          await logout();
+          setUser(null);
+          if (navigation && navigation.reset) {
+            navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+          }
+          return null;
+        }
+      }
       if (!currentToken) {
         setUser(null);
         if (navigation && navigation.reset) {
@@ -78,13 +117,6 @@ export const AuthProvider = ({ children }) => {
     setToken(newToken);
   };
   
-  const logout = useCallback(async () => { 
-   await AsyncStorage.removeItem('token');
-   await AsyncStorage.removeItem('userInfoCache');
-   setToken(null);
-   setUser(null);
- }, []);
-
   // Always redirect to login if not authenticated
   useEffect(() => {
     if (!isLoading && (!user || !token)) {
