@@ -38,7 +38,6 @@ const PostList = ({ refreshTrigger }) => {
   // Refetch posts when screen comes into focus (after returning from detail screen)
   useFocusEffect(
     useCallback(() => {
-      console.log('[PostList] Screen focused, refreshing posts...');
       fetchPosts();
     }, [])
   );

@@ -16,10 +16,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { API_BASE_URL } from '../config';
+import SearchableCityDropdown from '../components/SearchableCityDropdown';
+import { formatCityDisplay } from '../data/cities';
 
 const CreateTripScreen = ({ navigation }) => {
   const [title, setTitle] = useState('');
-  const [destination, setDestination] = useState('');
+  const [selectedDestination, setSelectedDestination] = useState(null); // Changed from destination string to city object
   const [description, setDescription] = useState('');
   const [budget, setBudget] = useState('');
   const [startDate, setStartDate] = useState(new Date());
@@ -101,7 +103,8 @@ const CreateTripScreen = ({ navigation }) => {
   };
 
   const handleCreateTrip = async () => {
-    if (!title.trim() || !destination.trim() || !budget.trim()) {
+    // Updated validation to check for selectedDestination object
+    if (!title.trim() || !selectedDestination || !budget.trim()) {
       Alert.alert('Error', 'Please fill in all required fields');
       return;
     }
@@ -127,7 +130,8 @@ const CreateTripScreen = ({ navigation }) => {
         },
         body: JSON.stringify({
           title: title.trim(),
-          destination: destination.trim(),
+          destination: formatCityDisplay(selectedDestination), // Send formatted string
+          destinationData: selectedDestination, // Send full city object for future use
           description: description.trim(),
           budget: parseFloat(budget),
           startDate: startDate.toISOString(),
@@ -199,14 +203,13 @@ const CreateTripScreen = ({ navigation }) => {
             />
           </View>
 
+          {/* UPDATED: Replace TextInput with SearchableCityDropdown */}
           <View style={styles.inputContainer}>
             <Text style={styles.label}>Destination *</Text>
-            <TextInput
-              style={styles.input}
-              value={destination}
-              onChangeText={setDestination}
-              placeholder="Where are you going?"
-              maxLength={100}
+            <SearchableCityDropdown
+              selectedCity={selectedDestination}
+              onCitySelect={setSelectedDestination}
+              placeholder="Select your destination"
             />
           </View>
 
@@ -358,7 +361,7 @@ const CreateTripScreen = ({ navigation }) => {
         </View>
       </ScrollView>
 
-      {/* Date Pickers - FIXED FOR BOTH PLATFORMS */}
+      {/* Date Pickers */}
       {showStartPicker && (
         <DateTimePicker
           value={startDate}
