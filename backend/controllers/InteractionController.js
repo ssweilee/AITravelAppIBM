@@ -4,7 +4,7 @@ const Trip = require('../models/Trip');
 const Itinerary = require('../models/Itinerary');
 const sendNotification = require('../utils/notify');
 
- function getModel(type) {
+function getModel(type) {
   switch (type) {
     case 'post':
       return Post;
@@ -15,6 +15,20 @@ const sendNotification = require('../utils/notify');
       
     default:
       throw new Error('Invalid model type');
+  }
+}
+
+// Helper function to get the correct owner field
+function getOwnerField(type) {
+  switch (type) {
+    case 'post':
+      return 'userId';
+    case 'trip':
+      return 'userId';
+    case 'itinerary':
+      return 'createdBy'; // This is the key fix
+    default:
+      return 'userId';
   }
 }
 
@@ -66,6 +80,34 @@ exports.toggleLike = async (req, res) => {
     res.status(500).json({
       message: 'Failed to toggle like',
       error: err.message,
+
+      //conflict
+  /*
+  //  Ensure likes array exists
+  if (!doc.likes) doc.likes = [];
+
+  // pick the right array field
+  const arr = doc.likes;  
+  const idx = arr.findIndex(u=>u.toString()===userId);
+  if (idx >= 0) arr.splice(idx,1);
+  else          arr.push(userId);
+
+  // Use the correct owner field for each model type
+  const ownerField = getOwnerField(type);
+  const ownerId = doc[ownerField];
+
+  if (ownerId && ownerId.toString() !== userId) {
+    // send notification to the post owner if the user is not the owner
+    const me = await User.findById(userId).select('firstName');
+    await sendNotification({
+      recipient: ownerId, // CHANGED: was doc.userId, now uses correct field
+      sender: userId,
+      type: 'like',
+      text: `${me.firstName} liked your ${type}.`,
+      entityType: type.charAt(0).toUpperCase() + type.slice(1), // Capitalize the type
+      entityId: id,
+      link: `/${type}/${id}` // Link to the post, trip, or itinerary
+*/
     });
   }
 };
@@ -183,7 +225,7 @@ exports.getSaved = async (req, res) => {
         {
           path: 'bindItinerary', // Also populate bound itineraries if any
           populate: {
-            path: 'createdBy',
+            path: 'createdBy', // Use createdBy for itineraries
             select: 'firstName lastName profilePicture'
           }
         }
@@ -193,12 +235,12 @@ exports.getSaved = async (req, res) => {
     populatePath = {
       path: 'savedItineraries',
       populate: {
-        path: 'userId',
+        path: 'createdBy', //  Use createdBy for itineraries
         select: 'firstName lastName profilePicture'
       }
     };
   } else if (type === 'trip') {
-    // THIS IS THE KEY FIX - populate posts within trips
+    //  populate posts within trips
     populatePath = {
       path: 'savedTrips',
       populate: [
@@ -258,12 +300,16 @@ exports.addMention = async (req, res) => {
       doc.taggedUsers.push(userId);
       await doc.save();
 
+      // Use the correct owner field
+      const ownerField = getOwnerField(type);
+      const ownerId = doc[ownerField];
+
       // send notification to the user
-      if (doc.userId.toString() !== userId) {
+      if (ownerId && ownerId.toString() !== userId) {
         const me = await User.findById(userId).select('firstName');
         // Notify the user who is being mentioned
         await sendNotification({
-          recipient: doc.userId,
+          recipient: ownerId, // CHANGED: was doc.userId, now uses correct field
           sender: userId,
           type: 'custom',
           text: `${me.firstName} mentioned you in a ${type}.`,
