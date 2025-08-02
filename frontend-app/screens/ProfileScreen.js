@@ -212,7 +212,8 @@ const ProfileScreen = () => {
       {selectedTab === 'Itinerary' && (
         <ItineraryList 
           refreshTrigger={refreshKey}
-          onPress={() => navigation.navigate('ItineraryDetail', { itinerary: item })}
+          userId={userInfo?._id}
+          onPress={(itinerary) => navigation.navigate('ItineraryDetail', { itinerary })}
         />
       )}
       

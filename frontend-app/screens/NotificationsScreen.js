@@ -47,24 +47,27 @@ export default function NotificationsScreen() {
     }
   }, []);
 
-  const deleteNotification = useCallback(async (id) => {
-    try {
-      const token = await AsyncStorage.getItem('token');
-      const res = await fetch(`${API_BASE_URL}/api/notifications/${id}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setNotifications(ns => ns.filter(n => n._id !== id));
-        if (typeof data.unreadCount === 'number') setUnreadCount(data.unreadCount);
-      } else {
-        console.warn('Delete failed', data);
+  const deleteNotification = useCallback(
+    async (id) => {
+      try {
+        const token = await AsyncStorage.getItem('token');
+        const res = await fetch(`${API_BASE_URL}/api/notifications/${id}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        if (res.ok) {
+          setNotifications((ns) => ns.filter((n) => n._id !== id));
+          if (typeof data.unreadCount === 'number') setUnreadCount(data.unreadCount);
+        } else {
+          console.warn('Delete failed', data);
+        }
+      } catch (e) {
+        console.error(e);
       }
-    } catch (e) {
-      console.error(e);
-    }
-  }, [setUnreadCount]);
+    },
+    [setUnreadCount]
+  );
 
   const markAsRead = async (id) => {
     try {
@@ -75,8 +78,8 @@ export default function NotificationsScreen() {
       });
       const data = await res.json();
       if (res.ok) {
-        setNotifications(ns =>
-          ns.map(n => (n._id === id ? { ...n, isRead: true } : n))
+        setNotifications((ns) =>
+          ns.map((n) => (n._id === id ? { ...n, isRead: true } : n))
         );
         if (typeof data.unreadCount === 'number') setUnreadCount(data.unreadCount);
       } else {
@@ -91,13 +94,16 @@ export default function NotificationsScreen() {
     try {
       const token = await AsyncStorage.getItem('token');
       if (!token) return;
+      // CORRECTED endpoint: clear-all
       const res = await fetch(`${API_BASE_URL}/api/notifications/clear-all`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
       });
       const text = await res.text();
       let data = {};
-      try { data = text ? JSON.parse(text) : {}; } catch {}
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch {}
       if (res.ok) {
         setNotifications([]);
         setUnreadCount(typeof data.unreadCount === 'number' ? data.unreadCount : 0);
@@ -121,27 +127,75 @@ export default function NotificationsScreen() {
     if (!n.isRead) await markAsRead(n._id);
     const token = await AsyncStorage.getItem('token');
     if (!token) return;
-    switch (n.entityType) {
-      case 'Post': {
-        try {
+
+    try {
+      // Follow notification should go to the profile of the sender
+      if (n.type === 'follow') {
+        const targetUserId =
+          n.sender && typeof n.sender === 'object' ? n.sender._id : n.sender;
+        if (targetUserId) {
+          navigation.navigate('UserProfile', { userId: targetUserId });
+          return;
+        }
+      }
+
+      switch (n.entityType) {
+        case 'Post': {
           const res = await fetch(`${API_BASE_URL}/api/posts/${n.entityId}`, {
             headers: { Authorization: `Bearer ${token}` },
           });
           const post = await res.json();
           if (res.ok) navigation.navigate('PostDetail', { post });
           else console.warn('Load post failed', post);
-        } catch (e) {
-          console.error(e);
+          break;
         }
-        break;
+        case 'Itinerary': {
+          try {
+            const res = await fetch(`${API_BASE_URL}/api/itineraries/detail/${n.entityId}`, {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            const itinerary = await res.json();
+            if (res.ok) {
+              navigation.navigate('ItineraryDetail', { itinerary });
+            } else {
+              console.warn('Load itinerary failed', itinerary);
+            }
+          } catch (e) {
+            console.error('Error fetching itinerary for notification:', e);
+          }
+          break;
+        }
+
+        case 'Trip': {
+          const res = await fetch(`${API_BASE_URL}/api/trips/${n.entityId}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          const trip = await res.json();
+          if (res.ok) navigation.navigate('TripDetail', { trip });
+          else console.warn('Load trip failed', trip);
+          break;
+        }
+        case 'Custom': {
+          navigation.navigate('Chat', { chatId: n.entityId });
+          break;
+        }
+        default: {
+          console.warn('Unhandled notification entityType/type', n.entityType, n.type);
+        }
       }
-      case 'Custom':
-        navigation.navigate('Chat', { chatId: n.entityId });
-        break;
-      default:
-        console.warn('Unhandled type', n.entityType);
+    } catch (e) {
+      console.error('handlePress error:', e);
     }
   };
+
+  // Inline header with clear all button
+  const renderHeader = () => (
+    <View style={styles.clearAllContainer}>
+      <TouchableOpacity onPress={clearAllNotifications} style={styles.clearAllButton}>
+        <Text style={styles.clearAllButtonText}>Clear All</Text>
+      </TouchableOpacity>
+    </View>
+  );
 
   useEffect(() => {
     fetchNotifications();
@@ -149,25 +203,26 @@ export default function NotificationsScreen() {
     (async () => {
       socket = await getSocket();
       const handlers = {
-        notification: p => {
+        notification: (p) => {
           const newNotif = p.payload || p;
-          setNotifications(ns => [newNotif, ...ns]);
+          setNotifications((ns) => [newNotif, ...ns]);
           if (typeof p.unreadCount === 'number') setUnreadCount(p.unreadCount);
         },
-        'notification-read': p => {
+        'notification-read': (p) => {
           if (p.notificationId) {
-            setNotifications(ns =>
-              ns.map(n => (n._id === p.notificationId ? { ...n, isRead: true } : n))
+            setNotifications((ns) =>
+              ns.map((n) => (n._id === p.notificationId ? { ...n, isRead: true } : n))
             );
           }
           if (typeof p.unreadCount === 'number') setUnreadCount(p.unreadCount);
         },
-        'notifications-cleared': p => {
+        'notifications-cleared': (p) => {
           setNotifications([]);
           if (typeof p.unreadCount === 'number') setUnreadCount(p.unreadCount);
         },
-        'notification-deleted': p => {
-          if (p.notificationId) setNotifications(ns => ns.filter(n => n._id !== p.notificationId));
+        'notification-deleted': (p) => {
+          if (p.notificationId)
+            setNotifications((ns) => ns.filter((n) => n._id !== p.notificationId));
           if (typeof p.unreadCount === 'number') setUnreadCount(p.unreadCount);
         },
         'bootstrap-unread-count': ({ unreadCount: bc }) => {
@@ -178,10 +233,14 @@ export default function NotificationsScreen() {
     })();
     return () => {
       getSocket()
-        .then(s => {
-          ['notification', 'notification-read', 'notifications-cleared', 'notification-deleted', 'bootstrap-unread-count'].forEach(e =>
-            s.off(e)
-          );
+        .then((s) => {
+          [
+            'notification',
+            'notification-read',
+            'notifications-cleared',
+            'notification-deleted',
+            'bootstrap-unread-count',
+          ].forEach((e) => s.off(e));
         })
         .catch(() => {});
     };
@@ -248,17 +307,19 @@ export default function NotificationsScreen() {
     );
   };
 
-  if (loading) return (
-    <View style={styles.center}>
-      <ActivityIndicator size="large" />
-    </View>
-  );
+  if (loading)
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
 
   return (
     <FlatList
       data={notifications}
-      keyExtractor={n => n._id}
+      keyExtractor={(n) => n._id}
       contentContainerStyle={{ paddingTop: 16, paddingBottom: 32 }}
+      ListHeaderComponent={renderHeader}
       ListEmptyComponent={renderEmpty}
       renderItem={renderItem}
       showsVerticalScrollIndicator={false}
@@ -267,7 +328,7 @@ export default function NotificationsScreen() {
 }
 
 const styles = StyleSheet.create({
-  center: { flex:1, justifyContent:'center', alignItems:'center', backgroundColor: '#f5f7fa' },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f5f7fa' },
   cardWrapper: { marginBottom: 12 },
   card: {
     backgroundColor: '#fff',
@@ -303,7 +364,13 @@ const styles = StyleSheet.create({
   time: { fontSize: 12, color: '#8a94a6' },
   emptyContainer: { marginTop: 80, alignItems: 'center', padding: 20 },
   emptyText: { fontSize: 16, color: '#666' },
-  headerClearBtn: { paddingHorizontal: 12, paddingVertical: 6, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 16, marginRight: 8 },
+  headerClearBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderRadius: 16,
+    marginRight: 8,
+  },
   headerClearText: { color: '#fff', fontWeight: '600' },
   deleteButton: {
     backgroundColor: '#D11A2A',
@@ -314,6 +381,23 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   deleteButtonText: { color: '#fff', fontWeight: 'bold' },
+  clearAllContainer: {
+    paddingHorizontal: 16,
+    paddingBottom: 8,
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+  },
+  clearAllButton: {
+    paddingVertical: 6,
+    paddingHorizontal: 14,
+    backgroundColor: '#d32f2f',
+    borderRadius: 8,
+  },
+  clearAllButtonText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 14,
+  },
 });
 
 

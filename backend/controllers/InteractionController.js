@@ -19,38 +19,57 @@ const sendNotification = require('../utils/notify');
 }
 
 exports.toggleLike = async (req, res) => {
-  const { type, id } = req.params;        
-  const userId       = req.user.userId;
-  const Model        = getModel(type);
-  const doc          = await Model.findById(id);
-  if (!doc) return res.status(404).json({ message: `${type} not found` });
+  try {
+    const { type, id } = req.params;
+    const userId = req.user.userId;
+    const Model = getModel(type);
+    const doc = await Model.findById(id);
+    if (!doc) return res.status(404).json({ message: `${type} not found` });
 
-  // pick the right array field
-  const arr = doc.likes;  
-  const idx = arr.findIndex(u=>u.toString()===userId);
-  if (idx >= 0) arr.splice(idx,1);
-  else          arr.push(userId);
+    // Ensure likes is always an array
+    if (!Array.isArray(doc.likes)) {
+      doc.likes = [];
+    }
 
-  if (doc.userId.toString() !== userId) {
-    // send notification to the post owner if the user is not the owner
-    const me = await User.findById(userId).select('firstName');
-    await sendNotification({
-      recipient: doc.userId,
-      sender: userId,
-      type: 'like',
-      text: `${me.firstName} liked your ${type}.`,
-      entityType: type.charAt(0).toUpperCase() + type.slice(1), // Capitalize the type
-      entityId: id,
-      link: `/${type}/${id}` // Link to the post, trip, or itinerary
+    // Determine owner (itinerary uses createdBy, others use userId)
+    const ownerId = (doc.userId || doc.createdBy)?.toString();
+
+    const alreadyLiked = doc.likes.some((u) => u.toString() === userId);
+    if (alreadyLiked) {
+      doc.likes = doc.likes.filter((u) => u.toString() !== userId);
+    } else {
+      doc.likes.push(userId);
+    }
+
+    // Send notification if the liker isn't the owner and owner exists
+    if (ownerId && ownerId !== userId) {
+      const me = await User.findById(userId).select('firstName');
+      await sendNotification({
+        recipient: ownerId,
+        sender: userId,
+        type: 'like',
+        text: `${me.firstName} liked your ${type}.`,
+        entityType: type.charAt(0).toUpperCase() + type.slice(1),
+        entityId: id,
+        link: `/${type}/${id}`,
+      });
+    }
+
+    await doc.save();
+
+    res.json({
+      liked: !alreadyLiked,
+      count: doc.likes.length,
+    });
+  } catch (err) {
+    console.error('toggleLike error:', err);
+    res.status(500).json({
+      message: 'Failed to toggle like',
+      error: err.message,
     });
   }
-
-  await doc.save();
-  res.json({ 
-    liked: idx<0, 
-    count: arr.length
-  });
 };
+
 
 exports.toggleSave = async (req, res) => {
   const { type, id } = req.params;
