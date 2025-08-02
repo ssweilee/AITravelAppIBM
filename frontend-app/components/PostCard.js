@@ -1,42 +1,58 @@
+// components/PostCard.js
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Image, Alert } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  Alert,
+  StyleSheet,
+  ScrollView,
+  Image,
+  ActivityIndicator,
+} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import { API_BASE_URL } from '../config';
-import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons, Feather } from '@expo/vector-icons';
 import BindItineraryCard from './ItineraryComponents/BindItineraryCard';
-
-import { useAuth } from '../contexts/AuthContext';
-
-import ShareModal from './ItineraryComponents/ShareModal';
 import BindTripCard from './BindTripCard';
+import ShareModal from './ItineraryComponents/ShareModal';
+import MoreMenu from './MoreMenu';
+import { useDeleteResource } from '../utils/useDeleteResource';
 
-
-const PostCard = ({ post, onPress, onToggleSave }) => {
+const PostCard = ({ post, onPress, onToggleSave, onDeleted }) => {
   const navigation = useNavigation();
   const [userId, setUserId] = useState(null);
   const [liked, setLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(post.likes?.length || 0);
   const [saved, setSaved] = useState(false);
   const [commentsPreview, setCommentsPreview] = useState([]);
-  
-  // Share functionality state
+
+  // Share state
   const [shareModalVisible, setShareModalVisible] = useState(false);
   const [followers, setFollowers] = useState([]);
   const [selectedFollowers, setSelectedFollowers] = useState([]);
+
+  // Menu visibility
+  const [menuVisible, setMenuVisible] = useState(false);
+
+  const { deleteResource, loading: deleting, error: deleteError } = useDeleteResource();
 
   useEffect(() => {
     (async () => {
       const token = await AsyncStorage.getItem('token');
       if (!token) return;
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      setUserId(payload.userId);
-      setLiked(post.likes?.includes(payload.userId));
-      setSaved(post.savedBy?.includes(payload.userId));
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        setUserId(payload.userId);
+        setLiked(post.likes?.includes(payload.userId));
+        setSaved(post.savedBy?.includes(payload.userId));
+      } catch (e) {
+        console.warn('Failed to parse token payload', e);
+      }
     })();
   }, [post]);
 
-  //  Update state when post object changes (reactive to external updates)
   useEffect(() => {
     if (userId) {
       setLiked(post.likes?.includes(userId) || false);
@@ -45,7 +61,6 @@ const PostCard = ({ post, onPress, onToggleSave }) => {
     }
   }, [post.likes, post.savedBy, userId]);
 
-  // Fetch latest comments for this post (show top 2, no mutual filter)
   useEffect(() => {
     let isMounted = true;
     const fetchComments = async () => {
@@ -55,46 +70,37 @@ const PostCard = ({ post, onPress, onToggleSave }) => {
           headers: { Authorization: `Bearer ${token}` },
         });
         let allComments = await res.json();
-        // Sort comments by createdAt descending (most recent first)
         if (Array.isArray(allComments)) {
           allComments = allComments.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
         }
         if (isMounted && Array.isArray(allComments)) setCommentsPreview(allComments.slice(0, 2));
       } catch (err) {
-        // Ignore errors for preview
+        // silent
       }
     };
     fetchComments();
-    return () => { isMounted = false; };
+    return () => {
+      isMounted = false;
+    };
   }, [post._id, post.comments?.length]);
 
   const toggleLike = async () => {
     try {
       const token = await AsyncStorage.getItem('token');
-      const res = await fetch(
-        `${API_BASE_URL}/api/interactions/post/${post._id}/like`,
-        {
-          method: 'PUT',
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      const res = await fetch(`${API_BASE_URL}/api/interactions/post/${post._id}/like`, {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${token}` },
+      });
       const result = await res.json();
       if (res.ok) {
         setLiked(result.liked);
         setLikesCount(result.count);
-        
-        // Update the post object to keep it in sync
         if (userId) {
-          if (!post.likes) {
-            post.likes = [];
-          }
-          
+          if (!post.likes) post.likes = [];
           if (result.liked) {
-            if (!post.likes.includes(userId)) {
-              post.likes.push(userId);
-            }
+            if (!post.likes.includes(userId)) post.likes.push(userId);
           } else {
-            post.likes = post.likes.filter(id => id !== userId);
+            post.likes = post.likes.filter((id) => id !== userId);
           }
         }
       } else {
@@ -106,59 +112,41 @@ const PostCard = ({ post, onPress, onToggleSave }) => {
   };
 
   const toggleSave = async () => {
-    const token = await AsyncStorage.getItem('token');
     try {
-      const res = await fetch(
-        `${API_BASE_URL}/api/interactions/post/${post._id}/save`,
-        { method: 'PUT', headers: { Authorization: `Bearer ${token}` } }
-      );
+      const token = await AsyncStorage.getItem('token');
+      const res = await fetch(`${API_BASE_URL}/api/interactions/post/${post._id}/save`, {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${token}` },
+      });
       const { saved: nowSaved } = await res.json();
-      
-      // Update local state
       setSaved(nowSaved);
-      
-      // Update the post object's savedBy array to keep it in sync
       if (userId) {
-        if (!post.savedBy) {
-          post.savedBy = [];
-        }
-        
+        if (!post.savedBy) post.savedBy = [];
         if (nowSaved) {
-          // Add userId to savedBy if not already present
-          if (!post.savedBy.includes(userId)) {
-            post.savedBy.push(userId);
-          }
+          if (!post.savedBy.includes(userId)) post.savedBy.push(userId);
         } else {
-          // Remove userId from savedBy
-          post.savedBy = post.savedBy.filter(id => id !== userId);
+          post.savedBy = post.savedBy.filter((id) => id !== userId);
         }
       }
-      
-      // Call the onToggleSave callback if provided (for SavedPostsScreen)
       if (typeof onToggleSave === 'function') {
         onToggleSave(post._id, nowSaved);
       }
-
     } catch (err) {
       console.error('Error toggling save:', err);
     }
   };
 
-  // Navigate to detail/comments
-  const goToComments = () =>
-    navigation.navigate('PostDetail', { post });
+  const goToComments = () => navigation.navigate('PostDetail', { post });
 
   // Share functionality
   const fetchFollowers = async () => {
     try {
       const token = await AsyncStorage.getItem('token');
       const response = await fetch(`${API_BASE_URL}/api/users/followers-following`, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
       const data = await response.json();
-      if (response.ok) {
-        setFollowers(data);
-      }
+      if (response.ok) setFollowers(data);
     } catch (error) {
       console.error('Error fetching followers:', error);
     }
@@ -170,174 +158,179 @@ const PostCard = ({ post, onPress, onToggleSave }) => {
   };
 
   const toggleSelectFollower = (userId) => {
-    setSelectedFollowers(prev => 
-      prev.includes(userId) 
-        ? prev.filter(id => id !== userId)
-        : [...prev, userId]
+    setSelectedFollowers((prev) =>
+      prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]
     );
   };
 
   const confirmShare = async () => {
-  if (selectedFollowers.length === 0) {
-    Alert.alert('Error', 'Please select at least one person to share with');
-    return;
-  }
+    if (selectedFollowers.length === 0) {
+      Alert.alert('Error', 'Please select at least one person to share with');
+      return;
+    }
 
-  try {
-    const token = await AsyncStorage.getItem('token');
-    
-    // Get current user's name for the message
-    const payload = JSON.parse(atob(token.split('.')[1]));
-    const currentUserResponse = await fetch(`${API_BASE_URL}/api/users/${payload.userId}`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    const { user: currentUser } = await currentUserResponse.json();
-    const senderName = currentUser.firstName || 'Someone';
-    
-    const sharePromises = selectedFollowers.map(async (userId) => {
-      // Use existing chat endpoint
-      const chatResponse = await fetch(`${API_BASE_URL}/api/chats`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({ otherUserId: userId })
+    try {
+      const token = await AsyncStorage.getItem('token');
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const currentUserResponse = await fetch(`${API_BASE_URL}/api/users/${payload.userId}`, {
+        headers: { Authorization: `Bearer ${token}` },
       });
+      const { user: currentUser } = await currentUserResponse.json();
+      const senderName = currentUser.firstName || 'Someone';
 
-      if (chatResponse.ok) {
-        const { chat } = await chatResponse.json();
-        
-        // Send message with shared post
-        const messageResponse = await fetch(`${API_BASE_URL}/api/messages/${chat._id}`, {
+      const sharePromises = selectedFollowers.map(async (uId) => {
+        const chatResponse = await fetch(`${API_BASE_URL}/api/chats`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`
+            Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({ 
-            text: `${senderName} shared a post with you!`,
-            sharedPost: post._id
-          })
+          body: JSON.stringify({ otherUserId: uId }),
         });
 
-        return messageResponse.ok;
+        if (chatResponse.ok) {
+          const { chat } = await chatResponse.json();
+          const messageResponse = await fetch(`${API_BASE_URL}/api/messages/${chat._id}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              text: `${senderName} shared a post with you!`,
+              sharedPost: post._id,
+            }),
+          });
+          return messageResponse.ok;
+        }
+        return false;
+      });
+
+      const results = await Promise.all(sharePromises);
+      const successCount = results.filter(Boolean).length;
+
+      if (successCount > 0) {
+        Alert.alert(
+          'Success',
+          `Post shared with ${successCount} ${successCount === 1 ? 'person' : 'people'}!`
+        );
+        setShareModalVisible(false);
+        setSelectedFollowers([]);
+      } else {
+        Alert.alert('Error', 'Failed to share post. Please try again.');
       }
-      return false;
-    });
-
-    const results = await Promise.all(sharePromises);
-    const successCount = results.filter(Boolean).length;
-
-    if (successCount > 0) {
-      Alert.alert('Success', `Post shared with ${successCount} ${successCount === 1 ? 'person' : 'people'}!`);
-      setShareModalVisible(false);
-      setSelectedFollowers([]);
-    } else {
-      Alert.alert('Error', 'Failed to share post. Please try again.');
+    } catch (error) {
+      console.error('Error sharing post:', error);
+      Alert.alert('Error', 'Network error. Please try again.');
     }
-  } catch (error) {
-    console.error('Error sharing post:', error);
-    Alert.alert('Error', 'Network error. Please try again.');
-  }
-};
+  };
+
+  const canDelete = userId && post.userId?._id?.toString() === userId?.toString();
+
+  const confirmDelete = async () => {
+    try {
+      await deleteResource(`/api/posts/${post._id}`);
+      onDeleted && onDeleted(post._id);
+    } catch (e) {
+      Alert.alert('Delete failed', e.message || 'Could not delete post');
+    }
+  };
+
+  const handleMorePress = () => {
+    if (!canDelete) return;
+    setMenuVisible(true);
+  };
 
   return (
     <View style={styles.container}>
-      {/* User info row */}
-      <View style={styles.userRow}>
-        <View style={styles.avatarWrapper}>
-        {post.userId?.profilePicture ? (
-            <Image
-              source={{ uri: post.userId.profilePicture }}
-              style={styles.avatar}
-              cachePolicy="memory-disk"
-            />
-          ) : (
-            <View style={styles.avatarPlaceholder}>
-              <Text style={styles.avatarPlaceholderText}>
-                {post.userId?.firstName?.[0]?.toUpperCase() || '?'}
-              </Text>
-            </View>
-          )}
+      {/* User info + more menu row */}
+      <View style={[styles.userRow, { justifyContent: 'space-between' }]}>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <View style={styles.avatarWrapper}>
+            {post.userId?.profilePicture ? (
+              <Image
+                source={{ uri: post.userId.profilePicture }}
+                style={styles.avatar}
+                cachePolicy="memory-disk"
+              />
+            ) : (
+              <View style={styles.avatarPlaceholder}>
+                <Text style={styles.avatarPlaceholderText}>
+                  {post.userId?.firstName?.[0]?.toUpperCase() || '?'}
+                </Text>
+              </View>
+            )}
+          </View>
+          <TouchableOpacity
+            onPress={() => {
+              if (post.userId?._id) {
+                if (userId === post.userId._id) {
+                  navigation.navigate('Profile');
+                } else {
+                  navigation.navigate('UserProfile', { userId: post.userId._id });
+                }
+              }
+            }}
+          >
+            <Text style={styles.username}>
+              {(post.userId?.firstName || '') +
+                (post.userId?.lastName ? ' ' + post.userId.lastName : '') || 'User'}
+            </Text>
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity onPress={() => {
-          if (post.userId?._id) {
-            if (userId === post.userId._id) {
-              navigation.navigate('Profile'); // Go to own profile
-            } else {
-              navigation.navigate('UserProfile', { userId: post.userId._id });
-            }
-          }
-        }}>
-          <Text style={styles.username}>
-            {(post.userId?.firstName || '') + (post.userId?.lastName ? ' ' + post.userId.lastName : '') || 'User'}
-          </Text>
-        </TouchableOpacity>
+        {canDelete && (
+          <TouchableOpacity onPress={handleMorePress} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            {deleting ? (
+              <ActivityIndicator size="small" />
+            ) : (
+              <Feather name="more-vertical" size={20} />
+            )}
+          </TouchableOpacity>
+        )}
       </View>
+
       <TouchableOpacity onPress={() => onPress?.(post) ?? goToComments()}>
         <Text style={styles.content}>{post.content}</Text>
-     {post.images && post.images.length > 0 && (
-  <ScrollView horizontal style={{ marginTop: 8 }}>
-    {post.images.map((img, index) => {
-    
-      
-      // Smart URL conversion: use current user's API_BASE_URL with the filename
-      let imageUrl;
-      
-      if (img.url.includes('/uploads/')) {
-        // Extract the /uploads/filename part from any URL format
-        const uploadsPath = img.url.substring(img.url.indexOf('/uploads/'));
-        // Use current user's server base URL
-        imageUrl = `${API_BASE_URL}${uploadsPath}`;
-      } else {
-        // Fallback: use as is
-        imageUrl = img.url;
-      }
-      
-      
-
-      return (
-        <Image
-          key={index}
-          source={{ uri: imageUrl }}
-          style={{ width: 200, height: 200, borderRadius: 8, marginRight: 10 }}
-          onError={() => console.log(`Failed to load image: ${imageUrl}`)}
-          onLoad={() => console.log(`Successfully loaded: ${imageUrl}`)}
-        />
-      );
-    })}
-  </ScrollView>
-)}
-
+        {post.images && post.images.length > 0 && (
+          <ScrollView horizontal style={{ marginTop: 8 }}>
+            {post.images.map((img, index) => {
+              let imageUrl;
+              if (img.url.includes('/uploads/')) {
+                const uploadsPath = img.url.substring(img.url.indexOf('/uploads/'));
+                imageUrl = `${API_BASE_URL}${uploadsPath}`;
+              } else {
+                imageUrl = img.url;
+              }
+              return (
+                <Image
+                  key={index}
+                  source={{ uri: imageUrl }}
+                  style={{ width: 200, height: 200, borderRadius: 8, marginRight: 10 }}
+                  onError={() => console.log(`Failed to load image: ${imageUrl}`)}
+                  onLoad={() => console.log(`Loaded: ${imageUrl}`)}
+                />
+              );
+            })}
+          </ScrollView>
+        )}
       </TouchableOpacity>
 
       {post.bindItinerary && (
         <BindItineraryCard
           itinerary={post.bindItinerary}
-          onPress={() =>
-            navigation.navigate('ItineraryDetail', { itinerary: post.bindItinerary })
-          }
+          onPress={() => navigation.navigate('ItineraryDetail', { itinerary: post.bindItinerary })}
         />
       )}
       {post.bindTrip && (
         <BindTripCard
           trip={post.bindTrip}
-          onPress={() =>
-          navigation.navigate('TripDetail', { trip: post.bindTrip })
-          }
+          onPress={() => navigation.navigate('TripDetail', { trip: post.bindTrip })}
         />
       )}
-      <Text style={styles.timestamp}>
-        {new Date(post.createdAt).toLocaleString()}
-      </Text>
+      <Text style={styles.timestamp}>{new Date(post.createdAt).toLocaleString()}</Text>
 
-      {/* Actions row (like, comment, save, share) ABOVE comments preview */}
       <View style={styles.actions}>
-        <TouchableOpacity
-          onPress={toggleLike}
-          style={styles.actionButton}
-        >
+        <TouchableOpacity onPress={toggleLike} style={styles.actionButton}>
           <Ionicons
             name={liked ? 'heart' : 'heart-outline'}
             size={24}
@@ -347,10 +340,7 @@ const PostCard = ({ post, onPress, onToggleSave }) => {
           <Text style={styles.actionText}>{likesCount}</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          onPress={goToComments}
-          style={styles.actionButton}
-        >
+        <TouchableOpacity onPress={goToComments} style={styles.actionButton}>
           <Ionicons name="chatbubble-outline" size={24} color="#00C7BE" style={{ marginRight: 4 }} />
           <Text style={styles.actionText}>Comments</Text>
         </TouchableOpacity>
@@ -360,20 +350,15 @@ const PostCard = ({ post, onPress, onToggleSave }) => {
             name={saved ? 'bookmark' : 'bookmark-outline'}
             size={24}
             color={saved ? '#FFFF00' : '#00C7BE'}
-            style={{ marginRight: 4 }}/>
-        </TouchableOpacity>
-
-        <TouchableOpacity onPress={handleSharePress} style={styles.actionButton}>
-          <Ionicons
-            name="share-outline"
-            size={24}
-            color="#444"
             style={{ marginRight: 4 }}
           />
         </TouchableOpacity>
+
+        <TouchableOpacity onPress={handleSharePress} style={styles.actionButton}>
+          <Ionicons name="share-outline" size={24} color="#444" style={{ marginRight: 4 }} />
+        </TouchableOpacity>
       </View>
 
-      {/* Comments preview (now below actions) */}
       {commentsPreview.length > 0 && (
         <View style={styles.commentsPreviewRow}>
           {commentsPreview.map((c) => (
@@ -390,11 +375,13 @@ const PostCard = ({ post, onPress, onToggleSave }) => {
                 }}
               >
                 <Text style={styles.commentPreviewNameRow}>
-                  {c.userId?.firstName || ''}{c.userId?.lastName ? ` ${c.userId.lastName}` : ''}:
+                  {(c.userId?.firstName || '') +
+                    (c.userId?.lastName ? ' ' + c.userId.lastName : '') ||
+                    'User'}
                 </Text>
               </TouchableOpacity>
-              <Text style={styles.commentPreviewTextRow} numberOfLines={1}>
-                {c.content}
+              <Text style={styles.commentPreviewTextRow}>
+                {c.content ?? c.text ?? ''}
               </Text>
             </View>
           ))}
@@ -405,8 +392,7 @@ const PostCard = ({ post, onPress, onToggleSave }) => {
           </TouchableOpacity>
         </View>
       )}
-      
-      {/* Share Modal */}
+
       <ShareModal
         visible={shareModalVisible}
         onClose={() => {
@@ -420,32 +406,73 @@ const PostCard = ({ post, onPress, onToggleSave }) => {
         contentType="post"
         styles={shareModalStyles}
       />
+
+      <MoreMenu
+        visible={menuVisible}
+        onClose={() => setMenuVisible(false)}
+        options={[
+          {
+            label: 'Delete Post',
+            destructive: true,
+            icon: <Feather name="trash-2" size={18} color="#d32f2f" />,
+            onPress: () => {
+              Alert.alert(
+                'Delete post',
+                'Are you sure you want to delete this post? This action can not be undone.',
+                [
+                  { text: 'Cancel', style: 'cancel' },
+                  {
+                    text: 'Delete',
+                    style: 'destructive',
+                    onPress: confirmDelete,
+                  },
+                ]
+              );
+            },
+          },
+        ]}
+      />
+
+      {deleteError && (
+        <Text style={{ color: 'red', marginTop: 4 }}>
+          Error deleting post: {deleteError.message || 'Unknown error'}
+        </Text>
+      )}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container:   { padding: 14, backgroundColor: '#fff', marginBottom: 14, borderRadius: 12, elevation: 2, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 6, shadowOffset: { width: 0, height: 2 } },
-  content:     { fontSize: 16, marginBottom: 6 },
-  timestamp:   { fontSize: 12, color: 'gray', marginTop: 2 },
-  actions:     { flexDirection: 'row', marginTop: 10, alignItems: 'center' },
-  actionButton:{ flexDirection: 'row', alignItems: 'center', marginRight: 24, paddingVertical: 4 },
-  actionText:  { fontSize: 15, color: '#222' },
+  container: {
+    padding: 14,
+    backgroundColor: '#fff',
+    marginBottom: 14,
+    borderRadius: 12,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+  },
+  content: { fontSize: 16, marginBottom: 6 },
+  timestamp: { fontSize: 12, color: 'gray', marginTop: 2 },
+  actions: { flexDirection: 'row', marginTop: 10, alignItems: 'center' },
+  actionButton: { flexDirection: 'row', alignItems: 'center', marginRight: 24, paddingVertical: 4 },
+  actionText: { fontSize: 15, color: '#222' },
   userRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
   avatarWrapper: { width: 38, height: 38, borderRadius: 19, overflow: 'hidden', marginRight: 10, backgroundColor: '#eee' },
   avatar: { width: 38, height: 38, borderRadius: 19, resizeMode: 'cover' },
   avatarPlaceholder: { width: 38, height: 38, borderRadius: 19, backgroundColor: '#ccc', justifyContent: 'center', alignItems: 'center' },
   avatarPlaceholderText: { color: '#fff', fontWeight: 'bold' },
   username: { fontWeight: 'bold', fontSize: 15, color: '#222' },
-  commentsPreviewRow: { marginTop: 6, marginBottom: 2, backgroundColor: '#f8f8f8', borderRadius: 8, padding: 8 },
-  commentPreviewItemRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 2 },
-  commentPreviewNameRow: { fontWeight: 'bold', color: '#1877f2', fontSize: 14, marginRight: 4 },
-  commentPreviewTextRow: { fontSize: 14, color: '#222', flexShrink: 1 },
+  commentsPreviewRow: { marginTop: 6, marginBottom: 2, backgroundColor: '#f8f9f8', borderRadius: 8, padding: 8 },
   viewAllCommentsRow: { marginTop: 4 },
   viewAllCommentsText: { color: '#888', fontSize: 13, fontWeight: 'bold' },
+  commentPreviewItemRow: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 4, gap: 6 },
+  commentPreviewNameRow: { fontWeight: 'bold', color: '#1877f2', fontSize: 14, marginRight: 6 },
+  commentPreviewTextRow: { fontSize: 14, color: '#222', flex: 1 },
 });
 
-// Share Modal Styles
 const shareModalStyles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
