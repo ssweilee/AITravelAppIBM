@@ -33,45 +33,61 @@ function getOwnerField(type) {
 }
 
 exports.toggleLike = async (req, res) => {
-  const { type, id } = req.params;        
-  const userId       = req.user.userId;
-  const Model        = getModel(type);
-  const doc          = await Model.findById(id);
-  if (!doc) return res.status(404).json({ message: `${type} not found` });
+  try {
+    const { type, id } = req.params;
+    const userId = req.user.userId;
+    const Model = getModel(type);
+    const doc = await Model.findById(id);
+    if (!doc) return res.status(404).json({ message: `${type} not found` });
 
-  //  Ensure likes array exists
-  if (!doc.likes) doc.likes = [];
+    // ensure likes is an array
+    if (!Array.isArray(doc.likes)) {
+      doc.likes = [];
+    }
 
-  // pick the right array field
-  const arr = doc.likes;  
-  const idx = arr.findIndex(u=>u.toString()===userId);
-  if (idx >= 0) arr.splice(idx,1);
-  else          arr.push(userId);
+    const alreadyLiked = doc.likes.some(u => u.toString() === userId);
+    const likedNow = !alreadyLiked;
 
-  // Use the correct owner field for each model type
-  const ownerField = getOwnerField(type);
-  const ownerId = doc[ownerField];
+    if (likedNow) {
+      doc.likes.push(userId);
+    } else {
+      doc.likes = doc.likes.filter(u => u.toString() !== userId);
+    }
 
-  if (ownerId && ownerId.toString() !== userId) {
-    // send notification to the post owner if the user is not the owner
-    const me = await User.findById(userId).select('firstName');
-    await sendNotification({
-      recipient: ownerId, // CHANGED: was doc.userId, now uses correct field
-      sender: userId,
-      type: 'like',
-      text: `${me.firstName} liked your ${type}.`,
-      entityType: type.charAt(0).toUpperCase() + type.slice(1), // Capitalize the type
-      entityId: id,
-      link: `/${type}/${id}` // Link to the post, trip, or itinerary
+    // determine owner using helper
+    const ownerField = getOwnerField(type);
+    const ownerIdRaw = doc[ownerField];
+    const ownerId = ownerIdRaw ? ownerIdRaw.toString() : null;
+
+    if (ownerId && ownerId !== userId) {
+      const me = await User.findById(userId).select('firstName');
+      await sendNotification({
+        recipient: ownerId,
+        sender: userId,
+        type: 'like',
+        text: `${me.firstName} liked your ${type}.`,
+        entityType: type.charAt(0).toUpperCase() + type.slice(1),
+        entityId: id,
+        link: `/${type}/${id}`,
+      });
+    }
+
+    await doc.save();
+
+    res.json({
+      liked: likedNow,
+      count: doc.likes.length,
+    });
+  } catch (err) {
+    console.error('toggleLike error:', err);
+    res.status(500).json({
+      message: 'Failed to toggle like',
+      error: err.message,
     });
   }
-
-  await doc.save();
-  res.json({ 
-    liked: idx<0, 
-    count: arr.length
-  });
 };
+
+
 
 exports.toggleSave = async (req, res) => {
   const { type, id } = req.params;

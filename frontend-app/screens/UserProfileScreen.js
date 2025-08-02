@@ -201,8 +201,8 @@ const UserProfileScreen = ({ route }) => {
       {selectedTab === 'Post' && <UserPostList userId={user._id} />}
       {selectedTab === 'Itinerary' && (
         <ItineraryList
-          userId={user._id}
-          onPress={(item) => navigation.navigate('ItineraryDetail', { itinerary: item })}
+          userId={currentUserId !== user._id ? user._id : undefined}
+          onPress={(itinerary) => navigation.navigate('ItineraryDetail', { itinerary })}
         />
       )}
       {selectedTab === 'Trip' && (

@@ -23,7 +23,7 @@ const notificationSchema = new mongoose.Schema({
   },
   entityType: {
     type: String, // e.g. 'Post', 'Comment', 'Itinerary'
-    enum: ['Post', 'Comment', 'Itinerary', 'Custom'],
+    enum: ['Post', 'Comment', 'Itinerary', 'Custom', 'Trip'],
     required: true
   },
   entityId: {

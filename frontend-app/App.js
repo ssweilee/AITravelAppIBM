@@ -8,6 +8,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { AuthProvider } from './contexts/AuthContext';
+import { NotificationsProvider } from './contexts/NotificationsContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons, MaterialIcons, FontAwesome } from '@expo/vector-icons';
 
@@ -108,49 +109,51 @@ export default function App() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <AuthProvider>
-          <NavigationContainer>
-            <Stack.Navigator initialRouteName={initialRoute}>
-              <Stack.Screen name="Signup" component={SignupScreen} />
-              <Stack.Screen name="SignupDetails" component={SignupDetailsScreen} />
-              <Stack.Screen name="Login" component={LoginScreen} />
-              <Stack.Screen name="Interest" component={InterestScreen} />
-              <Stack.Screen
-                name="Main"
-                component={MainAppTabs}
-                options={({ route }) => ({
-                  headerShown: false,
-                  gestureEnabled: false,
-                  animation: route?.params?.fromMessages ? 'slide_from_left' : 'default',
-                })}
-              />
-              <Stack.Screen name="UserProfile" component={UserProfileScreen} />
-              <Stack.Screen name="Profile" component={ProfileScreen} />
-              <Stack.Screen name="Chat" component={ChatScreen} />
-              <Stack.Screen name="PostDetail" component={PostDetailScreen} />
-              <Stack.Screen name="EditProfile" component={EditProfileScreen} />
-              <Stack.Screen
-                name="Messages"
-                component={MessagesScreen}
-                options={({ route }) => ({
-                  animation: route?.params?.fromSettings ? 'slide_from_left' : 'default',
-                })}
-              />
-              <Stack.Screen name="Create New Group" component={CreateGroupChatScreen} />
-              <Stack.Screen name="Chat Settings" component={ChatSettingScreen} options={{ headerShown: false }} />
-              <Stack.Screen name="Members" component={GroupChatMembersScreen} />
-              <Stack.Screen name="CreateItinerary" component={CreateItineraryScreen} options={{ headerShown: false }} />
-              <Stack.Screen name="CreateTrip" component={CreateTripScreen} options={{ headerShown: false }} />
-              <Stack.Screen name="CreatePost" component={CreatePostScreen} options={{ headerShown: false }} />
-              <Stack.Screen name="ItineraryDetail" component={ItineraryDetailScreen} options={{ headerShown: false }} />
-              <Stack.Screen name="TripDetail" component={TripDetailScreen} options={{ headerShown: false }} />
-              <Stack.Screen name="AccountSettings" component={AccountSettingsScreen} />
-              <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ title: 'Notifications' }} />
-              <Stack.Screen name="HotelSearch" component={HotelSearchScreen} />
-              <Stack.Screen name="FlightSearch" component={FlightSearchScreen} />
-              <Stack.Screen name="HotelList" component={HotelListScreen} />
-              <Stack.Screen name="SavedPosts" component={SavedPostsScreen} options={{ title: 'Saved Content' }} />
-            </Stack.Navigator>
-          </NavigationContainer>
+          <NotificationsProvider>
+            <NavigationContainer>
+              <Stack.Navigator initialRouteName={initialRoute}>
+                <Stack.Screen name="Signup" component={SignupScreen} />
+                <Stack.Screen name="SignupDetails" component={SignupDetailsScreen} />
+                <Stack.Screen name="Login" component={LoginScreen} />
+                <Stack.Screen name="Interest" component={InterestScreen} />
+                <Stack.Screen
+                  name="Main"
+                  component={MainAppTabs}
+                  options={({ route }) => ({
+                    headerShown: false,
+                    gestureEnabled: false,
+                    animation: route?.params?.fromMessages ? 'slide_from_left' : 'default',
+                  })}
+                />
+                <Stack.Screen name="UserProfile" component={UserProfileScreen} />
+                <Stack.Screen name="Profile" component={ProfileScreen} />
+                <Stack.Screen name="Chat" component={ChatScreen} />
+                <Stack.Screen name="PostDetail" component={PostDetailScreen} />
+                <Stack.Screen name="EditProfile" component={EditProfileScreen} />
+                <Stack.Screen
+                  name="Messages"
+                  component={MessagesScreen}
+                  options={({ route }) => ({
+                    animation: route?.params?.fromSettings ? 'slide_from_left' : 'default',
+                  })}
+                />
+                <Stack.Screen name="Create New Group" component={CreateGroupChatScreen} />
+                <Stack.Screen name="Chat Settings" component={ChatSettingScreen} options={{ headerShown: false }} />
+                <Stack.Screen name="Members" component={GroupChatMembersScreen} />
+                <Stack.Screen name="CreateItinerary" component={CreateItineraryScreen} options={{ headerShown: false }} />
+                <Stack.Screen name="CreateTrip" component={CreateTripScreen} options={{ headerShown: false }} />
+                <Stack.Screen name="CreatePost" component={CreatePostScreen} options={{ headerShown: false }} />
+                <Stack.Screen name="ItineraryDetail" component={ItineraryDetailScreen} options={{ headerShown: false }} />
+                <Stack.Screen name="TripDetail" component={TripDetailScreen} options={{ headerShown: false }} />
+                <Stack.Screen name="AccountSettings" component={AccountSettingsScreen} />
+                <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ title: 'Notifications' }} />
+                <Stack.Screen name="HotelSearch" component={HotelSearchScreen} />
+                <Stack.Screen name="FlightSearch" component={FlightSearchScreen} />
+                <Stack.Screen name="HotelList" component={HotelListScreen} />
+                <Stack.Screen name="SavedPosts" component={SavedPostsScreen} options={{ title: 'Saved Content' }} />
+              </Stack.Navigator>
+            </NavigationContainer>
+          </NotificationsProvider>
         </AuthProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

@@ -1,6 +1,6 @@
 // frontend-app/screens/SearchScreen.js
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import {
   View,
@@ -17,7 +17,7 @@ import {
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import debounce from 'lodash.debounce';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 
 import { API_BASE_URL } from '../config';
 import HotelSearchScreen from './HotelSearchScreen';
@@ -129,6 +129,21 @@ export default function SearchScreen() {
     return () => debouncedFetch.cancel();
   }, [query, selectedTab]);
 
+  // Refresh when screen regains focus so dynamic counts (likes/etc) stay fresh
+  useFocusEffect(
+    useCallback(() => {
+      if (selectedTab === 'Posts') {
+        fetchSearchResults(query, 'Posts', 1);
+      } else if (selectedTab === 'Users') {
+        Object.entries(expandedUsers).forEach(([uid, expanded]) => {
+          if (expanded) {
+            loadUserDetails(uid, true);
+          }
+        });
+      }
+    }, [query, selectedTab, expandedUsers])
+  );
+
   // load more on scroll
   const handleLoadMore = () => {
     if (selectedTab === 'Users' && userHasMore)
@@ -139,16 +154,20 @@ export default function SearchScreen() {
   };
 
   // when a user row expands, grab their top 3 posts + top 3 itins
-  const loadUserDetails = async userId => {
-    if (userPosts[userId] === undefined) {
+  const loadUserDetails = async (userId, force = false) => {
+    if (force || userPosts[userId] === undefined) {
       setUserPosts(u => ({ ...u, [userId]: null }));
       setUserItins(u => ({ ...u, [userId]: null }));
+
+      // debug visibility
+      console.log(`[loadUserDetails] fetching details for user ${userId} (force=${force})`);
 
       const postsData = await safeFetch(`${API_BASE_URL}/api/posts/user/${userId}`);
       const posts     = Array.isArray(postsData) ? postsData.slice(0, 3) : [];
       setUserPosts(u => ({ ...u, [userId]: posts }));
 
       const itinsData = await safeFetch(`${API_BASE_URL}/api/itineraries/${userId}`);
+      console.log(`[loadUserDetails] raw itineraries for user ${userId}:`, itinsData);
       const itins     = Array.isArray(itinsData) ? itinsData.slice(0, 3) : [];
       setUserItins(u => ({ ...u, [userId]: itins }));
     }
@@ -157,7 +176,9 @@ export default function SearchScreen() {
   const toggleExpand = userId => {
     setExpandedUsers(e => {
       const now = !e[userId];
-      if (now) loadUserDetails(userId);
+      if (now) {
+        loadUserDetails(userId, true); // always force refresh when expanding
+      }
       return { ...e, [userId]: now };
     });
   };
@@ -479,4 +500,6 @@ const styles = StyleSheet.create({
   emptyText: { textAlign: 'center', marginTop: 20, color: '#999' },
   emptyTextContainer: { flex: 1, justifyContent: 'center' },
 });
+
+
 

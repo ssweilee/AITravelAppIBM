@@ -1,5 +1,12 @@
+// components/TripList.js
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, FlatList, StyleSheet } from 'react-native';
+import {
+  View,
+  Text,
+  FlatList,
+  StyleSheet,
+  RefreshControl,
+} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_BASE_URL } from '../../config';
 import TripCard from '../TripCard';
@@ -7,54 +14,63 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 
 const TripList = ({ refreshTrigger, userId, onPress }) => {
   const [trips, setTrips] = useState([]);
+  const [refreshing, setRefreshing] = useState(false);
   const navigation = useNavigation();
 
-  const fetchTrips = async () => {
+  const fetchTrips = useCallback(async () => {
     try {
       const token = await AsyncStorage.getItem('token');
       if (!token) return;
 
       let endpoint;
       if (userId) {
-        // Viewing someone else's profile - get their public trips
         endpoint = `${API_BASE_URL}/api/trips/user/${userId}`;
       } else {
-        // Viewing your own profile - get your trips (both public and private)
         endpoint = `${API_BASE_URL}/api/trips/mine`;
       }
 
       const response = await fetch(endpoint, {
         headers: {
-          Authorization: `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       });
 
       const data = await response.json();
       if (response.ok) {
         setTrips(data);
       } else {
-        console.log('Failed to fetch trips:', data);
+        console.warn('Failed to fetch trips:', data);
       }
     } catch (err) {
       console.error('Error fetching trips:', err);
     }
-  };
+  }, [userId]);
 
   useEffect(() => {
     fetchTrips();
-  }, [refreshTrigger, userId]);
+  }, [refreshTrigger, userId, fetchTrips]);
 
-  // Refetch trips when screen comes into focus (after returning from detail screen)
   useFocusEffect(
     useCallback(() => {
       fetchTrips();
-    }, [userId])
+    }, [fetchTrips])
   );
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchTrips();
+    setRefreshing(false);
+  };
+
+  const handleTripDeleted = (deletedId) => {
+    setTrips((prev) => prev.filter((t) => t._id !== deletedId));
+  };
 
   const renderItem = ({ item }) => (
     <TripCard
       trip={item}
       onPress={onPress || ((trip) => navigation.navigate('TripDetail', { trip }))}
+      onDeleted={handleTripDeleted}
     />
   );
 
@@ -64,23 +80,20 @@ const TripList = ({ refreshTrigger, userId, onPress }) => {
       keyExtractor={(item) => item._id}
       renderItem={renderItem}
       contentContainerStyle={{ marginTop: 10 }}
-      ListEmptyComponent={<Text>No Trips Yet</Text>}
+      ListEmptyComponent={<Text style={styles.emptyText}>No Trips Yet</Text>}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+      }
     />
   );
 };
 
 const styles = StyleSheet.create({
-  tripItem: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    padding: 10,
-    marginBottom: 10,
-    borderRadius: 5
+  emptyText: {
+    textAlign: 'center',
+    marginTop: 20,
+    color: '#666',
   },
-  tripAuthor: {
-    fontWeight: 'bold',
-    marginBottom: 5
-  }
 });
 
 export default TripList;
