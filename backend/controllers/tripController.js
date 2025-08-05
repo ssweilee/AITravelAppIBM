@@ -3,6 +3,7 @@ const User = require('../models/User');
 const Post = require('../models/Post');
 const Itinerary = require('../models/Itinerary');
 const Comment = require('../models/Comment');
+const sendNotification = require('../utils/notify');
 
 exports.createTrip = async (req, res) => {
   try {
@@ -54,14 +55,14 @@ exports.createTrip = async (req, res) => {
       $push: { trips: trip._id }
     });
 
-    // Populate the response (no likes population)
+    // Populate the response
     const populatedTrip = await Trip.findById(trip._id)
       .populate('userId', 'firstName lastName')
       .populate('posts');
 
-    res.status(201).json({ 
-      message: 'Trip created successfully', 
-      trip: populatedTrip 
+    res.status(201).json({
+      message: 'Trip created successfully',
+      trip: populatedTrip
     });
   } catch (error) {
     console.error('Error creating trip:', error);
@@ -72,11 +73,10 @@ exports.createTrip = async (req, res) => {
 exports.getUserTrips = async (req, res) => {
   try {
     const userId = req.user.userId;
-    
+
     const trips = await Trip.find({ userId })
       .populate('userId', 'firstName lastName')
       .populate('posts')
-      // REMOVED: .populate('likes', 'firstName lastName') - This was causing the issue
       .populate('comments')
       .sort({ createdAt: -1 });
 
@@ -90,11 +90,10 @@ exports.getUserTrips = async (req, res) => {
 exports.getTripsByUserId = async (req, res) => {
   try {
     const { userId } = req.params;
-    
+
     const trips = await Trip.find({ userId, isPublic: true })
       .populate('userId', 'firstName lastName')
       .populate('posts')
-      // REMOVED: .populate('likes', 'firstName lastName') - This was causing the issue
       .populate('comments')
       .sort({ createdAt: -1 });
 
@@ -110,7 +109,6 @@ exports.getAllTrips = async (req, res) => {
     const trips = await Trip.find({ isPublic: true })
       .populate('userId', 'firstName lastName')
       .populate('posts')
-      // REMOVED: .populate('likes', 'firstName lastName') - This was causing the issue
       .populate('comments')
       .sort({ createdAt: -1 });
 
@@ -124,11 +122,10 @@ exports.getAllTrips = async (req, res) => {
 exports.getTripById = async (req, res) => {
   try {
     const { tripId } = req.params;
-    
+
     const trip = await Trip.findById(tripId)
       .populate('userId', 'firstName lastName')
       .populate('posts')
-      // REMOVED: .populate('likes', 'firstName lastName') - This was causing the issue
       .populate({
         path: 'comments',
         populate: {
@@ -154,7 +151,6 @@ exports.updateTrip = async (req, res) => {
     const userId = req.user.userId;
     const { title, destination, description, tags, budget, startDate, endDate, selectedPosts, isPublic } = req.body;
 
-    // Find the trip and verify ownership
     const trip = await Trip.findById(tripId);
     if (!trip) {
       return res.status(404).json({ message: 'Trip not found' });
@@ -164,12 +160,10 @@ exports.updateTrip = async (req, res) => {
       return res.status(403).json({ message: 'You can only edit your own trips' });
     }
 
-    // Validate dates if provided
     if (startDate && endDate && new Date(endDate) <= new Date(startDate)) {
       return res.status(400).json({ message: 'End date must be after start date' });
     }
 
-    // Verify posts ownership if provided
     if (selectedPosts && selectedPosts.length > 0) {
       const userPosts = await Post.find({ _id: { $in: selectedPosts }, userId });
       if (userPosts.length !== selectedPosts.length) {
@@ -177,7 +171,6 @@ exports.updateTrip = async (req, res) => {
       }
     }
 
-    // Update the trip
     const updateData = {};
     if (title) updateData.title = title;
     if (destination) updateData.destination = destination;
@@ -193,9 +186,9 @@ exports.updateTrip = async (req, res) => {
       .populate('userId', 'firstName lastName')
       .populate('posts');
 
-    res.status(200).json({ 
-      message: 'Trip updated successfully', 
-      trip: updatedTrip 
+    res.status(200).json({
+      message: 'Trip updated successfully',
+      trip: updatedTrip
     });
   } catch (error) {
     console.error('Error updating trip:', error);
@@ -204,32 +197,52 @@ exports.updateTrip = async (req, res) => {
 };
 
 exports.deleteTrip = async (req, res) => {
+  const session = await Trip.startSession();
   try {
     const { tripId } = req.params;
     const userId = req.user.userId;
 
-    // Find the trip and verify ownership
-    const trip = await Trip.findById(tripId);
+    session.startTransaction();
+
+    const trip = await Trip.findById(tripId).session(session);
     if (!trip) {
+      await session.abortTransaction();
       return res.status(404).json({ message: 'Trip not found' });
     }
 
     if (trip.userId.toString() !== userId) {
+      await session.abortTransaction();
       return res.status(403).json({ message: 'You can only delete your own trips' });
     }
 
-    // Remove trip from user's trips array
-    await User.findByIdAndUpdate(userId, {
-      $pull: { trips: tripId }
-    });
+    // Delete comments tied to this trip
+    await Comment.deleteMany({ targetModel: 'Trip', targetId: trip._id }).session(session);
 
-    // Delete the trip
-    await Trip.findByIdAndDelete(tripId);
+    // Unset bindTrip on posts pointing to this trip (if that relationship exists)
+    await Post.updateMany(
+      { bindTrip: trip._id },
+      { $unset: { bindTrip: '' } },
+      { session }
+    );
 
-    res.status(200).json({ message: 'Trip deleted successfully' });
+    // Remove trip from user's trip list
+    await User.findByIdAndUpdate(
+      userId,
+      { $pull: { trips: tripId } },
+      { session }
+    );
+
+    // Hard delete the trip
+    await Trip.deleteOne({ _id: tripId }).session(session);
+
+    await session.commitTransaction();
+    res.status(200).json({ message: 'Trip deleted successfully (hard-deleted)' });
   } catch (error) {
+    await session.abortTransaction();
     console.error('Error deleting trip:', error);
     res.status(500).json({ message: 'Failed to delete trip', error: error.message });
+  } finally {
+    session.endSession();
   }
 };
 
@@ -237,7 +250,7 @@ exports.addTripComment = async (req, res) => {
   const { tripId } = req.params;
   const { text } = req.body;
   const userId = req.user.userId;
-  
+
   try {
     const comment = new Comment({
       userId,
@@ -246,13 +259,31 @@ exports.addTripComment = async (req, res) => {
       targetModel: 'Trip',
     });
     await comment.save();
-    
+
     const trip = await Trip.findById(tripId);
+    if (!trip) {
+      return res.status(404).json({ message: 'Trip not found' });
+    }
     trip.comments.push(comment._id);
     await trip.save();
-    
+
+    // Notify trip owner about the new comment (if not self)
+    if (trip.userId.toString() !== userId) {
+      const me = await User.findById(userId).select('firstName');
+      await sendNotification({
+        recipient: trip.userId,
+        sender: userId,
+        type: 'comment',
+        text: `${me.firstName} commented on your trip.`,
+        entityType: 'Trip',
+        entityId: trip._id,
+        link: `/trip/${tripId}`
+      });
+    }
+
     res.status(201).json(comment);
   } catch (err) {
+    console.error('addTripComment error:', err);
     res.status(500).json({ message: 'Failed to add comment', error: err.message });
   }
 };
@@ -269,5 +300,50 @@ exports.getTripComments = async (req, res) => {
     res.json(comments);
   } catch (err) {
     res.status(500).json({ message: 'Failed to retrieve comments', error: err.message });
+  }
+};
+
+exports.deleteTripComment = async (req, res) => {
+  const session = await Comment.startSession();
+  try {
+    const { tripId, commentId } = req.params;
+    const userId = req.user.userId;
+
+    session.startTransaction();
+
+    const comment = await Comment.findById(commentId).session(session);
+    if (!comment) {
+      await session.abortTransaction();
+      return res.status(404).json({ message: 'Comment not found' });
+    }
+
+    if (comment.targetModel !== 'Trip' || comment.targetId.toString() !== tripId) {
+      await session.abortTransaction();
+      return res.status(400).json({ message: 'Comment does not belong to specified trip' });
+    }
+
+    if (comment.userId.toString() !== userId) {
+      await session.abortTransaction();
+      return res.status(403).json({ message: 'You can only delete your own comments' });
+    }
+
+    // Remove reference from the trip
+    await Trip.findByIdAndUpdate(
+      tripId,
+      { $pull: { comments: comment._id } },
+      { session }
+    );
+
+    // Hard delete the comment
+    await Comment.deleteOne({ _id: commentId }).session(session);
+
+    await session.commitTransaction();
+    res.status(200).json({ success: true, message: 'Comment deleted' });
+  } catch (err) {
+    await session.abortTransaction();
+    console.error('deleteTripComment error:', err);
+    res.status(500).json({ message: 'Failed to delete comment', error: err.message });
+  } finally {
+    session.endSession();
   }
 };

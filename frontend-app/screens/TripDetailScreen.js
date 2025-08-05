@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+// screens/TripDetailScreen.js
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,12 +10,22 @@ import {
   TextInput,
   Alert,
   Image,
+  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons, Feather } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_BASE_URL } from '../config';
+import MoreMenu from '../components/MoreMenu';
 import PostCard from '../components/PostCard';
+
+const parseJwt = (token) => {
+  try {
+    return JSON.parse(atob(token.split('.')[1]));
+  } catch {
+    return null;
+  }
+};
 
 const TripDetailScreen = ({ route, navigation }) => {
   const { trip: initialTrip } = route.params;
@@ -28,33 +39,58 @@ const TripDetailScreen = ({ route, navigation }) => {
   const [newComment, setNewComment] = useState('');
   const [commentLoading, setCommentLoading] = useState(false);
 
+  // Comment menu state
+  const [commentMenuVisible, setCommentMenuVisible] = useState(false);
+  const [menuComment, setMenuComment] = useState(null);
+  const [deletingComment, setDeletingComment] = useState(false);
+  const [commentDeleteError, setCommentDeleteError] = useState(null);
+
   useEffect(() => {
     const initializeData = async () => {
       const token = await AsyncStorage.getItem('token');
       if (token) {
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        setUserId(payload.userId);
-        setLiked(trip.likes?.includes(payload.userId) || false);
-        setLikesCount(trip.likes?.length || 0);
-        setSaved(trip.savedBy?.includes(payload.userId) || false);
+        const payload = parseJwt(token);
+        if (payload?.userId) {
+          setUserId(payload.userId);
+          setLiked(trip.likes?.includes(payload.userId) || false);
+          setLikesCount(trip.likes?.length || 0);
+          setSaved(trip.savedBy?.includes(payload.userId) || false);
+        }
       }
     };
 
     initializeData();
     fetchTripDetails();
     fetchComments();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trip._id]);
 
   const fetchComments = async () => {
     try {
       const token = await AsyncStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/api/trips/${trip._id}/comments`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await fetch(
+        `${API_BASE_URL}/api/trips/${trip._id}/comments`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
 
       if (response.ok) {
-        const commentsData = await response.json();
-        setComments(commentsData);
+        let commentsData = await response.json();
+        if (Array.isArray(commentsData)) {
+          // Normalize shape
+          commentsData = commentsData.map((c) => ({
+            ...c,
+            content: c.content ?? c.text ?? '',
+          }));
+          commentsData.sort(
+            (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+          );
+          setComments(commentsData);
+        }
+      } else {
+        const err = await response.text();
+        console.warn('Failed to fetch trip comments:', err);
       }
     } catch (error) {
       console.error('Error fetching comments:', error);
@@ -70,31 +106,31 @@ const TripDetailScreen = ({ route, navigation }) => {
     setCommentLoading(true);
     try {
       const token = await AsyncStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/api/trips/${trip._id}/comment`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({ text: newComment.trim() })
-      });
+      const response = await fetch(
+        `${API_BASE_URL}/api/trips/${trip._id}/comment`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ text: newComment.trim() }),
+        }
+      );
 
+      const payload = await response.json();
       if (response.ok) {
-        const newCommentData = await response.json();
-        // Add user info to the new comment (since we know current user)
-        const token = await AsyncStorage.getItem('token');
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        const userInfo = { _id: payload.userId }; // You might want to get full user info
-        
-        newCommentData.userId = userInfo;
-        setComments(prev => [newCommentData, ...prev]);
+        // Optimistically prepend
+        const newC = {
+          ...payload,
+          content: payload.content ?? payload.text ?? '',
+        };
+        setComments((prev) => [newC, ...prev]);
         setNewComment('');
-        
-        // Refresh comments to get properly populated user info
+        // Optionally refresh to get full nested user info
         fetchComments();
       } else {
-        const errorData = await response.json();
-        Alert.alert('Error', errorData.message || 'Failed to add comment');
+        Alert.alert('Error', payload.message || 'Failed to add comment');
       }
     } catch (error) {
       console.error('Error adding comment:', error);
@@ -109,7 +145,7 @@ const TripDetailScreen = ({ route, navigation }) => {
       setLoading(true);
       const token = await AsyncStorage.getItem('token');
       const response = await fetch(`${API_BASE_URL}/api/trips/${trip._id}`, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
 
       if (response.ok) {
@@ -137,6 +173,16 @@ const TripDetailScreen = ({ route, navigation }) => {
       if (res.ok) {
         setLiked(result.liked);
         setLikesCount(result.count);
+        setTrip((t) => {
+          const updated = { ...t };
+          if (!updated.likes) updated.likes = [];
+          if (result.liked) {
+            if (!updated.likes.includes(userId)) updated.likes.push(userId);
+          } else {
+            updated.likes = updated.likes.filter((id) => id !== userId);
+          }
+          return updated;
+        });
       }
     } catch (err) {
       console.error('Error toggling like:', err);
@@ -152,6 +198,16 @@ const TripDetailScreen = ({ route, navigation }) => {
       );
       const { saved: nowSaved } = await res.json();
       setSaved(nowSaved);
+      setTrip((t) => {
+        const updated = { ...t };
+        if (!updated.savedBy) updated.savedBy = [];
+        if (nowSaved) {
+          if (!updated.savedBy.includes(userId)) updated.savedBy.push(userId);
+        } else {
+          updated.savedBy = updated.savedBy.filter((id) => id !== userId);
+        }
+        return updated;
+      });
     } catch (err) {
       console.error('Error toggling save:', err);
     }
@@ -176,13 +232,75 @@ const TripDetailScreen = ({ route, navigation }) => {
     return `${diffDays} day${diffDays > 1 ? 's' : ''}`;
   };
 
-  // Helper function to get image URL
   const getImageUrl = (imgUrl) => {
     if (imgUrl && imgUrl.includes('/uploads/')) {
       const uploadsPath = imgUrl.substring(imgUrl.indexOf('/uploads/'));
       return `${API_BASE_URL}${uploadsPath}`;
     }
     return imgUrl;
+  };
+
+  const onCommentLongPress = (comment) => {
+    if (userId && comment.userId?._id?.toString() === userId.toString()) {
+      setMenuComment(comment);
+      setCommentMenuVisible(true);
+      setCommentDeleteError(null);
+    }
+  };
+
+  const handleDeleteComment = async () => {
+    if (!menuComment) return;
+    if (!userId) {
+      Alert.alert('Error', 'Not authenticated');
+      return;
+    }
+    if (menuComment.userId?._id?.toString() !== userId.toString()) {
+      Alert.alert('Cannot delete', 'You can only delete your own comment.');
+      return;
+    }
+
+    Alert.alert(
+      'Delete comment',
+      'Are you sure you want to delete this comment? This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            setDeletingComment(true);
+            try {
+              const token = await AsyncStorage.getItem('token');
+              const res = await fetch(
+                `${API_BASE_URL}/api/trips/${trip._id}/comment/${menuComment._id}`,
+                {
+                  method: 'DELETE',
+                  headers: { Authorization: `Bearer ${token}` },
+                }
+              );
+              const body = await res.json();
+              if (res.ok) {
+                setComments((prev) =>
+                  prev.filter((c) => c._id !== menuComment._id)
+                );
+                setCommentMenuVisible(false);
+                setMenuComment(null);
+              } else {
+                console.error('Delete comment failed:', body);
+                setCommentDeleteError(body.message || 'Failed to delete');
+                Alert.alert('Delete failed', body.message || 'Could not delete comment');
+              }
+            } catch (err) {
+              console.error('Error deleting comment:', err);
+              setCommentDeleteError(err.message);
+              Alert.alert('Error', 'Network error. Please try again.');
+            } finally {
+              setDeletingComment(false);
+            }
+          },
+        },
+      ]
+    );
   };
 
   if (loading && !trip.posts) {
@@ -212,7 +330,7 @@ const TripDetailScreen = ({ route, navigation }) => {
           <View style={styles.avatarWrapper}>
             <Image
               source={
-                trip.userId?.profilePicture 
+                trip.userId?.profilePicture
                   ? { uri: trip.userId.profilePicture }
                   : require('../assets/icon.png')
               }
@@ -221,7 +339,9 @@ const TripDetailScreen = ({ route, navigation }) => {
           </View>
           <View style={styles.userInfo}>
             <Text style={styles.username}>
-              {(trip.userId?.firstName || '') + (trip.userId?.lastName ? ' ' + trip.userId.lastName : '') || 'User'}
+              {(trip.userId?.firstName || '') +
+                (trip.userId?.lastName ? ' ' + trip.userId.lastName : '') ||
+                'User'}
             </Text>
             <Text style={styles.postDate}>
               {new Date(trip.createdAt).toLocaleDateString()}
@@ -232,13 +352,13 @@ const TripDetailScreen = ({ route, navigation }) => {
         {/* Trip Info */}
         <View style={styles.tripInfo}>
           <Text style={styles.tripTitle}>{trip.title}</Text>
-          
+
           <View style={styles.tripMeta}>
             <View style={styles.metaRow}>
               <Ionicons name="location-outline" size={18} color="#666" />
               <Text style={styles.destination}>{trip.destination}</Text>
             </View>
-            
+
             <View style={styles.metaRow}>
               <Ionicons name="time-outline" size={18} color="#666" />
               <Text style={styles.duration}>{calculateTripDuration()}</Text>
@@ -272,21 +392,31 @@ const TripDetailScreen = ({ route, navigation }) => {
                   activeOpacity={0.7}
                 >
                   <View style={styles.postBoxContent}>
-                    {/* Show post image if available */}
                     {post.images && post.images.length > 0 ? (
                       <>
-                        <Text style={styles.postBoxTextWithImage} numberOfLines={2}>
+                        <Text
+                          style={styles.postBoxTextWithImage}
+                          numberOfLines={2}
+                        >
                           {post.content || 'Post content'}
                         </Text>
                         <View style={styles.postImageContainer}>
                           <Image
                             source={{ uri: getImageUrl(post.images[0].url) }}
                             style={styles.postBoxImage}
-                            onError={() => console.log(`Failed to load image: ${getImageUrl(post.images[0].url)}`)}
+                            onError={() =>
+                              console.log(
+                                `Failed to load image: ${getImageUrl(
+                                  post.images[0].url
+                                )}`
+                              )
+                            }
                           />
                           {post.images.length > 1 && (
                             <View style={styles.imageCountBadge}>
-                              <Text style={styles.imageCountText}>+{post.images.length - 1}</Text>
+                              <Text style={styles.imageCountText}>
+                                +{post.images.length - 1}
+                              </Text>
                             </View>
                           )}
                         </View>
@@ -296,18 +426,23 @@ const TripDetailScreen = ({ route, navigation }) => {
                         {post.content || 'Post content'}
                       </Text>
                     )}
-                    
+
                     <View style={styles.postBoxFooter}>
                       <Text style={styles.postBoxDate}>
-                        {new Date(post.createdAt).toLocaleDateString('en-UK', {
-                          day: 'numeric',
-                          month: 'short'
-                        })}
+                        {new Date(post.createdAt).toLocaleDateString(
+                          'en-UK',
+                          {
+                            day: 'numeric',
+                            month: 'short',
+                          }
+                        )}
                       </Text>
                       {post.likes && post.likes.length > 0 && (
                         <View style={styles.postBoxLikes}>
                           <Ionicons name="heart" size={12} color="#e74c3c" />
-                          <Text style={styles.postBoxLikesText}>{post.likes.length}</Text>
+                          <Text style={styles.postBoxLikesText}>
+                            {post.likes.length}
+                          </Text>
                         </View>
                       )}
                     </View>
@@ -331,7 +466,12 @@ const TripDetailScreen = ({ route, navigation }) => {
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.actionButton}>
-            <Ionicons name="chatbubble-outline" size={24} color="#007AFF" style={{ marginRight: 4 }} />
+            <Ionicons
+              name="chatbubble-outline"
+              size={24}
+              color="#007AFF"
+              style={{ marginRight: 4 }}
+            />
             <Text style={styles.actionText}>{comments.length}</Text>
           </TouchableOpacity>
 
@@ -347,9 +487,10 @@ const TripDetailScreen = ({ route, navigation }) => {
 
         {/* Comments section */}
         <View style={styles.commentsSection}>
-          <Text style={styles.sectionTitle}>Comments ({comments.length})</Text>
-          
-          {/* Add comment input */}
+          <Text style={styles.sectionTitle}>
+            Comments ({comments.length})
+          </Text>
+
           <View style={styles.addCommentContainer}>
             <TextInput
               style={styles.commentInput}
@@ -359,8 +500,11 @@ const TripDetailScreen = ({ route, navigation }) => {
               multiline
               maxLength={500}
             />
-            <TouchableOpacity 
-              style={[styles.addCommentButton, commentLoading && styles.addCommentButtonDisabled]}
+            <TouchableOpacity
+              style={[
+                styles.addCommentButton,
+                commentLoading && styles.addCommentButtonDisabled,
+              ]}
               onPress={addComment}
               disabled={commentLoading}
             >
@@ -372,43 +516,89 @@ const TripDetailScreen = ({ route, navigation }) => {
             </TouchableOpacity>
           </View>
 
-          {/* Comments list */}
           {comments.length === 0 ? (
-            <Text style={styles.noComments}>No comments yet. Be the first to comment!</Text>
+            <Text style={styles.noComments}>
+              No comments yet. Be the first to comment!
+            </Text>
           ) : (
             <View style={styles.commentsList}>
-              {comments.map((comment, index) => (
-                <View key={comment._id || `comment-${index}`} style={styles.commentItem}>
+              {comments.map((comment, index) => {
+                const isOwner =
+                  userId &&
+                  comment.userId?._id?.toString() === userId.toString();
+                return (
                   <TouchableOpacity
-                    onPress={() => {
-                      if (comment.userId?._id) {
-                        if (userId === comment.userId._id) {
-                          navigation.navigate('Profile');
-                        } else {
-                          navigation.navigate('UserProfile', { userId: comment.userId._id });
-                        }
-                      }
-                    }}
+                    key={comment._id || `comment-${index}`}
+                    style={styles.commentItem}
+                    onLongPress={() => onCommentLongPress(comment)}
+                    delayLongPress={400}
+                    activeOpacity={0.8}
                   >
-                    <Text style={styles.commentAuthor}>
-                      {comment.userId?.firstName || ''} {comment.userId?.lastName || ''}
+                    <TouchableOpacity
+                      onPress={() => {
+                        if (comment.userId?._id) {
+                          if (userId === comment.userId._id) {
+                            navigation.navigate('Profile');
+                          } else {
+                            navigation.navigate('UserProfile', {
+                              userId: comment.userId._id,
+                            });
+                          }
+                        }
+                      }}
+                    >
+                      <Text style={styles.commentAuthor}>
+                        {comment.userId?.firstName || ''}{' '}
+                        {comment.userId?.lastName || ''}
+                      </Text>
+                    </TouchableOpacity>
+                    <Text style={styles.commentContent}>
+                      {comment.content}
+                    </Text>
+                    <Text style={styles.commentDate}>
+                      {new Date(comment.createdAt).toLocaleDateString(
+                        'en-UK',
+                        {
+                          day: 'numeric',
+                          month: 'short',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        }
+                      )}
                     </Text>
                   </TouchableOpacity>
-                  <Text style={styles.commentContent}>{comment.content}</Text>
-                  <Text style={styles.commentDate}>
-                    {new Date(comment.createdAt).toLocaleDateString('en-UK', {
-                      day: 'numeric',
-                      month: 'short',
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    })}
-                  </Text>
-                </View>
-              ))}
+                );
+              })}
             </View>
           )}
         </View>
       </ScrollView>
+
+      {/* Comment MoreMenu */}
+      {menuComment && (
+        <MoreMenu
+          visible={commentMenuVisible}
+          onClose={() => {
+            setCommentMenuVisible(false);
+            setMenuComment(null);
+          }}
+          options={[
+            {
+              label: 'Delete Comment',
+              destructive: true,
+              icon: <Feather name="trash-2" size={18} color="#d32f2f" />,
+              onPress: handleDeleteComment,
+            },
+          ]}
+        />
+      )}
+      {commentDeleteError && (
+        <View style={{ padding: 8, backgroundColor: '#ffecec' }}>
+          <Text style={{ color: '#d32f2f' }}>
+            Error deleting comment: {commentDeleteError}
+          </Text>
+        </View>
+      )}
     </SafeAreaView>
   );
 };
@@ -443,37 +633,37 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
   },
-  userRow: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
+  userRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 10,
     backgroundColor: '#fff',
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0'
+    borderBottomColor: '#f0f0f0',
   },
-  avatarWrapper: { 
-    width: 38, 
-    height: 38, 
-    borderRadius: 19, 
-    overflow: 'hidden', 
-    marginRight: 10, 
-    backgroundColor: '#eee' 
+  avatarWrapper: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    overflow: 'hidden',
+    marginRight: 10,
+    backgroundColor: '#eee',
   },
-  avatar: { 
-    width: 38, 
-    height: 38, 
-    borderRadius: 19, 
-    resizeMode: 'cover' 
+  avatar: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    resizeMode: 'cover',
   },
   userInfo: {
     flex: 1,
   },
-  username: { 
-    fontWeight: 'bold', 
-    fontSize: 15, 
+  username: {
+    fontWeight: 'bold',
+    fontSize: 15,
     color: '#222',
-    marginBottom: 2
+    marginBottom: 2,
   },
   postDate: {
     fontSize: 11,
@@ -563,12 +753,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'flex-start',
-    marginHorizontal: -4, // Offset for post box margins
+    marginHorizontal: -4,
   },
   postBox: {
-    width: '31.33%', // Slightly less than 33.33% to account for margins
-    aspectRatio: 1, // Square boxes
-    margin: '1%', // Space between boxes (2% total margin = 6%, 100-6=94, 94/3=31.33%)
+    width: '31.33%',
+    aspectRatio: 1,
+    margin: '1%',
     backgroundColor: '#fff',
     borderRadius: 12,
     elevation: 2,
@@ -696,13 +886,6 @@ const styles = StyleSheet.create({
     color: '#666',
   },
   noComments: {
-    fontSize: 14,
-    color: '#999',
-    fontStyle: 'italic',
-    textAlign: 'center',
-    marginTop: 20,
-  },
-  comingSoon: {
     fontSize: 14,
     color: '#999',
     fontStyle: 'italic',

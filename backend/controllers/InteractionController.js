@@ -4,7 +4,7 @@ const Trip = require('../models/Trip');
 const Itinerary = require('../models/Itinerary');
 const sendNotification = require('../utils/notify');
 
- function getModel(type) {
+function getModel(type) {
   switch (type) {
     case 'post':
       return Post;
@@ -18,39 +18,76 @@ const sendNotification = require('../utils/notify');
   }
 }
 
+// Helper function to get the correct owner field
+function getOwnerField(type) {
+  switch (type) {
+    case 'post':
+      return 'userId';
+    case 'trip':
+      return 'userId';
+    case 'itinerary':
+      return 'createdBy'; // This is the key fix
+    default:
+      return 'userId';
+  }
+}
+
 exports.toggleLike = async (req, res) => {
-  const { type, id } = req.params;        
-  const userId       = req.user.userId;
-  const Model        = getModel(type);
-  const doc          = await Model.findById(id);
-  if (!doc) return res.status(404).json({ message: `${type} not found` });
+  try {
+    const { type, id } = req.params;
+    const userId = req.user.userId;
+    const Model = getModel(type);
+    const doc = await Model.findById(id);
+    if (!doc) return res.status(404).json({ message: `${type} not found` });
 
-  // pick the right array field
-  const arr = doc.likes;  
-  const idx = arr.findIndex(u=>u.toString()===userId);
-  if (idx >= 0) arr.splice(idx,1);
-  else          arr.push(userId);
+    // ensure likes is an array
+    if (!Array.isArray(doc.likes)) {
+      doc.likes = [];
+    }
 
-  if (doc.userId.toString() !== userId) {
-    // send notification to the post owner if the user is not the owner
-    const me = await User.findById(userId).select('firstName');
-    await sendNotification({
-      recipient: doc.userId,
-      sender: userId,
-      type: 'like',
-      text: `${me.firstName} liked your ${type}.`,
-      entityType: type.charAt(0).toUpperCase() + type.slice(1), // Capitalize the type
-      entityId: id,
-      link: `/${type}/${id}` // Link to the post, trip, or itinerary
+    const alreadyLiked = doc.likes.some(u => u.toString() === userId);
+    const likedNow = !alreadyLiked;
+
+    if (likedNow) {
+      doc.likes.push(userId);
+    } else {
+      doc.likes = doc.likes.filter(u => u.toString() !== userId);
+    }
+
+    // determine owner using helper
+    const ownerField = getOwnerField(type);
+    const ownerIdRaw = doc[ownerField];
+    const ownerId = ownerIdRaw ? ownerIdRaw.toString() : null;
+
+    if (ownerId && ownerId !== userId) {
+      const me = await User.findById(userId).select('firstName');
+      await sendNotification({
+        recipient: ownerId,
+        sender: userId,
+        type: 'like',
+        text: `${me.firstName} liked your ${type}.`,
+        entityType: type.charAt(0).toUpperCase() + type.slice(1),
+        entityId: id,
+        link: `/${type}/${id}`,
+      });
+    }
+
+    await doc.save();
+
+    res.json({
+      liked: likedNow,
+      count: doc.likes.length,
+    });
+  } catch (err) {
+    console.error('toggleLike error:', err);
+    res.status(500).json({
+      message: 'Failed to toggle like',
+      error: err.message,
     });
   }
-
-  await doc.save();
-  res.json({ 
-    liked: idx<0, 
-    count: arr.length
-  });
 };
+
+
 
 exports.toggleSave = async (req, res) => {
   const { type, id } = req.params;
@@ -164,7 +201,7 @@ exports.getSaved = async (req, res) => {
         {
           path: 'bindItinerary', // Also populate bound itineraries if any
           populate: {
-            path: 'createdBy',
+            path: 'createdBy', // Use createdBy for itineraries
             select: 'firstName lastName profilePicture'
           }
         }
@@ -174,12 +211,12 @@ exports.getSaved = async (req, res) => {
     populatePath = {
       path: 'savedItineraries',
       populate: {
-        path: 'userId',
+        path: 'createdBy', //  Use createdBy for itineraries
         select: 'firstName lastName profilePicture'
       }
     };
   } else if (type === 'trip') {
-    // THIS IS THE KEY FIX - populate posts within trips
+    //  populate posts within trips
     populatePath = {
       path: 'savedTrips',
       populate: [
@@ -239,12 +276,16 @@ exports.addMention = async (req, res) => {
       doc.taggedUsers.push(userId);
       await doc.save();
 
+      // Use the correct owner field
+      const ownerField = getOwnerField(type);
+      const ownerId = doc[ownerField];
+
       // send notification to the user
-      if (doc.userId.toString() !== userId) {
+      if (ownerId && ownerId.toString() !== userId) {
         const me = await User.findById(userId).select('firstName');
         // Notify the user who is being mentioned
         await sendNotification({
-          recipient: doc.userId,
+          recipient: ownerId, // CHANGED: was doc.userId, now uses correct field
           sender: userId,
           type: 'custom',
           text: `${me.firstName} mentioned you in a ${type}.`,
