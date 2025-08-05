@@ -18,6 +18,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { API_BASE_URL } from '../config';
 import SearchableCityDropdown from '../components/SearchableCityDropdown';
 import { formatCityDisplay } from '../data/cities';
+import { PREDEFINED_TAGS, searchTags } from '../data/tags';
 
 const CreateTripScreen = ({ navigation }) => {
   const [title, setTitle] = useState('');
@@ -30,6 +31,10 @@ const CreateTripScreen = ({ navigation }) => {
   const [showEndPicker, setShowEndPicker] = useState(false);
   const [isPublic, setIsPublic] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [selectedTags, setSelectedTags] = useState([]);
+  const [tagSearch, setTagSearch] = useState('');
+  const [showAllTags, setShowAllTags] = useState(false);
+  const MAX_VISIBLE_TAGS = 8;
   
   // Content selection
   const [userPosts, setUserPosts] = useState([]);
@@ -102,10 +107,27 @@ const CreateTripScreen = ({ navigation }) => {
     );
   };
 
+  const toggleTagSelecttion = (tag) => {
+    if (selectedTags.includes(tag)) {
+      setSelectedTags(prev => prev.filter(t => t !== tag));
+    } else {
+      if (selectedTags.length >= 6) {
+        Alert.alert('Limit Reached', 'You can select up to 6 tags.');
+        return;
+      }
+      setSelectedTags(prev => [...prev, tag]);
+    }
+  };
+
   const handleCreateTrip = async () => {
     // Updated validation to check for selectedDestination object
     if (!title.trim() || !selectedDestination || !budget.trim()) {
       Alert.alert('Error', 'Please fill in all required fields');
+      return;
+    }
+
+    if (selectedTags.length < 3) {
+      Alert.alert('Error', 'Please select at least 3 tags to describe your trip.');
       return;
     }
 
@@ -133,6 +155,7 @@ const CreateTripScreen = ({ navigation }) => {
           destination: formatCityDisplay(selectedDestination), // Send formatted string
           destinationData: selectedDestination, // Send full city object for future use
           description: description.trim(),
+          tags: selectedTags.map(tag => tag.trim()).filter(tag => tag), // Split tags by comma and trim whitespace
           budget: parseFloat(budget),
           startDate: startDate.toISOString(),
           endDate: endDate.toISOString(),
@@ -166,6 +189,10 @@ const CreateTripScreen = ({ navigation }) => {
       day: 'numeric'
     });
   };
+
+  const filteredTags = PREDEFINED_TAGS.filter(tag =>
+  tag.searchText.toLowerCase().includes(tagSearch.toLowerCase())
+);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -212,6 +239,48 @@ const CreateTripScreen = ({ navigation }) => {
               placeholder="Select your destination"
             />
           </View>
+
+          {/* Tags Section */}
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Select at least 3 tags to help others discover your trip *</Text>
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search tags..."
+              value={tagSearch}
+              onChangeText={setTagSearch}
+            />
+            <View style={styles.tagContainer}>
+              {(showAllTags || tagSearch.length > 0 
+                  ? filteredTags 
+                  : filteredTags.slice(0, MAX_VISIBLE_TAGS)
+                ).map(tag => (
+                <TouchableOpacity
+                  key={tag.id}
+                  onPress={() => toggleTagSelecttion(tag.tag)}
+                  style={[
+                    styles.tagChip,
+                    selectedTags.includes(tag.tag) && styles.selectedChip
+                  ]}
+                >
+                  <Text style={[
+                    styles.tagText,
+                    selectedTags.includes(tag.tag) && styles.selectedText
+                  ]}>
+                    {tag.tag}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+
+          {/* Show "View More" button if there are more tags than visible */}
+          {tagSearch.length === 0 && filteredTags.length > MAX_VISIBLE_TAGS && (
+            <TouchableOpacity onPress={() => setShowAllTags(prev => !prev)}>
+              <Text style={styles.viewMoreText}>
+                {showAllTags ? 'Show Less ▲' : 'View More ▼'}
+              </Text>
+            </TouchableOpacity>
+          )}
 
           <View style={styles.inputContainer}>
             <Text style={styles.label}>Description</Text>
@@ -361,22 +430,97 @@ const CreateTripScreen = ({ navigation }) => {
         </View>
       </ScrollView>
 
+      {/* iOS Modal for Start Date */}
+{Platform.OS === 'ios' && showStartPicker && (
+  <View style={{
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#fff',
+    padding: 16,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    elevation: 10,
+  }}>
+    <DateTimePicker
+      value={startDate}
+      mode="date"
+      display="spinner"
+      onChange={(event, selectedDate) => {
+        if (selectedDate) {
+          setStartDate(selectedDate);
+          if (selectedDate >= endDate) {
+            const newEndDate = new Date(selectedDate);
+            newEndDate.setDate(newEndDate.getDate() + 1);
+            setEndDate(newEndDate);
+          }
+        }
+      }}
+    />
+    <TouchableOpacity
+      onPress={() => setShowStartPicker(false)}
+      style={{ alignSelf: 'flex-end', padding: 10 }}
+    >
+      <Text style={{ color: '#007AFF', fontWeight: '600' }}>Done</Text>
+    </TouchableOpacity>
+  </View>
+)}
+
+    {/* iOS Modal for End Date */}
+    {Platform.OS === 'ios' && showEndPicker && (
+      <View style={{
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        backgroundColor: '#fff',
+        padding: 16,
+        borderTopLeftRadius: 20,
+        borderTopRightRadius: 20,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 10,
+        elevation: 10,
+      }}>
+        <DateTimePicker
+          value={endDate}
+          mode="date"
+          display="spinner"
+          onChange={(event, selectedDate) => {
+            if (selectedDate) setEndDate(selectedDate);
+          }}
+        />
+        <TouchableOpacity
+          onPress={() => setShowEndPicker(false)}
+          style={{ alignSelf: 'flex-end', padding: 10 }}
+        >
+          <Text style={{ color: '#007AFF', fontWeight: '600' }}>Done</Text>
+        </TouchableOpacity>
+      </View>
+    )}
+
       {/* Date Pickers */}
-      {showStartPicker && (
+      {Platform.OS === 'andriod' && showStartPicker && (
         <DateTimePicker
           value={startDate}
           mode="date"
-          display={Platform.OS === 'ios' ? 'calendar' : 'default'}
+          display='default'
           onChange={(event, date) => handleDateChange(event, date, 'start')}
           minimumDate={new Date()}
         />
       )}
 
-      {showEndPicker && (
+      {Platform.OS === 'andriod' && showEndPicker && (
         <DateTimePicker
           value={endDate}
           mode="date"
-          display={Platform.OS === 'ios' ? 'calendar' : 'default'}
+          display='default'
           onChange={(event, date) => handleDateChange(event, date, 'end')}
           minimumDate={startDate}
         />
@@ -439,9 +583,14 @@ const styles = StyleSheet.create({
     color: '#333',
     marginBottom: 8,
   },
+  sublabel: {
+    fontSize: 14,
+    color: '#333',
+    marginBottom: 8,
+  },
   input: {
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: '#ccc',
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
@@ -463,7 +612,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: '#ccc',
     borderRadius: 8,
     padding: 12,
     backgroundColor: '#fff',
@@ -498,7 +647,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f9f9f9',
   },
   selectedItem: {
-    borderColor: '#007AFF',
+    borderColor: '#ccc',
     backgroundColor: '#f0f8ff',
   },
   contentInfo: {
@@ -529,6 +678,45 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     textAlign: 'center',
     marginVertical: 20,
+  },
+  tagContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  tagChip: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    marginRight: 8,
+    marginBottom: 2,
+  },
+  selectedChip: {
+    backgroundColor: '#007AFF',
+    borderColor: '#007AFF',
+  },
+  tagText: {
+    fontSize: 14,
+    color: '#333',
+  },
+  selectedText: {
+    color: '#fff',
+  },
+  searchInput: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 10,
+    fontSize: 14,
+  },
+  viewMoreText: {
+    color: '#333',
+    fontWeight: '600',
+    textAlign: 'right',
+    marginBottom: 12,
   },
 });
 

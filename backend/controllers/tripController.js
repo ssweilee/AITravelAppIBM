@@ -6,12 +6,14 @@ const Comment = require('../models/Comment');
 
 exports.createTrip = async (req, res) => {
   try {
-    const { title, destination, description, budget, startDate, endDate, selectedPosts, selectedItineraries } = req.body;
+    const { title, destination, description, budget, startDate, endDate, selectedPosts, selectedItineraries, tags } = req.body;
     const userId = req.user.userId;
 
+    console.log('Tags: ', tags);
+
     // Validate required fields
-    if (!title || !destination || !startDate || !endDate || !budget) {
-      return res.status(400).json({ message: 'Title, destination, dates, and budget are required' });
+    if (!title || !destination || !startDate || !endDate || !budget || !tags) {
+      return res.status(400).json({ message: 'Title, destination, dates, tags, and budget are required' });
     }
 
     // Validate dates
@@ -40,6 +42,7 @@ exports.createTrip = async (req, res) => {
       title,
       destination,
       description: description || '',
+      tags: tags || [],
       budget,
       startDate: new Date(startDate),
       endDate: new Date(endDate),
@@ -149,7 +152,7 @@ exports.updateTrip = async (req, res) => {
   try {
     const { tripId } = req.params;
     const userId = req.user.userId;
-    const { title, destination, description, budget, startDate, endDate, selectedPosts, isPublic } = req.body;
+    const { title, destination, description, tags, budget, startDate, endDate, selectedPosts, isPublic } = req.body;
 
     // Find the trip and verify ownership
     const trip = await Trip.findById(tripId);
@@ -184,6 +187,7 @@ exports.updateTrip = async (req, res) => {
     if (endDate) updateData.endDate = new Date(endDate);
     if (selectedPosts) updateData.posts = selectedPosts;
     if (isPublic !== undefined) updateData.isPublic = isPublic;
+    if (tags) updateData.tags = tags;
 
     const updatedTrip = await Trip.findByIdAndUpdate(tripId, updateData, { new: true })
       .populate('userId', 'firstName lastName')
