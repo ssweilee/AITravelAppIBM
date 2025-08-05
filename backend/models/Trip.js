@@ -41,6 +41,11 @@ const tripSchema = new mongoose.Schema({
     trim: true,
     maxlength: 500
   },
+  tags: [{
+    type: String, 
+    trim: true,
+    required: true,
+  }],
   budget: {
     type: Number,
     required: true,

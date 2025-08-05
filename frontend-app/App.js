@@ -40,6 +40,7 @@ import HotelSearchScreen from './screens/HotelSearchScreen';
 import FlightSearchScreen from './screens/FlightSearchScreen';
 import HotelListScreen from './screens/HotelListScreen';
 import SavedPostsScreen from './screens/SavedPostScreen';
+import RecommendationScreen from './screens/RecommendationScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab   = createBottomTabNavigator();
@@ -54,7 +55,7 @@ function MainAppTabs() {
               return <Ionicons name="home" size={size} color={color} />;
             case 'Search':
               return <Ionicons name="search" size={size} color={color} />;
-            case 'Control Panel':
+            case 'Trips':
               return <MaterialIcons name="settings" size={size} color={color} />;
             case 'Bookings':
               return <FontAwesome name="calendar-check-o" size={size} color={color} />;
@@ -73,7 +74,7 @@ function MainAppTabs() {
     >
       <Tab.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
       <Tab.Screen name="Search" component={SearchScreen} />
-      <Tab.Screen name="Control Panel" component={ControlPanelScreen} />
+      <Tab.Screen name="Trips" component={RecommendationScreen} />
       <Tab.Screen name="Bookings" component={BookingsScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} options={{ headerTitle: '' }} />
     </Tab.Navigator>
