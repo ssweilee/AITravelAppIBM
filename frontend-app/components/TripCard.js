@@ -359,7 +359,6 @@ const TripCard = ({ trip, onPress, onToggleSave, onDeleted }) => {
           </Text>
         )}
 
-        {/* Preview of posts in trip */}
         {trip.posts && trip.posts.length > 0 && (
           <View style={styles.postsPreview}>
             <Text style={styles.postsPreviewTitle}>
@@ -412,6 +411,15 @@ const TripCard = ({ trip, onPress, onToggleSave, onDeleted }) => {
                 </View>
               )}
             </ScrollView>
+          </View>
+        )}
+        {trip.tags && trip.tags.length > 0 && (
+          <View style={styles.tagContainer}>
+            {trip.tags.map((tag, index) => (
+              <View key={index} style={styles.tagChip}>
+                <Text style={styles.tagText}>#{tag}</Text>
+              </View>
+            ))}
           </View>
         )}
       </TouchableOpacity>
@@ -768,6 +776,25 @@ const styles = StyleSheet.create({
     color: '#007AFF',
     fontWeight: '600',
     fontSize: 13,
+  },
+  tagContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginBottom: 12,
+    gap: 6, // if using React Native 0.71+, else use marginRight and marginBottom in child
+  },
+  tagChip: {
+    backgroundColor: '#e6f0ff',
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    marginRight: 6,
+    marginBottom: 6,
+  },
+  tagText: {
+    fontSize: 12,
+    color: '#007AFF',
+    fontWeight: '500',
   },
 });
 

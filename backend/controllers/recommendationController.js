@@ -1,7 +1,9 @@
 const Trip = require('../models/Trip');
 const User = require('../models/User');
 
-exports.buildUserPreferenceProfile = async (userId) => {
+exports.buildUserPreferenceProfile = async (req, res) => {
+  const userId = req.user.userId;
+
   try {
     const user = await User.findById(userId)
       .populate('savedTrips')
@@ -15,32 +17,43 @@ exports.buildUserPreferenceProfile = async (userId) => {
       throw new Error('User not found');
     }
 
+    // find all trips liked by the user and store trip IDs in 'likedTripsIds'
+    const likedTrips = await Trip.find({ likes: user._id }, '_id');
+    const likedTripsIds = likedTrips.map(trip => trip._id.toString());
+
     const preferenceProfile = {
       userId: user._id.toString(),
       travelStyle: user.travelStyle || null,
       location: user.location || null,
       followings: user.followings.map(f => f._id.toString()),
       savedTripsIds: [...user.savedTrips.map(st => st._id.toString())],
-      likedTripsIds: [],
+      likedTripsIds: likedTripsIds,
       avgBudget: null,
-      recentDestinations: []
+      recentDestinations: {},
+      tags: {},
     };
 
     const recentTrips = [...user.trips];
-   
     const budgets = [];
     const destinations = {};
+    const tagCounts = {};
+  
 
     for (const trip of recentTrips) {
-      //preferenceProfile.savedTripsIds.push(trip._id.toString());
-
-      // budget aggregation 
-      if (trip.budget) budgets.push(trip.budget);
+      // tags aggregation
+      if (Array.isArray(trip.tags)) {
+        for (const tag of trip.tags) {
+          tagCounts[tag] = (tagCounts[tag] || 0) + 1;
+        }
+      }
 
       // destination aggregation
       if (trip.destination) {
         destinations[trip.destination] = (destinations[trip.destination] || 0) + 1;
       }
+
+      // budget aggregation 
+      if (trip.budget) budgets.push(trip.budget);
     }
 
     // find median budget
@@ -52,14 +65,11 @@ exports.buildUserPreferenceProfile = async (userId) => {
           ? (sorted[mid - 1] + sorted[mid]) / 2
           : sorted[mid];
     }
-
-    const sortedDestinations = Object.entries(destinations)
-      .sort((a, b) => b[1] - a[1])
-      .map(([dest]) => dest);
-    preferenceProfile.recentDestinations = sortedDestinations;
-
-    return preferenceProfile;
-
+ 
+    preferenceProfile.recentDestinations = destinations;
+    preferenceProfile.tags = tagCounts;
+    res.status(200).json(preferenceProfile);
+    
   } catch (error) {
     console.log('Failed to build user preference profile: ', error.message);
     throw error;

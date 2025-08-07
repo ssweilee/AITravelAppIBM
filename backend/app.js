@@ -17,6 +17,8 @@ const notificationRoutes = require('./routes/notificationRoutes.js');
 const tripRoutes = require('./routes/tripRoutes.js');
 const aiRoutes = require('./routes/aiRoutes');
 require('dotenv').config();
+const recommendationRoutes = require('./routes/recommendationRoutes.js');
+
 
 const app = express();
 
@@ -48,7 +50,7 @@ app.use('/api/itineraries', authenticateToken, itineraryRoutes);
 app.use('/api/notifications', authenticateToken, notificationRoutes);
 app.use('/api/trips', authenticateToken, tripRoutes);
 app.use('/api/ai', aiRoutes);
-
+app.use('/api/recommend', recommendationRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ message: 'Route not found' });
