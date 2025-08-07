@@ -3,9 +3,11 @@ import { useState } from 'react';
 import { Alert, Button, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { API_BASE_URL } from '../config';
+import { useAuth } from '../contexts/AuthContext';
 
 function LoginForm() {
   const navigation = useNavigation();
+  const { login } = useAuth();
 
   const [ email, setEmail ] = useState('');
   const [ password, setPassword ] = useState('');
@@ -29,9 +31,9 @@ function LoginForm() {
         if (data.user) {
           await AsyncStorage.setItem('userInfoCache', JSON.stringify(data.user));
         }
-        
+        // Ensure AuthContext is updated
+        await login(data.token, data.user);
         const alreadySelected = await AsyncStorage.getItem('hasSelectedInterests');
-        
         if (alreadySelected === 'true') {
           navigation.navigate('Main', { screen: 'Home' });
         } else {

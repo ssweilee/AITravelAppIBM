@@ -40,6 +40,7 @@ import HotelSearchScreen from './screens/HotelSearchScreen';
 import FlightSearchScreen from './screens/FlightSearchScreen';
 import HotelListScreen from './screens/HotelListScreen';
 import SavedPostsScreen from './screens/SavedPostScreen';
+import AIAssistantScreen from './screens/AIAssistantScreen';
 import RecommendationScreen from './screens/RecommendationScreen';
 
 const Stack = createNativeStackNavigator();
@@ -59,6 +60,8 @@ function MainAppTabs() {
               return <MaterialIcons name="settings" size={size} color={color} />;
             case 'Bookings':
               return <FontAwesome name="calendar-check-o" size={size} color={color} />;
+            case 'AI Assistant':
+              return <Ionicons name="chatbubbles-outline" size={size} color={color} />;
             case 'Profile':
               return <Ionicons name="person" size={size} color={color} />;
             default:
@@ -76,6 +79,7 @@ function MainAppTabs() {
       <Tab.Screen name="Search" component={SearchScreen} />
       <Tab.Screen name="Trips" component={RecommendationScreen} />
       <Tab.Screen name="Bookings" component={BookingsScreen} />
+      <Tab.Screen name="AI Assistant" component={AIAssistantScreen} options={{ title: 'AI Assistant' }} />
       <Tab.Screen name="Profile" component={ProfileScreen} options={{ headerTitle: '' }} />
     </Tab.Navigator>
   );

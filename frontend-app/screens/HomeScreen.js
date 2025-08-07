@@ -12,19 +12,35 @@ import { SafeAreaView } from 'react-native-safe-area-context'; // ✅ SafeAreaVi
 import FeedList from '../components/FeedList';
 import { useFocusEffect } from '@react-navigation/native';
 import { useNotifications } from '../contexts/NotificationsContext';
+import { useAuth } from '../contexts/AuthContext';
+import { authFetch } from '../utils/authFetch';
 
 const HomeScreen = ({ navigation }) => {
   const [refreshKey, setRefreshKey] = useState(0);
   const [showDropdown, setShowDropdown] = useState(false);
   const { unreadCount } = useNotifications();
+  const { logout } = useAuth();
 
   const triggerRefresh = () => setRefreshKey(prev => prev + 1);
 
+  // Check token validity on focus
   useFocusEffect(
     useCallback(() => {
-      console.log('HomeScreen is focused. Triggering feed refresh...');
-      setRefreshKey((prevKey) => prevKey + 1);
-    }, [])
+      let isActive = true;
+      (async () => {
+        const result = await authFetch(
+          `${API_BASE_URL}/api/users/profile`,
+          {},
+          { logout, navigation }
+        );
+        if (!result.success && isActive) {
+          // authFetch already handles logout and redirect
+          return;
+        }
+        setRefreshKey((prevKey) => prevKey + 1);
+      })();
+      return () => { isActive = false; };
+    }, [logout, navigation])
   );
 
   return (

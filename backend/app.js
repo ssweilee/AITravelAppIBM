@@ -15,7 +15,10 @@ const avatarUploadRouter = require('./routes/avatarUploadRoutes.js');
 const itineraryRoutes = require('./routes/itineraryRoutes.js');
 const notificationRoutes = require('./routes/notificationRoutes.js');
 const tripRoutes = require('./routes/tripRoutes.js');
+const aiRoutes = require('./routes/aiRoutes');
+require('dotenv').config();
 const recommendationRoutes = require('./routes/recommendationRoutes.js');
+
 
 const app = express();
 
@@ -46,6 +49,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/api/itineraries', authenticateToken, itineraryRoutes);
 app.use('/api/notifications', authenticateToken, notificationRoutes);
 app.use('/api/trips', authenticateToken, tripRoutes);
+app.use('/api/ai', aiRoutes);
 app.use('/api/recommend', recommendationRoutes);
 
 app.use((req, res) => {

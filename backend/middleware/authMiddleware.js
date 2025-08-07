@@ -19,4 +19,6 @@ exports.authenticateToken = (req, res, next) => {
     };
     next();
   });
+
+  console.log("JWT_SECRET in use:", process.env.JWT_SECRET);
 };
