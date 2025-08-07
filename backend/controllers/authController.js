@@ -99,6 +99,8 @@ const refresh = async (req, res) => {
   }
 };
 
+console.log("JWT_SECRET in use:", process.env.JWT_SECRET);
+
 // Catch-all for unknown API routes
 // This should be added in your main app.js or server.js, not in the controller.
 // But for reference, here is the code to add:

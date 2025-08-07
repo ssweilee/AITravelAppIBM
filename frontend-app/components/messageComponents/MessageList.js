@@ -7,13 +7,29 @@ import socket from "../../utils/socket";
 import moment from "moment";
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from "../../contexts/AuthContext";
+import jwtDecode from 'jwt-decode';
 
 const MessageList = ({ searchQuery }) => {
   const [chats, setChats] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
   const navigation = useNavigation();
   const { user } = useAuth(); 
-  const currentUserId = user?._id;
+  let currentUserId = user?._id;
+
+  // Fallback: decode from token immediately if not available
+  if (!currentUserId) {
+    AsyncStorage.getItem('token').then(token => {
+      if (token) {
+        try {
+          const decoded = jwtDecode(token);
+          console.log('Decoded JWT for currentUserId:', decoded);
+          currentUserId = decoded.userId || decoded._id || decoded.id;
+        } catch (e) {
+          console.log('JWT decode error:', e);
+        }
+      }
+    });
+  }
 
   // Fetch all chats once
   const fetchChats = async () => {
@@ -101,7 +117,15 @@ const MessageList = ({ searchQuery }) => {
 
   const renderChatItem = ({ item }) => {
     const otherUser = item.members.find((m) => m._id !== currentUserId);
-    if (!otherUser) return null;
+    // Debug: Log currentUserId and members for diagnosis
+    // console.log('MessageList renderChatItem:', {
+    //   currentUserId,
+    //   members: item.members.map(m => ({ _id: m._id, firstName: m.firstName, lastName: m.lastName })),
+    //   chatId: item._id,
+    //   isGroup: item.isGroup,
+    //   chatName: item.chatName
+    // });
+    if (!otherUser && !item.isGroup) return null;
 
     const lastMessageTime = item.lastMessage?.createdAt
       ? moment(item.lastMessage.createdAt).fromNow()
