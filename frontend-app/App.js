@@ -71,8 +71,8 @@ function MainAppTabs() {
 
             case 'Control Panel':
               return <Ionicons name="settings" size={size} color={color} />;
-            case 'Bookings':
-              return <FontAwesome name="calendar-check-o" size={size} color={color} />;
+            // case 'Bookings':
+            //   return <FontAwesome name="calendar-check-o" size={size} color={color} />;
             case 'AI Assistant':
               return <Ionicons name="chatbubbles-outline" size={size} color={color} />;
             case 'Profile':
@@ -93,7 +93,7 @@ function MainAppTabs() {
       <Tab.Screen name="Search" component={SearchScreen} />
       <Tab.Screen name="Trips" component={RecommendationScreen} />
       <Tab.Screen name="Control Panel" component={ControlPanelScreen} options={{ title: 'Control Panel' }} />
-      <Tab.Screen name="Bookings" component={BookingsScreen} />
+      {/* <Tab.Screen name="Bookings" component={BookingsScreen} /> */}
       <Tab.Screen name="AI Assistant" component={AIAssistantScreen} options={{ title: 'AI Assistant' }} />
       <Tab.Screen name="Profile" component={ProfileScreen} options={{ headerTitle: '' }} />
     </Tab.Navigator>
