@@ -187,13 +187,13 @@ exports.getSaved = async (req, res) => {
             },
             {
               path: 'likes',
-              select: 'firstName lastName'
+              select: 'firstName lastName profilePicture'
             },
             {
               path: 'comments',
               populate: {
                 path: 'userId',
-                select: 'firstName lastName'
+                select: 'firstName lastName profilePicture'
               }
             }
           ]
@@ -236,7 +236,7 @@ exports.getSaved = async (req, res) => {
           path: 'comments',
           populate: {
             path: 'userId',
-            select: 'firstName lastName'
+            select: 'firstName lastName profilePicture'
           }
         }
       ]

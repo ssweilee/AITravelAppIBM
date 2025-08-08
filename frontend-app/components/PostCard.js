@@ -19,6 +19,7 @@ import BindTripCard from './BindTripCard';
 import ShareModal from './ItineraryComponents/ShareModal';
 import MoreMenu from './MoreMenu';
 import { useDeleteResource } from '../utils/useDeleteResource';
+import { getAvatarUrl } from '../utils/getAvatarUrl';
 
 const PostCard = ({ post, onPress, onToggleSave, onDeleted }) => {
   const navigation = useNavigation();
@@ -249,10 +250,13 @@ const PostCard = ({ post, onPress, onToggleSave, onDeleted }) => {
           <View style={styles.avatarWrapper}>
             {post.userId?.profilePicture ? (
               <Image
-                source={{ uri: post.userId.profilePicture }}
-                style={styles.avatar}
-                cachePolicy="memory-disk"
-              />
+              source={
+                post.userId?.profilePicture
+                ? { uri: getAvatarUrl(post.userId.profilePicture) }
+                  : require('../assets/icon.png')
+              }
+              style={styles.avatar}
+            />
             ) : (
               <View style={styles.avatarPlaceholder}>
                 <Text style={styles.avatarPlaceholderText}>

@@ -25,7 +25,7 @@ module.exports = (io, socket) => {
 
       // 2) Populate and update chat
       const populatedMessage = await Message.findById(newMessage._id)
-        .populate('senderId', 'firstName lastName');
+        .populate('senderId', 'firstName lastName profilePicture');
       await Chat.findByIdAndUpdate(chatId, {
         lastMessage: newMessage._id,
         updatedAt:   new Date(),

@@ -19,8 +19,10 @@ import { Ionicons, MaterialIcons, Feather } from '@expo/vector-icons';
 import ShareModal from './ItineraryComponents/ShareModal';
 import MoreMenu from './MoreMenu';
 import { useDeleteResource } from '../utils/useDeleteResource';
+import { getAvatarUrl } from '../utils/getAvatarUrl';
 
 const TripCard = ({ trip, onPress, onToggleSave, onDeleted }) => {
+  console.log('Trip data in TripCard:', JSON.stringify(trip, null, 2));
   const navigation = useNavigation();
   const [userId, setUserId] = useState(null);
   const [liked, setLiked] = useState(false);
@@ -300,7 +302,14 @@ const TripCard = ({ trip, onPress, onToggleSave, onDeleted }) => {
       <View style={[styles.userRow]}>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <View style={styles.avatarWrapper}>
-            <Image source={require('../assets/icon.png')} style={styles.avatar} />
+          <Image
+        source={
+          trip.userId?.profilePicture
+            ? { uri: getAvatarUrl(trip.userId.profilePicture) }
+            : require('../assets/icon.png')
+        }
+        style={styles.avatar}
+      />
           </View>
           <TouchableOpacity
             onPress={() => {

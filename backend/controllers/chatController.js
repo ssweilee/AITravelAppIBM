@@ -21,7 +21,7 @@ exports.getOrCreateChat = async (req, res) => {
       });
     }
 
-    await chat.populate('members', 'firstName lastName');
+    await chat.populate('members', 'firstName lastName profilePicture'); // Populate member details
     res.status(200).json({chat});
   } catch (err) {
     console.log('Failed to get/create chat:', err);
@@ -36,7 +36,7 @@ exports.getUserChats = async (req, res) => {
       .populate('members', 'firstName lastName profilePicture') 
       .populate({
         path: 'lastMessage',
-        populate: { path: 'senderId', select: 'firstName lastName' }
+        populate: { path: 'senderId', select: 'firstName lastName profilePicture' }
       })
       .sort('-updatedAt');
 
@@ -69,7 +69,7 @@ exports.createGroupChat = async (req, res) => {
       chatName: chatName || 'New Group',
     });
 
-    await groupChat.populate('members', 'firstName lastName');
+    await groupChat.populate('members', 'firstName lastName profilePicture');
 
     res.status(201).json(groupChat);
   } catch (err) {
@@ -83,10 +83,10 @@ exports.getChatById = async (req, res) => {
 
   try {
     const chat = await Chat.findById(chatId)
-      .populate('members', 'firstName lastName')
+      .populate('members', 'firstName lastName profilePicture')
       .populate({
         path: 'lastMessage',
-        populate: { path: 'senderId', select: 'firstName lastName' }
+        populate: { path: 'senderId', select: 'firstName lastName profilePicture' }
       });
 
     if (!chat) {

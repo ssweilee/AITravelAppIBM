@@ -228,7 +228,7 @@ exports.getCommentsForPost = async (req, res) => {
     const comments = await Comment.find({
       targetId: postId,
       targetModel: 'Post',
-    }).populate('userId', 'firstName lastName');
+    }).populate('userId', 'firstName lastName profilePicture');
     res.json(comments);
   } catch (err) {
     console.error('getCommentsForPost error:', err);
@@ -242,7 +242,7 @@ exports.getPostById = async (req, res) => {
       .populate('userId', 'firstName lastName profilePicture')
       .populate({
         path: 'comments',
-        populate: { path: 'userId', select: 'firstName lastName' }
+        populate: { path: 'userId', select: 'firstName lastName profilePicture' }
       });
     if (!post) return res.status(404).json({ message: 'Post not found' });
     res.json(post);

@@ -57,7 +57,7 @@ exports.createTrip = async (req, res) => {
 
     // Populate the response
     const populatedTrip = await Trip.findById(trip._id)
-      .populate('userId', 'firstName lastName')
+      .populate('userId', 'firstName lastName profilePicture')
       .populate('posts');
 
     res.status(201).json({
@@ -75,7 +75,7 @@ exports.getUserTrips = async (req, res) => {
     const userId = req.user.userId;
 
     const trips = await Trip.find({ userId })
-      .populate('userId', 'firstName lastName')
+      .populate('userId', 'firstName lastName profilePicture')
       .populate('posts')
       .populate('comments')
       .sort({ createdAt: -1 });
@@ -92,7 +92,7 @@ exports.getTripsByUserId = async (req, res) => {
     const { userId } = req.params;
 
     const trips = await Trip.find({ userId, isPublic: true })
-      .populate('userId', 'firstName lastName')
+      .populate('userId', 'firstName lastName profilePicture')
       .populate('posts')
       .populate('comments')
       .sort({ createdAt: -1 });
@@ -107,7 +107,7 @@ exports.getTripsByUserId = async (req, res) => {
 exports.getAllTrips = async (req, res) => {
   try {
     const trips = await Trip.find({ isPublic: true })
-      .populate('userId', 'firstName lastName')
+      .populate('userId', 'firstName lastName profilePicture')
       .populate('posts')
       .populate('comments')
       .sort({ createdAt: -1 });
@@ -124,7 +124,7 @@ exports.getTripById = async (req, res) => {
     const { tripId } = req.params;
 
     const trip = await Trip.findById(tripId)
-      .populate('userId', 'firstName lastName')
+      .populate('userId', 'firstName lastName profilePicture')
       .populate('posts')
       .populate({
         path: 'comments',
@@ -183,7 +183,7 @@ exports.updateTrip = async (req, res) => {
     if (tags) updateData.tags = tags;
 
     const updatedTrip = await Trip.findByIdAndUpdate(tripId, updateData, { new: true })
-      .populate('userId', 'firstName lastName')
+      .populate('userId', 'firstName lastName profilePicture')
       .populate('posts');
 
     res.status(200).json({
@@ -295,7 +295,7 @@ exports.getTripComments = async (req, res) => {
     const comments = await Comment.find({
       targetId: tripId,
       targetModel: 'Trip',
-    }).populate('userId', 'firstName lastName');
+    }).populate('userId', 'firstName lastName profilePicture');
 
     res.json(comments);
   } catch (err) {
