@@ -68,7 +68,7 @@ function RecommendationScreen() {
             preferenceProfile.recommendations.slice(0, 5).map((trip, idx) => (
               <View key={trip._id || idx} style={{ marginBottom: 16, padding: 12, backgroundColor: '#f2f2f2', borderRadius: 8 }}>
                 <Text style={{ fontSize: 18, fontWeight: 'bold' }}>{trip.title || 'Trip Title'}</Text>
-                //<Text>Location: {trip.location || 'N/A'}</Text>
+                {/* <Text>Location: {trip.location || 'N/A'}</Text> */}
                 <Text>Location: {trip.destination || 'N/A'}</Text>
                 <Text>Budget: {trip.budget ? `$${trip.budget}` : 'N/A'}</Text>
                 <Text>Travel Style: {trip.travelStyle || 'N/A'}</Text>
