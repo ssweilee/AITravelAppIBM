@@ -1,5 +1,6 @@
 const Trip = require('../models/Trip');
 const User = require('../models/User');
+const axios = require('axios');
 
 exports.buildUserPreferenceProfile = async (req, res) => {
   const userId = req.user.userId;
@@ -73,5 +74,16 @@ exports.buildUserPreferenceProfile = async (req, res) => {
   } catch (error) {
     console.log('Failed to build user preference profile: ', error.message);
     throw error;
+  }
+};
+
+exports.getPythonRecommendations = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const response = await axios.post('http://127.0.0.1:5001/recommend', { userId });
+    res.json(response.data);
+  } catch (err) {
+    console.error('Error calling Python recommender:', err.message);
+    res.status(500).json({ error: 'Failed to get recommendations from Python service' });
   }
 };

@@ -57,7 +57,20 @@ function MainAppTabs() {
             case 'Search':
               return <Ionicons name="search" size={size} color={color} />;
             case 'Trips':
-              return <MaterialIcons name="settings" size={size} color={color} />;
+              return (
+                <View style={{ position: 'relative' }}>
+                  <FontAwesome name="map-marker" size={size} color={color} />
+                  <FontAwesome
+                    name="star"
+                    size={size * 0.4}
+                    color="red"
+                    style={{ position: 'absolute', top: size * 0.2, left: size * 0.3 }}
+                  />
+                </View>
+              );
+
+            case 'Control Panel':
+              return <Ionicons name="settings" size={size} color={color} />;
             case 'Bookings':
               return <FontAwesome name="calendar-check-o" size={size} color={color} />;
             case 'AI Assistant':
@@ -68,6 +81,7 @@ function MainAppTabs() {
               return null;
           }
         },
+
         tabBarActiveTintColor: '#00C7BE',
         tabBarInactiveTintColor: '#aaa',
         headerStyle: { backgroundColor: '#00C7BE' },
@@ -78,6 +92,7 @@ function MainAppTabs() {
       <Tab.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
       <Tab.Screen name="Search" component={SearchScreen} />
       <Tab.Screen name="Trips" component={RecommendationScreen} />
+      <Tab.Screen name="Control Panel" component={ControlPanelScreen} options={{ title: 'Control Panel' }} />
       <Tab.Screen name="Bookings" component={BookingsScreen} />
       <Tab.Screen name="AI Assistant" component={AIAssistantScreen} options={{ title: 'AI Assistant' }} />
       <Tab.Screen name="Profile" component={ProfileScreen} options={{ headerTitle: '' }} />
