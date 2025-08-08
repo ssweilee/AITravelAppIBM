@@ -2,6 +2,7 @@ import React, { createContext, useState, useContext, useEffect, useCallback } fr
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fetchUserProfile } from '../utils/ProfileInfo'; 
 import { NavigationContainerRefContext } from '@react-navigation/native';
+import { getAvatarUrl } from '../utils/getAvatarUrl'; 
 
 const AuthContext = createContext(null);
 
@@ -63,7 +64,33 @@ export const AuthProvider = ({ children }) => {
 
       const userData = await fetchUserProfile(navigation);
       if (userData?.success && userData.user) {
-        setUser(userData.user);
+
+        const refreshedUser = { ...userData.user }; 
+        if (refreshedUser && refreshedUser.profilePicture) {
+          refreshedUser.profilePicture = getAvatarUrl(refreshedUser.profilePicture);
+        }
+        
+        setUser(refreshedUser); 
+        await AsyncStorage.setItem('userInfoCache', JSON.stringify(refreshedUser));
+        return refreshedUser;
+
+      } else {
+        console.error("Failed to refresh user:", userData.error);
+        if (userData.error?.message === 'Invalid token' || userData.error?.message === 'No auth token found') {
+          console.log("Invalid token detected, logging out.");
+          await logout();
+          if (navigation && navigation.reset) {
+            navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+          }
+        } else {
+          setUser(null);
+        }
+        return null;
+      }
+
+
+{/**
+  setUser(userData.user);
         await AsyncStorage.setItem('userInfoCache', JSON.stringify(userData.user));
         return userData.user;
       } else {
@@ -79,6 +106,10 @@ export const AuthProvider = ({ children }) => {
         }
         return null;
       }
+  
+  */}
+
+        
     } catch (error) {
       console.error("An unexpected error occurred while refreshing user:", error);
       setUser(null);
@@ -109,8 +140,12 @@ export const AuthProvider = ({ children }) => {
   const login = async (newToken, newUserInfo) => {
     await AsyncStorage.setItem('token', newToken);
     if (newUserInfo) {
-      await AsyncStorage.setItem('userInfoCache', JSON.stringify(newUserInfo));
-      setUser(newUserInfo);
+      const userToSet = { ...newUserInfo };
+      if (userToSet && userToSet.profilePicture) {
+        userToSet.profilePicture = getAvatarUrl(userToSet.profilePicture);
+      }
+      setUser(userToSet);
+    await AsyncStorage.setItem('userInfoCache', JSON.stringify(userToSet));
     } else {
       await refreshUser(); 
     }
