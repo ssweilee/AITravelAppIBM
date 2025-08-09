@@ -302,14 +302,14 @@ const TripCard = ({ trip, onPress, onToggleSave, onDeleted }) => {
       <View style={[styles.userRow]}>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <View style={styles.avatarWrapper}>
-          <Image
-        source={
-          trip.userId?.profilePicture
-            ? { uri: getAvatarUrl(trip.userId.profilePicture) }
-            : require('../assets/icon.png')
-        }
-        style={styles.avatar}
-      />
+            <Image
+              source={
+                trip.userId?.profilePicture
+                  ? { uri: getAvatarUrl(trip.userId.profilePicture) }
+                  : require('../assets/icon.png')
+              }
+              style={styles.avatar}
+            />
           </View>
           <TouchableOpacity
             onPress={() => {
@@ -422,7 +422,8 @@ const TripCard = ({ trip, onPress, onToggleSave, onDeleted }) => {
             </ScrollView>
           </View>
         )}
-{/* Preview of itineraries in trip */}
+
+        {/* Preview of itineraries in trip */}
         {trip.itineraries && trip.itineraries.length > 0 && (
           <View style={styles.itinerariesPreview}>
             <Text style={styles.itinerariesPreviewTitle}>
@@ -473,8 +474,6 @@ const TripCard = ({ trip, onPress, onToggleSave, onDeleted }) => {
                 <Text style={styles.tagText}>#{tag}</Text>
               </View>
             ))}
-          </View>
-        )}
           </View>
         )}
       </TouchableOpacity>
@@ -793,7 +792,7 @@ const styles = StyleSheet.create({
     color: '#666',
     fontWeight: '500',
   },
-  // NEW STYLES FOR ITINERARIES PREVIEW
+  // STYLES FOR ITINERARIES PREVIEW
   itinerariesPreview: {
     marginBottom: 12,
   },
@@ -858,6 +857,26 @@ const styles = StyleSheet.create({
     color: '#666',
     fontWeight: '500',
   },
+  // STYLES FOR TRIP TAGS
+  tagContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginBottom: 12,
+    marginTop: 8,
+  },
+  tagChip: {
+    backgroundColor: '#e6f0ff',
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    marginRight: 6,
+    marginBottom: 6,
+  },
+  tagText: {
+    fontSize: 12,
+    color: '#007AFF',
+    fontWeight: '500',
+  },
   timestamp: {
     fontSize: 12,
     color: 'gray',
@@ -896,25 +915,6 @@ const styles = StyleSheet.create({
     color: '#007AFF',
     fontWeight: '600',
     fontSize: 13,
-  },
-  tagContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginBottom: 12,
-    gap: 6, // if using React Native 0.71+, else use marginRight and marginBottom in child
-  },
-  tagChip: {
-    backgroundColor: '#e6f0ff',
-    borderRadius: 20,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    marginRight: 6,
-    marginBottom: 6,
-  },
-  tagText: {
-    fontSize: 12,
-    color: '#007AFF',
-    fontWeight: '500',
   },
 });
 
