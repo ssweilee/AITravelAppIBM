@@ -42,6 +42,21 @@ const BindTripCard = ({ trip, onPress }) => {
             {formatDate(trip.startDate)} – {formatDate(trip.endDate)} • {calculateDuration()}
           </Text>
           <Text style={styles.budget}>Budget: ${trip.budget}</Text>
+          
+          {/* Show content summary */}
+          <View style={styles.contentSummary}>
+            {trip.posts && trip.posts.length > 0 && (
+              <Text style={styles.contentText}>
+                {trip.posts.length} post{trip.posts.length > 1 ? 's' : ''}
+              </Text>
+            )}
+            {trip.itineraries && trip.itineraries.length > 0 && (
+              <Text style={styles.contentText}>
+                {trip.itineraries.length} itinerary{trip.itineraries.length > 1 ? 's' : ''}
+              </Text>
+            )}
+          </View>
+          
           <Text style={styles.sharedBy}>
             Sharing {trip.userId?.firstName} {trip.userId?.lastName}'s trip
           </Text>
@@ -125,6 +140,19 @@ const styles = StyleSheet.create({
     color: '#28a745',
     fontWeight: '500',
     marginBottom: 4,
+  },
+  contentSummary: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 4,
+  },
+  contentText: {
+    fontSize: 11,
+    color: '#555',
+    backgroundColor: 'rgba(255,255,255,0.8)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
   },
   buttonColumn: {
     flexDirection: 'row',

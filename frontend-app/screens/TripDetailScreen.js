@@ -303,7 +303,7 @@ const TripDetailScreen = ({ route, navigation }) => {
     );
   };
 
-  if (loading && !trip.posts) {
+  if (loading && !trip.posts && !trip.itineraries) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
@@ -446,6 +446,62 @@ const TripDetailScreen = ({ route, navigation }) => {
                         </View>
                       )}
                     </View>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        )}
+
+        {/* Trip Itineraries Section - NEW SECTION */}
+        {trip.itineraries && trip.itineraries.length > 0 && (
+          <View style={styles.itinerariesSection}>
+            <Text style={styles.sectionTitle}>
+              Itineraries in this trip ({trip.itineraries.length})
+            </Text>
+            <View style={styles.itinerariesList}>
+              {trip.itineraries.map((itinerary, index) => (
+                <TouchableOpacity
+                  key={itinerary._id || `itinerary-${index}`}
+                  style={styles.itineraryCard}
+                  onPress={() => navigation.navigate('ItineraryDetail', { itinerary })}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.itineraryHeader}>
+                    <View style={styles.itineraryIcon}>
+                      <Ionicons name="map-outline" size={24} color="#007AFF" />
+                    </View>
+                    <View style={styles.itineraryInfo}>
+                      <Text style={styles.itineraryTitle} numberOfLines={1}>
+                        {itinerary.title || itinerary.destination}
+                      </Text>
+                      <Text style={styles.itineraryDestination} numberOfLines={1}>
+                        {itinerary.destination}
+                      </Text>
+                      <Text style={styles.itineraryDates}>
+                        {formatDate(itinerary.startDate)} - {formatDate(itinerary.endDate)}
+                      </Text>
+                    </View>
+                  </View>
+                  
+                  {itinerary.description && (
+                    <Text style={styles.itineraryDescription} numberOfLines={2}>
+                      {itinerary.description}
+                    </Text>
+                  )}
+                  
+                  <View style={styles.itineraryFooter}>
+                    <Text style={styles.itineraryDays}>
+                      {itinerary.days?.length || 0} day{itinerary.days?.length !== 1 ? 's' : ''}
+                    </Text>
+                    {itinerary.likes && itinerary.likes.length > 0 && (
+                      <View style={styles.itineraryLikes}>
+                        <Ionicons name="heart" size={12} color="#e74c3c" />
+                        <Text style={styles.itineraryLikesText}>
+                          {itinerary.likes.length}
+                        </Text>
+                      </View>
+                    )}
                   </View>
                 </TouchableOpacity>
               ))}
@@ -825,6 +881,84 @@ const styles = StyleSheet.create({
   },
   postBoxLikesText: {
     fontSize: 10,
+    color: '#e74c3c',
+    marginLeft: 2,
+  },
+  // NEW STYLES FOR ITINERARIES SECTION
+  itinerariesSection: {
+    padding: 16,
+    backgroundColor: '#f0f8ff',
+  },
+  itinerariesList: {
+    gap: 12,
+  },
+  itineraryCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 1 },
+    borderLeftWidth: 4,
+    borderLeftColor: '#007AFF',
+  },
+  itineraryHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 8,
+  },
+  itineraryIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#e6f3ff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  itineraryInfo: {
+    flex: 1,
+  },
+  itineraryTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#222',
+    marginBottom: 2,
+  },
+  itineraryDestination: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 2,
+  },
+  itineraryDates: {
+    fontSize: 12,
+    color: '#007AFF',
+    fontWeight: '500',
+  },
+  itineraryDescription: {
+    fontSize: 14,
+    color: '#444',
+    lineHeight: 18,
+    marginBottom: 8,
+  },
+  itineraryFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  itineraryDays: {
+    fontSize: 12,
+    color: '#666',
+    fontWeight: '500',
+  },
+  itineraryLikes: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  itineraryLikesText: {
+    fontSize: 12,
     color: '#e74c3c',
     marginLeft: 2,
   },

@@ -8,7 +8,10 @@ import {
   Modal,
   StyleSheet,
   Dimensions,
+  Platform,
+  StatusBar,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { TOP_CITIES, formatCityDisplay, searchCities } from '../data/cities';
 
@@ -91,8 +94,15 @@ const SearchableCityDropdown = ({
         animationType="slide"
         transparent={false}
         onRequestClose={closeModal}
+        statusBarTranslucent={false}
       >
-        <View style={styles.modalContainer}>
+        <SafeAreaView style={styles.modalContainer}>
+          <StatusBar 
+            barStyle="dark-content" 
+            backgroundColor="#f8f9fa" 
+            translucent={false}
+          />
+          
           {/* Header */}
           <View style={styles.modalHeader}>
             <TouchableOpacity
@@ -150,7 +160,7 @@ const SearchableCityDropdown = ({
               </View>
             }
           />
-        </View>
+        </SafeAreaView>
       </Modal>
     </View>
   );
@@ -194,9 +204,15 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
     backgroundColor: '#f8f9fa',
+    minHeight: 56, // Ensure consistent header height
   },
   closeButton: {
-    padding: 4,
+    padding: 8,
+    borderRadius: 20,
+    minWidth: 40,
+    minHeight: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   modalTitle: {
     fontSize: 18,
@@ -204,7 +220,7 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   headerSpacer: {
-    width: 32, // Same width as close button for centering
+    width: 40, // Same width as close button for centering
   },
   searchContainer: {
     flexDirection: 'row',
@@ -213,7 +229,8 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     margin: 16,
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingVertical: Platform.OS === 'ios' ? 12 : 8,
+    minHeight: 44, // Ensure minimum touch target on iOS
   },
   searchIcon: {
     marginRight: 8,
@@ -225,8 +242,13 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   clearButton: {
-    padding: 4,
+    padding: 8,
     marginLeft: 8,
+    borderRadius: 20,
+    minWidth: 36,
+    minHeight: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   resultsHeader: {
     paddingHorizontal: 16,
@@ -245,9 +267,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 14,
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
+    minHeight: 60, // Ensure good touch target
   },
   cityInfo: {
     flex: 1,
