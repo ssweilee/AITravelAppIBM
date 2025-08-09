@@ -109,7 +109,7 @@ exports.searchItineraries = async (req, res) => {
         { createdBy: { $in: userIds } }
       ]
     })
-    .populate('createdBy', 'firstName lastName')
+    .populate('createdBy', 'firstName lastName profilePicture')
     .sort({ createdAt: -1 })
     .limit(limit)
     .skip(skip)

@@ -13,6 +13,7 @@ import debounce from 'lodash.debounce';
 import ItineraryList from '../components/profileComponents/ItineraryList';
 import TripList from '../components/profileComponents/TripList'; 
 import FollowersModal from '../modals/FollowersModal';
+import { getAvatarUrl } from '../utils/getAvatarUrl';
 
 const ProfileScreen = () => {
   const { user: userInfo, isLoading, refreshUser } = useAuth();
@@ -99,6 +100,10 @@ const ProfileScreen = () => {
     });
   };
 
+  console.log('[ProfileScreen] userInfo:', userInfo);
+console.log('[ProfileScreen] profilePicture:', userInfo?.profilePicture);
+
+
   return (
     <View style={[styles.container, { paddingTop: Platform.OS === 'android' ? RNStatusBar.currentHeight :10 }]}>
       <StatusBar style="dark" />
@@ -144,12 +149,11 @@ const ProfileScreen = () => {
           style={styles.profilePictureWrapper} 
           onPress={navigateToEdit}  
         >
-          {userInfo?.profilePicture ? (
-            <Image
-              source={{ uri: userInfo.profilePicture }}
-              style={styles.profilePicture}
-              key={userInfo.profilePicture} 
-            />
+          {userInfo?.profilePicture ? (   
+        <Image
+          source={{ uri: getAvatarUrl(userInfo.profilePicture) }}
+          style={styles.profilePicture}
+        />
           ) : (
             <Ionicons name="person" size={40} color="#999" />
           )}

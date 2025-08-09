@@ -23,6 +23,7 @@ import { Ionicons, MaterialIcons, Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { API_BASE_URL } from '../config';
 import MoreMenu from '../components/MoreMenu'; // adjust path if needed
+import { getAvatarUrl } from '../utils/getAvatarUrl';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -318,7 +319,7 @@ const PostDetailScreen = ({ route }) => {
             <Image
               source={
                 post.userId?.profilePicture
-                  ? { uri: post.userId.profilePicture }
+                ? { uri: getAvatarUrl(post.userId.profilePicture) }
                   : require('../assets/icon.png')
               }
               style={styles.avatar}

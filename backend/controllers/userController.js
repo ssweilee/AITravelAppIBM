@@ -195,8 +195,8 @@ exports.getFollowersAndFollowing = async (req, res) => {
     const userId = req.user.userId;
     
     const user = await User.findById(userId)
-      .populate('followers', 'firstName lastName')
-      .populate('followings', 'firstName lastName');
+      .populate('followers', 'firstName lastName profilePicture')
+      .populate('followings', 'firstName lastName profilePicture');
 
     if (!user) {
       return res.status(404).json({ message: 'User not found' });

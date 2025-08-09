@@ -18,20 +18,20 @@ exports.getMessagesForChat = async (req, res) => {
         populate: [
           {
             path: 'userId',
-            select: 'firstName lastName'
+            select: 'firstName lastName profilePicture'
           },
           {
             path: 'bindItinerary',
             populate: {
               path: 'createdBy',
-              select: 'firstName lastName'
+              select: 'firstName lastName profilePicture'
             }
           },
           {
             path: 'bindTrip',
             populate: {
               path: 'userId',
-              select: 'firstName lastName'
+              select: 'firstName lastName profilePicture'
             }
           }
         ]

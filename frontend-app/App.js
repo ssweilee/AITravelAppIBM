@@ -40,6 +40,8 @@ import HotelSearchScreen from './screens/HotelSearchScreen';
 import FlightSearchScreen from './screens/FlightSearchScreen';
 import HotelListScreen from './screens/HotelListScreen';
 import SavedPostsScreen from './screens/SavedPostScreen';
+import AIAssistantScreen from './screens/AIAssistantScreen';
+import RecommendationScreen from './screens/RecommendationScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab   = createBottomTabNavigator();
@@ -54,16 +56,32 @@ function MainAppTabs() {
               return <Ionicons name="home" size={size} color={color} />;
             case 'Search':
               return <Ionicons name="search" size={size} color={color} />;
+            case 'Trips':
+              return (
+                <View style={{ position: 'relative' }}>
+                  <FontAwesome name="map-marker" size={size} color={color} />
+                  <FontAwesome
+                    name="star"
+                    size={size * 0.4}
+                    color="red"
+                    style={{ position: 'absolute', top: size * 0.2, left: size * 0.3 }}
+                  />
+                </View>
+              );
+
             case 'Control Panel':
-              return <MaterialIcons name="settings" size={size} color={color} />;
-            case 'Bookings':
-              return <FontAwesome name="calendar-check-o" size={size} color={color} />;
+              return <Ionicons name="settings" size={size} color={color} />;
+            // case 'Bookings':
+            //   return <FontAwesome name="calendar-check-o" size={size} color={color} />;
+            case 'AI Assistant':
+              return <Ionicons name="chatbubbles-outline" size={size} color={color} />;
             case 'Profile':
               return <Ionicons name="person" size={size} color={color} />;
             default:
               return null;
           }
         },
+
         tabBarActiveTintColor: '#00C7BE',
         tabBarInactiveTintColor: '#aaa',
         headerStyle: { backgroundColor: '#00C7BE' },
@@ -73,8 +91,10 @@ function MainAppTabs() {
     >
       <Tab.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
       <Tab.Screen name="Search" component={SearchScreen} />
-      <Tab.Screen name="Control Panel" component={ControlPanelScreen} />
-      <Tab.Screen name="Bookings" component={BookingsScreen} />
+      <Tab.Screen name="Trips" component={RecommendationScreen} />
+      <Tab.Screen name="Control Panel" component={ControlPanelScreen} options={{ title: 'Control Panel' }} />
+      {/* <Tab.Screen name="Bookings" component={BookingsScreen} /> */}
+      <Tab.Screen name="AI Assistant" component={AIAssistantScreen} options={{ title: 'AI Assistant' }} />
       <Tab.Screen name="Profile" component={ProfileScreen} options={{ headerTitle: '' }} />
     </Tab.Navigator>
   );

@@ -221,7 +221,6 @@ const EditProfileScreen = ({ route, navigation }) => {
   }, []); 
 
 
-
   const uploadAvatar = async (token) => {
     setUploadingAvatar(true);
     try {
@@ -233,8 +232,6 @@ const EditProfileScreen = ({ route, navigation }) => {
         type: avatarFile.type,
       });
   
-      console.log('[DEBUG] uploadAvatar: Sending request to:', `${API_BASE_URL}/api/users/upload-avatar`);
-
       const uploadResponse = await fetch(`${API_BASE_URL}/api/users/upload-avatar`, {
         method: 'POST',
         headers: {
@@ -245,11 +242,11 @@ const EditProfileScreen = ({ route, navigation }) => {
       });
   
       const uploadResult = await uploadResponse.json();
-      console.log('[DEBUG] uploadAvatar: Sending request to:', `${API_BASE_URL}/api/users/upload-avatar`);
+      console.log('[DEBUG] uploadAvatar response:', uploadResult);
       if (!uploadResponse.ok) {
         throw new Error(uploadResult.message || 'Failed to upload avatar');
       }
-      return `${uploadResult.profilePicture}?t=${Date.now()}`;
+      return uploadResult.profilePicture; 
     } catch (err) {
       console.error('[DEBUG] uploadAvatar: Error:', err.message);
       Alert.alert('Upload Error', err.message);
@@ -279,7 +276,14 @@ const EditProfileScreen = ({ route, navigation }) => {
         setLoading(false);
         return;
       }
-
+      //preparing basic payload
+      const payload = {
+        firstName,
+        lastName,
+        bio,
+      };
+  
+      //handle location field
       let locationField = '';
       if (selectedLocationObject) {
         locationField = selectedLocationObject.value;
@@ -294,24 +298,44 @@ const EditProfileScreen = ({ route, navigation }) => {
         }
       }
 
-      let finalProfilePictureUrl = currentUserInfo?.profilePicture;
-      console.log('handleSave: Uploading new avatar...');
+      payload.location = locationField;
+
       if (avatarFile) {
+        console.log('handleSave: Uploading new avatar...');
+        const newFilename = await uploadAvatar(token);
+        
+        if (!newFilename) {
+          setLoading(false);
+          return;
+        }
+      
+        const fullImageUrl = `${API_BASE_URL}/uploads/avatars/${newFilename}`;
+      await Image.prefetch(fullImageUrl);
+
+      payload.profilePicture = newFilename;
+
+
+
+{/**
+  let finalProfilePictureUrl = currentUserInfo?.profilePicture;
+      console.log('handleSave: Uploading new avatar...');
+
+      
+        if (avatarFile) {
       finalProfilePictureUrl = await uploadAvatar(token);
       if (!finalProfilePictureUrl) { 
         setLoading(false);
         return; 
-      }
-      await Image.prefetch(finalProfilePictureUrl);
+      } 
+  
+  */}
+
     } else if (removeAvatar) {
       console.log('handleSave: Removing avatar...');
-      finalProfilePictureUrl = null; 
+      payload.profilePicture = null;
     }
-      const payload = { firstName, lastName, location: locationField, bio };
-      if (finalProfilePictureUrl !== currentUserInfo.profilePicture) {
-        payload.profilePicture = finalProfilePictureUrl;
-      }
-      console.log('EditProfileScreen - Save Payload:', JSON.stringify(payload));
+
+    console.log('EditProfileScreen - Save Payload:', JSON.stringify(payload));
       const url = `${API_BASE_URL}/api/users/edit/${userId}`;
     const response = await fetch(url, {
       method: 'PUT',

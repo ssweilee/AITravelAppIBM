@@ -7,12 +7,14 @@ const sendNotification = require('../utils/notify');
 
 exports.createTrip = async (req, res) => {
   try {
-    const { title, destination, description, budget, startDate, endDate, selectedPosts, selectedItineraries } = req.body;
+    const { title, destination, description, budget, startDate, endDate, selectedPosts, selectedItineraries, tags } = req.body;
     const userId = req.user.userId;
 
+    console.log('Tags: ', tags);
+
     // Validate required fields
-    if (!title || !destination || !startDate || !endDate || !budget) {
-      return res.status(400).json({ message: 'Title, destination, dates, and budget are required' });
+    if (!title || !destination || !startDate || !endDate || !budget || !tags) {
+      return res.status(400).json({ message: 'Title, destination, dates, tags, and budget are required' });
     }
 
     // Validate dates
@@ -41,6 +43,7 @@ exports.createTrip = async (req, res) => {
       title,
       destination,
       description: description || '',
+      tags: tags || [],
       budget,
       startDate: new Date(startDate),
       endDate: new Date(endDate),
@@ -55,9 +58,11 @@ exports.createTrip = async (req, res) => {
 
     // Populate the response - UPDATED TO INCLUDE ITINERARIES
     const populatedTrip = await Trip.findById(trip._id)
+
       .populate('userId', 'firstName lastName')
       .populate('posts')
-      .populate('itineraries'); // ADD THIS LINE
+      .populate('itineraries'); 
+
 
     res.status(201).json({
       message: 'Trip created successfully',
@@ -74,7 +79,7 @@ exports.getUserTrips = async (req, res) => {
     const userId = req.user.userId;
 
     const trips = await Trip.find({ userId })
-      .populate('userId', 'firstName lastName')
+      .populate('userId', 'firstName lastName profilePicture')
       .populate('posts')
       .populate('itineraries') // ADD THIS LINE
       .populate('comments')
@@ -92,7 +97,7 @@ exports.getTripsByUserId = async (req, res) => {
     const { userId } = req.params;
 
     const trips = await Trip.find({ userId, isPublic: true })
-      .populate('userId', 'firstName lastName')
+      .populate('userId', 'firstName lastName profilePicture')
       .populate('posts')
       .populate('itineraries') // ADD THIS LINE
       .populate('comments')
@@ -108,7 +113,7 @@ exports.getTripsByUserId = async (req, res) => {
 exports.getAllTrips = async (req, res) => {
   try {
     const trips = await Trip.find({ isPublic: true })
-      .populate('userId', 'firstName lastName')
+      .populate('userId', 'firstName lastName profilePicture')
       .populate('posts')
       .populate('itineraries') // ADD THIS LINE
       .populate('comments')
@@ -126,7 +131,7 @@ exports.getTripById = async (req, res) => {
     const { tripId } = req.params;
 
     const trip = await Trip.findById(tripId)
-      .populate('userId', 'firstName lastName')
+      .populate('userId', 'firstName lastName profilePicture')
       .populate('posts')
       .populate('itineraries') // ADD THIS LINE
       .populate({
@@ -152,7 +157,9 @@ exports.updateTrip = async (req, res) => {
   try {
     const { tripId } = req.params;
     const userId = req.user.userId;
+
     const { title, destination, description, budget, startDate, endDate, selectedPosts, selectedItineraries, isPublic } = req.body;
+
 
     const trip = await Trip.findById(tripId);
     if (!trip) {
@@ -192,11 +199,13 @@ exports.updateTrip = async (req, res) => {
     if (selectedPosts) updateData.posts = selectedPosts;
     if (selectedItineraries) updateData.itineraries = selectedItineraries; // ADD THIS LINE
     if (isPublic !== undefined) updateData.isPublic = isPublic;
+    if (tags) updateData.tags = tags;
 
     const updatedTrip = await Trip.findByIdAndUpdate(tripId, updateData, { new: true })
+
       .populate('userId', 'firstName lastName')
       .populate('posts')
-      .populate('itineraries'); // ADD THIS LINE
+      .populate('itineraries'); 
 
     res.status(200).json({
       message: 'Trip updated successfully',
@@ -307,7 +316,7 @@ exports.getTripComments = async (req, res) => {
     const comments = await Comment.find({
       targetId: tripId,
       targetModel: 'Trip',
-    }).populate('userId', 'firstName lastName');
+    }).populate('userId', 'firstName lastName profilePicture');
 
     res.json(comments);
   } catch (err) {

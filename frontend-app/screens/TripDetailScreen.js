@@ -18,6 +18,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_BASE_URL } from '../config';
 import MoreMenu from '../components/MoreMenu';
 import PostCard from '../components/PostCard';
+import { getAvatarUrl } from '../utils/getAvatarUrl';
 
 const parseJwt = (token) => {
   try {
@@ -328,14 +329,14 @@ const TripDetailScreen = ({ route, navigation }) => {
         {/* User info row */}
         <View style={styles.userRow}>
           <View style={styles.avatarWrapper}>
-            <Image
-              source={
-                trip.userId?.profilePicture
-                  ? { uri: trip.userId.profilePicture }
-                  : require('../assets/icon.png')
-              }
-              style={styles.avatar}
-            />
+          <Image
+      source={
+        trip.userId?.profilePicture
+          ? { uri: getAvatarUrl(trip.userId.profilePicture) }
+          : require('../assets/icon.png')
+      }
+      style={styles.avatar}
+    />
           </View>
           <View style={styles.userInfo}>
             <Text style={styles.username}>

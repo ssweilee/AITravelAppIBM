@@ -19,8 +19,10 @@ import { Ionicons, MaterialIcons, Feather } from '@expo/vector-icons';
 import ShareModal from './ItineraryComponents/ShareModal';
 import MoreMenu from './MoreMenu';
 import { useDeleteResource } from '../utils/useDeleteResource';
+import { getAvatarUrl } from '../utils/getAvatarUrl';
 
 const TripCard = ({ trip, onPress, onToggleSave, onDeleted }) => {
+  console.log('Trip data in TripCard:', JSON.stringify(trip, null, 2));
   const navigation = useNavigation();
   const [userId, setUserId] = useState(null);
   const [liked, setLiked] = useState(false);
@@ -300,7 +302,14 @@ const TripCard = ({ trip, onPress, onToggleSave, onDeleted }) => {
       <View style={[styles.userRow]}>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <View style={styles.avatarWrapper}>
-            <Image source={require('../assets/icon.png')} style={styles.avatar} />
+          <Image
+        source={
+          trip.userId?.profilePicture
+            ? { uri: getAvatarUrl(trip.userId.profilePicture) }
+            : require('../assets/icon.png')
+        }
+        style={styles.avatar}
+      />
           </View>
           <TouchableOpacity
             onPress={() => {
@@ -359,7 +368,6 @@ const TripCard = ({ trip, onPress, onToggleSave, onDeleted }) => {
           </Text>
         )}
 
-        {/* Preview of posts in trip */}
         {trip.posts && trip.posts.length > 0 && (
           <View style={styles.postsPreview}>
             <Text style={styles.postsPreviewTitle}>
@@ -414,8 +422,7 @@ const TripCard = ({ trip, onPress, onToggleSave, onDeleted }) => {
             </ScrollView>
           </View>
         )}
-
-        {/* Preview of itineraries in trip */}
+{/* Preview of itineraries in trip */}
         {trip.itineraries && trip.itineraries.length > 0 && (
           <View style={styles.itinerariesPreview}>
             <Text style={styles.itinerariesPreviewTitle}>
@@ -455,6 +462,19 @@ const TripCard = ({ trip, onPress, onToggleSave, onDeleted }) => {
                 </View>
               )}
             </ScrollView>
+          </View>
+        )}
+
+        {/* Trip Tags */}
+        {trip.tags && trip.tags.length > 0 && (
+          <View style={styles.tagContainer}>
+            {trip.tags.map((tag, index) => (
+              <View key={index} style={styles.tagChip}>
+                <Text style={styles.tagText}>#{tag}</Text>
+              </View>
+            ))}
+          </View>
+        )}
           </View>
         )}
       </TouchableOpacity>
@@ -876,6 +896,25 @@ const styles = StyleSheet.create({
     color: '#007AFF',
     fontWeight: '600',
     fontSize: 13,
+  },
+  tagContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginBottom: 12,
+    gap: 6, // if using React Native 0.71+, else use marginRight and marginBottom in child
+  },
+  tagChip: {
+    backgroundColor: '#e6f0ff',
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    marginRight: 6,
+    marginBottom: 6,
+  },
+  tagText: {
+    fontSize: 12,
+    color: '#007AFF',
+    fontWeight: '500',
   },
 });
 
