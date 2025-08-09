@@ -37,7 +37,7 @@ exports.createTrip = async (req, res) => {
       }
     }
 
-    // Create the trip
+    // Create the trip - UPDATED TO INCLUDE ITINERARIES
     const trip = await Trip.create({
       userId,
       title,
@@ -48,6 +48,7 @@ exports.createTrip = async (req, res) => {
       startDate: new Date(startDate),
       endDate: new Date(endDate),
       posts: selectedPosts || [],
+      itineraries: selectedItineraries || [], // ADD THIS LINE
     });
 
     // Add trip to user's trips array
@@ -55,10 +56,13 @@ exports.createTrip = async (req, res) => {
       $push: { trips: trip._id }
     });
 
-    // Populate the response
+    // Populate the response - UPDATED TO INCLUDE ITINERARIES
     const populatedTrip = await Trip.findById(trip._id)
-      .populate('userId', 'firstName lastName profilePicture')
-      .populate('posts');
+
+      .populate('userId', 'firstName lastName')
+      .populate('posts')
+      .populate('itineraries'); 
+
 
     res.status(201).json({
       message: 'Trip created successfully',
@@ -77,6 +81,7 @@ exports.getUserTrips = async (req, res) => {
     const trips = await Trip.find({ userId })
       .populate('userId', 'firstName lastName profilePicture')
       .populate('posts')
+      .populate('itineraries') // ADD THIS LINE
       .populate('comments')
       .sort({ createdAt: -1 });
 
@@ -94,6 +99,7 @@ exports.getTripsByUserId = async (req, res) => {
     const trips = await Trip.find({ userId, isPublic: true })
       .populate('userId', 'firstName lastName profilePicture')
       .populate('posts')
+      .populate('itineraries') // ADD THIS LINE
       .populate('comments')
       .sort({ createdAt: -1 });
 
@@ -109,6 +115,7 @@ exports.getAllTrips = async (req, res) => {
     const trips = await Trip.find({ isPublic: true })
       .populate('userId', 'firstName lastName profilePicture')
       .populate('posts')
+      .populate('itineraries') // ADD THIS LINE
       .populate('comments')
       .sort({ createdAt: -1 });
 
@@ -126,6 +133,7 @@ exports.getTripById = async (req, res) => {
     const trip = await Trip.findById(tripId)
       .populate('userId', 'firstName lastName profilePicture')
       .populate('posts')
+      .populate('itineraries') // ADD THIS LINE
       .populate({
         path: 'comments',
         populate: {
@@ -149,7 +157,9 @@ exports.updateTrip = async (req, res) => {
   try {
     const { tripId } = req.params;
     const userId = req.user.userId;
-    const { title, destination, description, tags, budget, startDate, endDate, selectedPosts, isPublic } = req.body;
+
+    const { title, destination, description, budget, startDate, endDate, selectedPosts, selectedItineraries, isPublic } = req.body;
+
 
     const trip = await Trip.findById(tripId);
     if (!trip) {
@@ -171,6 +181,14 @@ exports.updateTrip = async (req, res) => {
       }
     }
 
+    // ADD VALIDATION FOR ITINERARIES
+    if (selectedItineraries && selectedItineraries.length > 0) {
+      const userItineraries = await Itinerary.find({ _id: { $in: selectedItineraries }, createdBy: userId });
+      if (userItineraries.length !== selectedItineraries.length) {
+        return res.status(403).json({ message: 'You can only add your own itineraries to a trip' });
+      }
+    }
+
     const updateData = {};
     if (title) updateData.title = title;
     if (destination) updateData.destination = destination;
@@ -179,12 +197,15 @@ exports.updateTrip = async (req, res) => {
     if (startDate) updateData.startDate = new Date(startDate);
     if (endDate) updateData.endDate = new Date(endDate);
     if (selectedPosts) updateData.posts = selectedPosts;
+    if (selectedItineraries) updateData.itineraries = selectedItineraries; // ADD THIS LINE
     if (isPublic !== undefined) updateData.isPublic = isPublic;
     if (tags) updateData.tags = tags;
 
     const updatedTrip = await Trip.findByIdAndUpdate(tripId, updateData, { new: true })
-      .populate('userId', 'firstName lastName profilePicture')
-      .populate('posts');
+
+      .populate('userId', 'firstName lastName')
+      .populate('posts')
+      .populate('itineraries'); 
 
     res.status(200).json({
       message: 'Trip updated successfully',

@@ -422,6 +422,50 @@ const TripCard = ({ trip, onPress, onToggleSave, onDeleted }) => {
             </ScrollView>
           </View>
         )}
+{/* Preview of itineraries in trip */}
+        {trip.itineraries && trip.itineraries.length > 0 && (
+          <View style={styles.itinerariesPreview}>
+            <Text style={styles.itinerariesPreviewTitle}>
+              {trip.itineraries.length} itinerary{trip.itineraries.length > 1 ? 's' : ''} in this trip
+            </Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.itinerariesScroll}
+            >
+              {trip.itineraries.slice(0, 3).map((itineraryItem, index) => (
+                <View key={itineraryItem._id || index} style={styles.itineraryPreview}>
+                  <View style={styles.itineraryPreviewHeader}>
+                    <Ionicons name="map-outline" size={16} color="#007AFF" />
+                    <Text numberOfLines={1} style={styles.itineraryPreviewTitle}>
+                      {itineraryItem.title || itineraryItem.destination}
+                    </Text>
+                  </View>
+                  <Text numberOfLines={1} style={styles.itineraryPreviewDestination}>
+                    {itineraryItem.destination}
+                  </Text>
+                  {itineraryItem.description && (
+                    <Text numberOfLines={2} style={styles.itineraryPreviewDescription}>
+                      {itineraryItem.description}
+                    </Text>
+                  )}
+                  <Text style={styles.itineraryPreviewDays}>
+                    {itineraryItem.days?.length || 0} day{itineraryItem.days?.length !== 1 ? 's' : ''}
+                  </Text>
+                </View>
+              ))}
+              {trip.itineraries.length > 3 && (
+                <View style={styles.moreItinerariesIndicator}>
+                  <Text style={styles.moreItinerariesText}>
+                    +{trip.itineraries.length - 3} more
+                  </Text>
+                </View>
+              )}
+            </ScrollView>
+          </View>
+        )}
+
+        {/* Trip Tags */}
         {trip.tags && trip.tags.length > 0 && (
           <View style={styles.tagContainer}>
             {trip.tags.map((tag, index) => (
@@ -429,6 +473,8 @@ const TripCard = ({ trip, onPress, onToggleSave, onDeleted }) => {
                 <Text style={styles.tagText}>#{tag}</Text>
               </View>
             ))}
+          </View>
+        )}
           </View>
         )}
       </TouchableOpacity>
@@ -743,6 +789,71 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   morePostsText: {
+    fontSize: 12,
+    color: '#666',
+    fontWeight: '500',
+  },
+  // NEW STYLES FOR ITINERARIES PREVIEW
+  itinerariesPreview: {
+    marginBottom: 12,
+  },
+  itinerariesPreviewTitle: {
+    fontSize: 13,
+    color: '#666',
+    marginBottom: 8,
+    fontWeight: '500',
+  },
+  itinerariesScroll: {
+    flexDirection: 'row',
+  },
+  itineraryPreview: {
+    backgroundColor: '#e6f3ff',
+    padding: 8,
+    borderRadius: 8,
+    marginRight: 8,
+    width: 140,
+    minHeight: 80,
+    borderLeftWidth: 3,
+    borderLeftColor: '#007AFF',
+  },
+  itineraryPreviewHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  itineraryPreviewTitle: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#222',
+    marginLeft: 4,
+    flex: 1,
+  },
+  itineraryPreviewDestination: {
+    fontSize: 11,
+    color: '#666',
+    marginBottom: 4,
+  },
+  itineraryPreviewDescription: {
+    fontSize: 10,
+    color: '#555',
+    marginBottom: 4,
+    lineHeight: 12,
+  },
+  itineraryPreviewDays: {
+    fontSize: 10,
+    color: '#007AFF',
+    fontWeight: '500',
+    marginTop: 'auto',
+  },
+  moreItinerariesIndicator: {
+    backgroundColor: '#e9ecef',
+    padding: 8,
+    borderRadius: 8,
+    width: 100,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  moreItinerariesText: {
     fontSize: 12,
     color: '#666',
     fontWeight: '500',

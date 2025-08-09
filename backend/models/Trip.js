@@ -57,6 +57,12 @@ const tripSchema = new mongoose.Schema({
       ref: 'Post'
     }
   ],
+  itineraries: [  // ADD THIS FIELD
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Itinerary'
+    }
+  ],
   reviews: [
     {
       type: mongoose.Schema.Types.ObjectId,
