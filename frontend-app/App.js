@@ -42,6 +42,7 @@ import HotelListScreen from './screens/HotelListScreen';
 import SavedPostsScreen from './screens/SavedPostScreen';
 import AIAssistantScreen from './screens/AIAssistantScreen';
 import RecommendationScreen from './screens/RecommendationScreen';
+import PreferencesScreen from './screens/PreferencesScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab   = createBottomTabNavigator();
@@ -171,6 +172,7 @@ export default function App() {
                 <Stack.Screen name="FlightSearch" component={FlightSearchScreen} />
                 <Stack.Screen name="HotelList" component={HotelListScreen} />
                 <Stack.Screen name="SavedPosts" component={SavedPostsScreen} options={{ title: 'Saved Content' }} />
+                <Stack.Screen name="PreferencesScreen" component={PreferencesScreen} options={{ title: 'Edit Preferences' }} />
               </Stack.Navigator>
             </NavigationContainer>
           </NotificationsProvider>
