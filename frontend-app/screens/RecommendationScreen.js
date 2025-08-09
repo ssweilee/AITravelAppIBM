@@ -68,7 +68,7 @@ function RecommendationScreen() {
           ) : (
             <>
               <Text style={{ fontSize: 22, fontWeight: 'bold', marginBottom: 12 }}>
-                Top 10 Hybrid Recommendations
+                Top Hybrid Recommendations
               </Text>
               {preferenceProfile && Array.isArray(preferenceProfile.topTenPicks) && preferenceProfile.topTenPicks.length > 0 ? (
                 preferenceProfile.topTenPicks.slice(0, 5).map((trip, idx) => (
