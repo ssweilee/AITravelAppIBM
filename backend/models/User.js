@@ -63,6 +63,17 @@ const userSchema = new mongoose.Schema({
   refreshToken: {
     type: String,
     default: ''
+  },
+  tags: {
+    type: [String],
+    default: []
+  },
+  avgBudget: {
+    type: Number
+  },
+  recentDestinations: {
+    type: [String],
+    default: []
   }
 });
 
