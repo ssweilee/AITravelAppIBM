@@ -35,8 +35,34 @@ exports.getUserChats = async (req, res) => {
     const chats = await Chat.find({ members: currentUserId })
       .populate('members', 'firstName lastName profilePicture') 
       .populate({
-        path: 'lastMessage',
-        populate: { path: 'senderId', select: 'firstName lastName profilePicture' }
+        path: 'lastMessage', 
+        populate: [          
+          {
+            path: 'senderId', 
+            select: 'firstName lastName profilePicture'
+          },
+          {
+            path: 'sharedPost', 
+            populate: {
+              path: 'userId', 
+              select: 'firstName lastName profilePicture'
+            }
+          },
+          {
+            path: 'sharedTrip',
+            populate: {
+              path: 'userId',
+              select: 'firstName lastName profilePicture'
+            }
+          },
+          {
+            path: 'sharedItinerary',
+            populate: {
+              path: 'createdBy', 
+              select: 'firstName lastName profilePicture'
+            }
+          }
+        ]
       })
       .sort('-updatedAt');
 

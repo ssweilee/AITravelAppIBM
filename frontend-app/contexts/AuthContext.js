@@ -125,6 +125,7 @@ export const AuthProvider = ({ children }) => {
       try {
          const currentToken = await AsyncStorage.getItem('token');
          if (currentToken) {
+          setToken(currentToken);
            await refreshUser();
          }
       } catch (e) {

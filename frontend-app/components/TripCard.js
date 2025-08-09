@@ -302,14 +302,14 @@ const TripCard = ({ trip, onPress, onToggleSave, onDeleted }) => {
       <View style={[styles.userRow]}>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <View style={styles.avatarWrapper}>
-          <Image
-        source={
-          trip.userId?.profilePicture
-            ? { uri: getAvatarUrl(trip.userId.profilePicture) }
-            : require('../assets/icon.png')
-        }
-        style={styles.avatar}
-      />
+            <Image
+              source={
+                trip.userId?.profilePicture
+                  ? { uri: getAvatarUrl(trip.userId.profilePicture) }
+                  : require('../assets/icon.png')
+              }
+              style={styles.avatar}
+            />
           </View>
           <TouchableOpacity
             onPress={() => {
