@@ -506,7 +506,7 @@ const CreateTripScreen = ({ navigation }) => {
     )}
 
       {/* Date Pickers */}
-      {Platform.OS === 'andriod' && showStartPicker && (
+      {Platform.OS === 'android' && showStartPicker && (
         <DateTimePicker
           value={startDate}
           mode="date"
@@ -516,7 +516,7 @@ const CreateTripScreen = ({ navigation }) => {
         />
       )}
 
-      {Platform.OS === 'andriod' && showEndPicker && (
+      {Platform.OS === 'android' && showEndPicker && (
         <DateTimePicker
           value={endDate}
           mode="date"
