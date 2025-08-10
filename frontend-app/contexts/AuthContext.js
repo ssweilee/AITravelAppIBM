@@ -19,6 +19,7 @@ export const AuthProvider = ({ children }) => {
    setUser(null);
  }, []);
 
+
   const refreshUser = useCallback(async () => {
     try {
       let currentToken = await AsyncStorage.getItem('token');
@@ -62,7 +63,7 @@ export const AuthProvider = ({ children }) => {
         return null;
       }
 
-      const userData = await fetchUserProfile(navigation);
+      const userData = await fetchUserProfile(navigation, currentToken);
       if (userData?.success && userData.user) {
 
         const refreshedUser = { ...userData.user }; 
@@ -109,48 +110,48 @@ export const AuthProvider = ({ children }) => {
   
   */}
 
-        
-    } catch (error) {
-      console.error("An unexpected error occurred while refreshing user:", error);
-      setUser(null);
-      if (navigation && navigation.reset) {
-        navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
-      }
-      return null;
-    }
-  }, [logout, navigation]);
 
-  useEffect(() => {
-    const initializeApp = async () => {
-      try {
-         const currentToken = await AsyncStorage.getItem('token');
-         if (currentToken) {
-          setToken(currentToken);
-           await refreshUser();
-         }
-      } catch (e) {
-        console.error("Failed to initialize app state:", e);
-        setUser(null);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    initializeApp();
-  }, [refreshUser]);
+      } catch (error) {
+  console.error("An unexpected error occurred while refreshing user:", error);
+  setUser(null);
+  if (navigation && navigation.reset) {
+    navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+  }
+  return null;
+}
+}, [logout, navigation]);
+
+useEffect(() => {
+  const initializeApp = async () => {
+    try {
+       const currentToken = await AsyncStorage.getItem('token');
+       if (currentToken) {
+         setToken(currentToken);
+         await refreshUser();
+       }
+    } catch (e) {
+      console.error("Failed to initialize app state:", e);
+      await logout(); 
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  initializeApp();
+}, []);
 
   const login = async (newToken, newUserInfo) => {
+    setIsLoading(true);
     await AsyncStorage.setItem('token', newToken);
+    setToken(newToken);
     if (newUserInfo) {
       const userToSet = { ...newUserInfo };
-      if (userToSet && userToSet.profilePicture) {
+      if (userToSet.profilePicture) {
         userToSet.profilePicture = getAvatarUrl(userToSet.profilePicture);
       }
       setUser(userToSet);
-    await AsyncStorage.setItem('userInfoCache', JSON.stringify(userToSet));
-    } else {
-      await refreshUser(); 
+      await AsyncStorage.setItem('userInfoCache', JSON.stringify(userToSet));
     }
-    setToken(newToken);
+    setIsLoading(false);
   };
   
   // Always redirect to login if not authenticated
