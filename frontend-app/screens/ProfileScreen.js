@@ -141,6 +141,22 @@ console.log('[ProfileScreen] profilePicture:', userInfo?.profilePicture);
             />
             <Text>Itinerary</Text>
           </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.dropdownItem}
+            onPress={() => {
+              setShowDropdown(false);
+              navigation.navigate('CreateTrip');
+            }}
+          >
+            <MaterialIcons
+              name="luggage"
+              size={22}
+              color="#222"
+              style={{ marginRight: 10 }}
+            />
+            <Text>Trip</Text>
+          </TouchableOpacity>
         </View>
       )}
 
@@ -209,25 +225,27 @@ console.log('[ProfileScreen] profilePicture:', userInfo?.profilePicture);
         ))}
       </View>
 
-      {selectedTab === 'Post' && (
-        <PostList refreshTrigger={refreshKey} />
-      )}
+      <View style={{ flex: 1 }}>
+        {selectedTab === 'Post' && (
+          <PostList refreshTrigger={refreshKey} />
+        )}
 
-      {selectedTab === 'Itinerary' && (
-        <ItineraryList 
-          refreshTrigger={refreshKey}
-          userId={userInfo?._id}
-          onPress={(itinerary) => navigation.navigate('ItineraryDetail', { itinerary })}
-        />
-      )}
-      
-      {selectedTab === 'Trip' && (
-        <TripList 
-          refreshTrigger={refreshKey}
-          userId={userInfo?._id}
-          onPress={(trip) => navigation.navigate('TripDetail', { trip })}
-        />
-      )}
+        {selectedTab === 'Itinerary' && (
+          <ItineraryList 
+            refreshTrigger={refreshKey}
+            userId={userInfo?._id}
+            onPress={(itinerary) => navigation.navigate('ItineraryDetail', { itinerary })}
+          />
+        )}
+        
+        {selectedTab === 'Trip' && (
+          <TripList 
+            refreshTrigger={refreshKey}
+            userId={userInfo?._id}
+            onPress={(trip) => navigation.navigate('TripDetail', { trip })}
+          />
+        )}
+      </View>
 
       <FollowersModal
         visible={followersModalVisible}
