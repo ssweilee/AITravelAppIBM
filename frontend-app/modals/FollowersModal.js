@@ -76,9 +76,13 @@ const FollowersModal = ({ visible, onClose, userId, title = 'Followers', type = 
       <View style={styles.avatarWrapper}>
         {item.profilePicture ? (
           <Image
-            source={{ uri: item.profilePicture }}
-            style={styles.avatar}
-          />
+          source={
+            trip.userId?.profilePicture
+              ? { uri: getAvatarUrl(trip.userId.profilePicture) }
+              : require('../assets/icon.png')
+          }
+          style={styles.avatar}
+        />
         ) : (
           <View style={styles.avatarPlaceholder}>
             <Text style={styles.avatarInitials}>

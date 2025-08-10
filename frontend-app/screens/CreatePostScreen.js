@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, Alert, StyleSheet, TouchableOpacity, TextInput, Image, ScrollView, Platform, StatusBar as RNStatusBar, Modal, FlatList } from 'react-native';
 import { Ionicons, MaterialIcons, FontAwesome } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -69,6 +69,16 @@ const CreatePostScreen = ({ navigation, route }) => {
     fetchUsernameAndFollowings();
   }, []);
 
+  if (!user) {
+    // If user data is not yet available, show a loading spinner or a blank screen
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#00c7be" />
+      </View>
+    );
+  }
+
+
   const handlePostSubmit = async () => {
     if (!content) {
       alert('Post content cannot be empty');
@@ -126,10 +136,8 @@ const CreatePostScreen = ({ navigation, route }) => {
 
   // Helper for avatar (show image if available, else initials or icon)
   const renderAvatar = (user) => {
-    if (user.profilePicture) {
-      return (
-        <Image source={{ uri: user.profilePicture }} style={styles.avatarImg} />
-      );
+    if (user?.profilePicture) { 
+      return <Image source={{ uri: user.profilePicture }} style={styles.avatarImg} />;
     }
     const initials = (user.firstName?.[0] || '') + (user.lastName?.[0] || '');
     return (
@@ -213,7 +221,6 @@ const CreatePostScreen = ({ navigation, route }) => {
             </Text>
           </View>
         )}
-        {/* 直接使用 context 中的用戶名 */}
         <Text style={styles.userName}>{`${user.firstName} ${user.lastName}`}</Text>
       </View>
 

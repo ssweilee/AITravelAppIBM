@@ -6,6 +6,7 @@ import { API_BASE_URL } from '../config';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import BindItineraryCard from './ItineraryComponents/BindItineraryCard';
 import ShareTripCard from './ShareTripCard';
+import { getAvatarUrl } from '../utils/getAvatarUrl';
 
 const SharePostCard = ({ post }) => {
   const navigation = useNavigation();
@@ -76,10 +77,14 @@ const SharePostCard = ({ post }) => {
       {/* User info row */}
       <View style={styles.userRow}>
         <View style={styles.avatarWrapper}>
-          <Image
-            source={require('../assets/icon.png')}
-            style={styles.avatar}
-          />
+        <Image
+              source={
+                post.userId?.profilePicture
+                ? { uri: getAvatarUrl(post.userId.profilePicture) }
+                  : require('../assets/icon.png')
+              }
+              style={styles.avatar}
+            />
         </View>
         <TouchableOpacity onPress={() => {
           if (post.userId?._id) {

@@ -1,25 +1,37 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, FlatList, StyleSheet, RefreshControl } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { View, Text, FlatList, StyleSheet, RefreshControl, ActivityIndicator } from 'react-native';
+//import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_BASE_URL } from '../config';
 import PostCard from './PostCard'; 
 import TripCard from './TripCard';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useAuth } from '../contexts/AuthContext';
 
 const FeedList = ({ refreshTrigger }) => {
+  const { token, isLoading: isAuthLoading } = useAuth();
   const [feedItems, setFeedItems] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [isFeedLoading, setIsFeedLoading] = useState(true);
   const navigation = useNavigation();
 
-  const fetchFeedContent = async () => {
-    try {
-      const token = await AsyncStorage.getItem('token');
-      if (!token) {
-        console.warn('User is not authenticated');
-        return;
-      }
+  useEffect(() => {
+    console.log('[FeedList] Auth State Update:', { 
+      isAuthLoading, 
+      token: token ? `Token exists (length: ${token.length})` : null 
+    });
+  }, [token, isAuthLoading]);
 
-      
+  const fetchFeedContent = useCallback(async () => {
+    if (isAuthLoading || !token) {
+      console.log('Auth is loading or no token, skipping feed fetch.');
+      setIsFeedLoading(false); 
+      setFeedItems([]); 
+      return;
+    }
+
+    setIsFeedLoading(true);
+
+    try {
       const [postsResponse, tripsResponse] = await Promise.all([
         fetch(`${API_BASE_URL}/api/posts/feed`, {
           headers: { Authorization: `Bearer ${token}` }
@@ -47,27 +59,29 @@ const FeedList = ({ refreshTrigger }) => {
       setFeedItems(allContent);
     } catch (err) {
       console.log('Error fetching feed content:', err);
+    } finally {
+      setIsFeedLoading(false); 
     }
-  };
+  }, [token, isAuthLoading]);
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
     await fetchFeedContent();
     setRefreshing(false);
-  }, []);
+  }, [fetchFeedContent]);
 
   useEffect(() => {
     fetchFeedContent();
-  }, [refreshTrigger]);
+  }, [fetchFeedContent, refreshTrigger]);
 
+  if (isFeedLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#00c7be" />
+      </View>
+    );
+  }
   
-  useFocusEffect(
-    useCallback(() => {
-      
-      fetchFeedContent();
-    }, [])
-  );
-
   const renderItem = ({ item }) => {
     if (item.contentType === 'trip') {
       return (
@@ -114,6 +128,12 @@ const styles = StyleSheet.create({
   postAuthor: {
     fontWeight: 'bold',
     marginBottom: 5
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: 20,
   }
 });
 

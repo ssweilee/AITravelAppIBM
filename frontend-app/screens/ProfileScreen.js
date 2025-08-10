@@ -151,7 +151,7 @@ console.log('[ProfileScreen] profilePicture:', userInfo?.profilePicture);
         >
           {userInfo?.profilePicture ? (   
         <Image
-          source={{ uri: getAvatarUrl(userInfo.profilePicture) }}
+          source={{ uri: userInfo.profilePicture }}
           style={styles.profilePicture}
         />
           ) : (

@@ -329,14 +329,14 @@ const TripDetailScreen = ({ route, navigation }) => {
         {/* User info row */}
         <View style={styles.userRow}>
           <View style={styles.avatarWrapper}>
-          <Image
-      source={
-        trip.userId?.profilePicture
-          ? { uri: getAvatarUrl(trip.userId.profilePicture) }
-          : require('../assets/icon.png')
-      }
-      style={styles.avatar}
-    />
+            <Image
+              source={
+                trip.userId?.profilePicture
+                  ? { uri: getAvatarUrl(trip.userId.profilePicture) }
+                  : require('../assets/icon.png')
+              }
+              style={styles.avatar}
+            />
           </View>
           <View style={styles.userInfo}>
             <Text style={styles.username}>
