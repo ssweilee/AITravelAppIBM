@@ -53,8 +53,8 @@ const ProfileScreen = () => {
         </Text>
       ),
       headerRight: () => (
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingRight: 10 }}>
-          <TouchableOpacity onPress={() => navigation.navigate('Notifications')} style={{ marginRight: 8 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', paddingRight: 10 }}>
+          <TouchableOpacity onPress={() => navigation.navigate('Notifications')} style={styles.iconButton}>
             <View style={{ position: 'relative' }}>
               <Ionicons name="notifications-outline" size={24} color="white" />
               {unreadCount > 0 && (
@@ -64,7 +64,7 @@ const ProfileScreen = () => {
               )}
             </View>
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => setShowDropdown(v => !v)}>
+          <TouchableOpacity onPress={() => setShowDropdown(v => !v)} style={styles.iconButton}>
             <MaterialIcons name="add-circle-outline" size={24} color="white" />
           </TouchableOpacity>
           <TouchableOpacity
@@ -326,7 +326,8 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 10,
     fontWeight: 'bold',
-  }
+  },
+  iconButton: { marginLeft: 12 },
 });
 
 export default ProfileScreen;
