@@ -20,6 +20,7 @@ import { Swipeable, RectButton } from 'react-native-gesture-handler';
 import { getSocket } from '../utils/socket';
 import { API_BASE_URL } from '../config';
 import { useNotifications } from '../contexts/NotificationsContext';
+import { getAvatarUrl } from '../utils/getAvatarUrl';
 
 export default function NotificationsScreen() {
   const [notifications, setNotifications] = useState([]);
@@ -264,7 +265,7 @@ export default function NotificationsScreen() {
 
   const renderItem = ({ item }) => {
     const time = new Date(item.createdAt).toLocaleString();
-    const avatar = item.sender?.profilePicture;
+    //const avatar = item.sender?.profilePicture;
     return (
       <View style={[styles.cardWrapper, { paddingHorizontal: HORIZONTAL_INSET }]}>
         <Swipeable
@@ -285,13 +286,14 @@ export default function NotificationsScreen() {
           <View style={[styles.card, !item.isRead && styles.unreadCard, { width: cardWidth }]}>
             <Pressable onPress={() => handlePress(item)} style={styles.innerRow}>
               <View style={styles.avatarContainer}>
-                {avatar ? (
-                  <Image source={{ uri: avatar }} style={styles.avatar} />
-                ) : (
-                  <View style={[styles.avatar, styles.placeholder]}>
-                    <Ionicons name="person" size={20} color="#fff" />
-                  </View>
-                )}
+              <Image
+                  source={
+                    item.sender?.profilePicture
+                      ? { uri: getAvatarUrl(item.sender.profilePicture) }
+                      : require('../assets/icon.png') 
+                  }
+                  style={styles.avatar}
+                />
                 {!item.isRead && <View style={styles.unreadDot} />}
               </View>
               <View style={styles.content}>
