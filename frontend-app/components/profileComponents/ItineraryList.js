@@ -17,7 +17,7 @@ import ShareFriendsModal from '../../modals/ShareFriendsModal';
 import MoreMenu from '../MoreMenu'; // path from profileComponents to MoreMenu.js
 import { Feather } from '@expo/vector-icons';
 
-const dummyImage = 'https://via.placeholder.com/300x180.png?text=Trip+Cover';
+const dummyImage = 'https://via.placeholder.com/300x180/1F2A37/FFFFFF?text=Trip+Cover';
 
 const ItineraryList = ({ refreshTrigger, userId, onPress }) => {
   const [itineraries, setItineraries] = useState([]);
@@ -35,7 +35,6 @@ const ItineraryList = ({ refreshTrigger, userId, onPress }) => {
         return;
       }
 
-      // Decode token to know current user (for self detection)
       let currentUserId;
       try {
         currentUserId = JSON.parse(atob(token.split('.')[1])).userId;
@@ -43,8 +42,6 @@ const ItineraryList = ({ refreshTrigger, userId, onPress }) => {
         currentUserId = null;
       }
 
-      // If userId is provided and is not the same as current user, fetch that user's
-      // otherwise, use /mine so that private + public items are returned.
       const endpoint =
         userId && userId !== currentUserId
           ? `${API_BASE_URL}/api/itineraries/${userId}`
@@ -230,7 +227,6 @@ const ItineraryCard = ({ item, onPress, onDeleted }) => {
       onPress={handlePress}
       activeOpacity={0.9}
     >
-      {/* three vertical dots menu trigger */}
       {canDelete && (
         <View style={styles.dotContainer}>
           <TouchableOpacity onPress={() => setMenuVisible(true)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
@@ -304,14 +300,16 @@ const ItineraryCard = ({ item, onPress, onDeleted }) => {
 const styles = StyleSheet.create({
   card: {
     width: '100%',
-    backgroundColor: '#fbc',
+    backgroundColor: '#FFFFFF',
     borderRadius: 12,
     marginBottom: 16,
     overflow: 'hidden',
-    elevation: 3,
+    elevation: 2,
     shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E6F2F1',
     position: 'relative',
   },
   dotContainer: {
@@ -323,6 +321,7 @@ const styles = StyleSheet.create({
   image: {
     width: '100%',
     height: 160,
+    backgroundColor: '#1F2A37',
   },
   cardContentRow: {
     flexDirection: 'row',
@@ -353,11 +352,14 @@ const styles = StyleSheet.create({
     color: '#777',
   },
   actionButton: {
-    padding: 6,
-    backgroundColor: '#eee',
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+    backgroundColor: '#F5F7FA',
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#E6EAF0',
   },
   repostMeta: {
     fontSize: 12,
