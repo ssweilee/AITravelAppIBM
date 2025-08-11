@@ -102,9 +102,18 @@ function RecommendationScreen() {
               <Text style={{ fontSize: 22, fontWeight: 'bold', marginTop: 24, marginBottom: 12 }}>
                 Collaborative Filtering Recommendations
               </Text>
-              <View style={{ minHeight: 60, justifyContent: 'center', alignItems: 'center' }}>
-                <Text style={{ color: '#888' }}>[Coming soon]</Text>
-              </View>
+              {preferenceProfile && Array.isArray(preferenceProfile.collaborative) && preferenceProfile.collaborative.length > 0 ? (
+                preferenceProfile.collaborative.slice(0, 5).map((trip, idx) => (
+                  <View key={trip._id || idx} style={{ marginBottom: 16, padding: 12, backgroundColor: '#fff7e6', borderRadius: 8 }}>
+                    <Text style={{ fontSize: 18, fontWeight: 'bold' }}>{trip.title || 'Trip Title'}</Text>
+                    <Text>Location: {trip.destination || 'N/A'}</Text>
+                    <Text>Budget: {trip.budget ? `$${trip.budget}` : 'N/A'}</Text>
+                    <Text>Travel Style: {trip.travelStyle || 'N/A'}</Text>
+                  </View>
+                ))
+              ) : (
+                <Text>No collaborative recommendations found.</Text>
+              )}
             </>
           )}
         </ScrollView>

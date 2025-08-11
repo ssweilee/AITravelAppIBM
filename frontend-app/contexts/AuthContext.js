@@ -14,6 +14,7 @@ export const AuthProvider = ({ children }) => {
 
   const logout = useCallback(async () => { 
    await AsyncStorage.removeItem('token');
+   await AsyncStorage.removeItem('refreshToken');
    await AsyncStorage.removeItem('userInfoCache');
    setToken(null);
    setUser(null);
@@ -126,6 +127,17 @@ useEffect(() => {
     try {
        const currentToken = await AsyncStorage.getItem('token');
        if (currentToken) {
+         // Validate cache belongs to this token user
+         let cache = await AsyncStorage.getItem('userInfoCache');
+         if (cache) {
+           try {
+             const cachedUser = JSON.parse(cache);
+             const payload = JSON.parse(atob(currentToken.split('.')[1]));
+             if (cachedUser?._id !== payload?.userId) {
+               await AsyncStorage.removeItem('userInfoCache');
+             }
+           } catch { /* ignore */ }
+         }
          setToken(currentToken);
          await refreshUser();
        }
@@ -143,13 +155,28 @@ useEffect(() => {
     setIsLoading(true);
     await AsyncStorage.setItem('token', newToken);
     setToken(newToken);
+    let userToSet = null;
     if (newUserInfo) {
-      const userToSet = { ...newUserInfo };
+      userToSet = { ...newUserInfo };
       if (userToSet.profilePicture) {
         userToSet.profilePicture = getAvatarUrl(userToSet.profilePicture);
       }
       setUser(userToSet);
       await AsyncStorage.setItem('userInfoCache', JSON.stringify(userToSet));
+    } else {
+      // Fetch profile if backend didn’t send user
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/users/profile`, { headers: { Authorization: `Bearer ${newToken}` } });
+        const data = await res.json();
+        if (res.ok && data?.user?._id) {
+          userToSet = data.user;
+          if (userToSet.profilePicture) {
+            userToSet.profilePicture = getAvatarUrl(userToSet.profilePicture);
+          }
+          setUser(userToSet);
+          await AsyncStorage.setItem('userInfoCache', JSON.stringify(userToSet));
+        }
+      } catch (e) { console.log('[login] profile fetch after login failed:', e.message); }
     }
     setIsLoading(false);
   };
