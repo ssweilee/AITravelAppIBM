@@ -201,10 +201,10 @@ const CreatePostScreen = ({ navigation, route }) => {
     <View style={[styles.container, { paddingTop: Platform.OS === 'android' ? RNStatusBar.currentHeight : 40 }]}>
       {/* Header */}
       <View style={styles.headerRow}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={{ zIndex: 2, elevation: 2 }}>
           <Ionicons name="arrow-back" size={26} color="#222" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Create Post</Text>
+        <Text style={styles.headerTitle} pointerEvents="none">Create Post</Text>
         <TouchableOpacity style={[styles.postButton, { backgroundColor: '#00c7be' }]} onPress={handlePostSubmit}>
           <Text style={[styles.postButtonText, { color: '#fff' }]}>Post</Text>
         </TouchableOpacity>
