@@ -2,6 +2,7 @@ import React, { createContext, useState, useContext, useEffect, useCallback } fr
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fetchUserProfile } from '../utils/ProfileInfo'; 
 import { NavigationContainerRefContext } from '@react-navigation/native';
+import { getAvatarUrl } from '../utils/getAvatarUrl'; 
 
 const AuthContext = createContext(null);
 
@@ -17,6 +18,7 @@ export const AuthProvider = ({ children }) => {
    setToken(null);
    setUser(null);
  }, []);
+
 
   const refreshUser = useCallback(async () => {
     try {
@@ -61,9 +63,35 @@ export const AuthProvider = ({ children }) => {
         return null;
       }
 
-      const userData = await fetchUserProfile(navigation);
+      const userData = await fetchUserProfile(navigation, currentToken);
       if (userData?.success && userData.user) {
-        setUser(userData.user);
+
+        const refreshedUser = { ...userData.user }; 
+        if (refreshedUser && refreshedUser.profilePicture) {
+          refreshedUser.profilePicture = getAvatarUrl(refreshedUser.profilePicture);
+        }
+        
+        setUser(refreshedUser); 
+        await AsyncStorage.setItem('userInfoCache', JSON.stringify(refreshedUser));
+        return refreshedUser;
+
+      } else {
+        console.error("Failed to refresh user:", userData.error);
+        if (userData.error?.message === 'Invalid token' || userData.error?.message === 'No auth token found') {
+          console.log("Invalid token detected, logging out.");
+          await logout();
+          if (navigation && navigation.reset) {
+            navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+          }
+        } else {
+          setUser(null);
+        }
+        return null;
+      }
+
+
+{/**
+  setUser(userData.user);
         await AsyncStorage.setItem('userInfoCache', JSON.stringify(userData.user));
         return userData.user;
       } else {
@@ -79,42 +107,51 @@ export const AuthProvider = ({ children }) => {
         }
         return null;
       }
-    } catch (error) {
-      console.error("An unexpected error occurred while refreshing user:", error);
-      setUser(null);
-      if (navigation && navigation.reset) {
-        navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
-      }
-      return null;
-    }
-  }, [logout, navigation]);
+  
+  */}
 
-  useEffect(() => {
-    const initializeApp = async () => {
-      try {
-         const currentToken = await AsyncStorage.getItem('token');
-         if (currentToken) {
-           await refreshUser();
-         }
-      } catch (e) {
-        console.error("Failed to initialize app state:", e);
-        setUser(null);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    initializeApp();
-  }, [refreshUser]);
+
+      } catch (error) {
+  console.error("An unexpected error occurred while refreshing user:", error);
+  setUser(null);
+  if (navigation && navigation.reset) {
+    navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+  }
+  return null;
+}
+}, [logout, navigation]);
+
+useEffect(() => {
+  const initializeApp = async () => {
+    try {
+       const currentToken = await AsyncStorage.getItem('token');
+       if (currentToken) {
+         setToken(currentToken);
+         await refreshUser();
+       }
+    } catch (e) {
+      console.error("Failed to initialize app state:", e);
+      await logout(); 
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  initializeApp();
+}, []);
 
   const login = async (newToken, newUserInfo) => {
+    setIsLoading(true);
     await AsyncStorage.setItem('token', newToken);
-    if (newUserInfo) {
-      await AsyncStorage.setItem('userInfoCache', JSON.stringify(newUserInfo));
-      setUser(newUserInfo);
-    } else {
-      await refreshUser(); 
-    }
     setToken(newToken);
+    if (newUserInfo) {
+      const userToSet = { ...newUserInfo };
+      if (userToSet.profilePicture) {
+        userToSet.profilePicture = getAvatarUrl(userToSet.profilePicture);
+      }
+      setUser(userToSet);
+      await AsyncStorage.setItem('userInfoCache', JSON.stringify(userToSet));
+    }
+    setIsLoading(false);
   };
   
   // Always redirect to login if not authenticated

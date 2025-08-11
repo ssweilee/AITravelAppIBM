@@ -8,6 +8,7 @@ import MessageInput from '../components/messageComponents/MessageInput';
 import socket from '../utils/socket';
 import { KeyboardAwareFlatList } from 'react-native-keyboard-aware-scroll-view';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 
 const ChatScreen = () => {
   const navigation = useNavigation();
@@ -43,6 +44,17 @@ const ChatScreen = () => {
         shadowOpacity: 0,
         borderBottomWidth: 0,
       },
+      headerLeft: () => (
+      <TouchableOpacity
+        onPress={() => navigation.goBack()}
+        style={{ paddingHorizontal: 0, paddingVertical: 6 }}
+        activeOpacity={0.7}
+      >
+        <Ionicons name="arrow-back" size={24} color="#fff" />
+      </TouchableOpacity>
+      ),
+      headerBackTitleVisible: false,
+      headerBackTitle: '',
     });
   }, [navigation, chatId, otherUserName]);
 

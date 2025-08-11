@@ -53,8 +53,8 @@ const ProfileScreen = () => {
         </Text>
       ),
       headerRight: () => (
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingRight: 10 }}>
-          <TouchableOpacity onPress={() => navigation.navigate('Notifications')} style={{ marginRight: 8 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', paddingRight: 10 }}>
+          <TouchableOpacity onPress={() => navigation.navigate('Notifications')} style={styles.iconButton}>
             <View style={{ position: 'relative' }}>
               <Ionicons name="notifications-outline" size={24} color="white" />
               {unreadCount > 0 && (
@@ -64,8 +64,8 @@ const ProfileScreen = () => {
               )}
             </View>
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => setShowDropdown(v => !v)}>
-            <MaterialIcons name="add-circle-outline" size={24} color="white" />
+          <TouchableOpacity onPress={() => setShowDropdown(v => !v)} style={styles.iconButton}>
+            <MaterialIcons name="create-outline" size={24} color="white" />
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.iconButton}
@@ -141,6 +141,22 @@ console.log('[ProfileScreen] profilePicture:', userInfo?.profilePicture);
             />
             <Text>Itinerary</Text>
           </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.dropdownItem}
+            onPress={() => {
+              setShowDropdown(false);
+              navigation.navigate('CreateTrip');
+            }}
+          >
+            <MaterialIcons
+              name="luggage"
+              size={22}
+              color="#222"
+              style={{ marginRight: 10 }}
+            />
+            <Text>Trip</Text>
+          </TouchableOpacity>
         </View>
       )}
 
@@ -151,7 +167,7 @@ console.log('[ProfileScreen] profilePicture:', userInfo?.profilePicture);
         >
           {userInfo?.profilePicture ? (   
         <Image
-          source={{ uri: getAvatarUrl(userInfo.profilePicture) }}
+          source={{ uri: userInfo.profilePicture }}
           style={styles.profilePicture}
         />
           ) : (
@@ -209,25 +225,27 @@ console.log('[ProfileScreen] profilePicture:', userInfo?.profilePicture);
         ))}
       </View>
 
-      {selectedTab === 'Post' && (
-        <PostList refreshTrigger={refreshKey} />
-      )}
+      <View style={{ flex: 1 }}>
+        {selectedTab === 'Post' && (
+          <PostList refreshTrigger={refreshKey} />
+        )}
 
-      {selectedTab === 'Itinerary' && (
-        <ItineraryList 
-          refreshTrigger={refreshKey}
-          userId={userInfo?._id}
-          onPress={(itinerary) => navigation.navigate('ItineraryDetail', { itinerary })}
-        />
-      )}
-      
-      {selectedTab === 'Trip' && (
-        <TripList 
-          refreshTrigger={refreshKey}
-          userId={userInfo?._id}
-          onPress={(trip) => navigation.navigate('TripDetail', { trip })}
-        />
-      )}
+        {selectedTab === 'Itinerary' && (
+          <ItineraryList 
+            refreshTrigger={refreshKey}
+            userId={userInfo?._id}
+            onPress={(itinerary) => navigation.navigate('ItineraryDetail', { itinerary })}
+          />
+        )}
+        
+        {selectedTab === 'Trip' && (
+          <TripList 
+            refreshTrigger={refreshKey}
+            userId={userInfo?._id}
+            onPress={(trip) => navigation.navigate('TripDetail', { trip })}
+          />
+        )}
+      </View>
 
       <FollowersModal
         visible={followersModalVisible}
@@ -308,7 +326,8 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 10,
     fontWeight: 'bold',
-  }
+  },
+  iconButton: { marginLeft: 12 },
 });
 
 export default ProfileScreen;

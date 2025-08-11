@@ -43,11 +43,10 @@ const UserProfileScreen = ({ route }) => {
       setCurrentUserId(decodedUserId);
 
       let result = await fetchUserById(userId);
-      // If token missing, retry once after short delay
       if (!result.success && result.error?.toLowerCase().includes('token')) {
         if (!didRetry) {
           didRetry = true;
-          setTimeout(loadProfileData, 300); // Retry after 300ms
+          setTimeout(loadProfileData, 300);
           return;
         }
       }
@@ -59,7 +58,6 @@ const UserProfileScreen = ({ route }) => {
       setLoading(false);
     };
 
-    // Call the async function
     loadProfileData();
   }, [userId]);
 
@@ -198,19 +196,21 @@ const UserProfileScreen = ({ route }) => {
         ))}
       </View>
 
-      {selectedTab === 'Post' && <UserPostList userId={user._id} />}
-      {selectedTab === 'Itinerary' && (
-        <ItineraryList
-          userId={currentUserId !== user._id ? user._id : undefined}
-          onPress={(itinerary) => navigation.navigate('ItineraryDetail', { itinerary })}
-        />
-      )}
-      {selectedTab === 'Trip' && (
-        <TripList
-          userId={user._id}
-          onPress={(trip) => navigation.navigate('TripDetail', { trip })}
-        />
-      )}
+      <View style={{ flex: 1 }}>
+        {selectedTab === 'Post' && <UserPostList userId={user._id} />}
+        {selectedTab === 'Itinerary' && (
+          <ItineraryList
+            userId={currentUserId !== user._id ? user._id : undefined}
+            onPress={(itinerary) => navigation.navigate('ItineraryDetail', { itinerary })}
+          />
+        )}
+        {selectedTab === 'Trip' && (
+          <TripList
+            userId={user._id}
+            onPress={(trip) => navigation.navigate('TripDetail', { trip })}
+          />
+        )}
+      </View>
 
       <FollowersModal
         visible={followersModalVisible}
