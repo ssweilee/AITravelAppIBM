@@ -23,51 +23,23 @@ const CreatePostScreen = ({ navigation, route }) => {
 
   React.useEffect(() => {
     const fetchUsernameAndFollowings = async () => {
-      try {
-        const token = await AsyncStorage.getItem('token');
-        if (token) {
           try {
-            const base64Url = token.split('.')[1];
-            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-            const jsonPayload = decodeURIComponent(
-              atob(base64)
-                .split('')
-                .map(function(c) {
-                  return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-                })
-                .join('')
-            );
-            const payload = JSON.parse(jsonPayload);
-            // Fetch user info from backend using userId
-            const response = await fetch(`${API_BASE_URL}/api/users/${payload.userId}`, {
-              headers: { Authorization: `Bearer ${token}` }
+            const token = await AsyncStorage.getItem('token');
+            const response = await fetch(`${API_BASE_URL}/api/users/followings`, {
+              headers: { Authorization: `Bearer ${token}` },
             });
             const data = await response.json();
-            if (response.ok && data.user) {
-              setUsername((data.user.firstName || '') + ' ' + (data.user.lastName || ''));
+            if (response.ok && Array.isArray(data)) {
+              setFollowings(data);
             } else {
-              setUsername('User');
+              console.error("Unexpected followings response:", data);
             }
-            // Fetch followings for tag modal
-            const profileRes = await fetch(`${API_BASE_URL}/api/users/profile`, {
-              headers: { Authorization: `Bearer ${token}` }
-            });
-            const profileData = await profileRes.json();
-            if (profileRes.ok && profileData.user && Array.isArray(profileData.user.followings)) {
-              setFollowings(profileData.user.followings);
-            }
-          } catch (decodeErr) {
-            console.log('Error decoding JWT or fetching user:', decodeErr);
-            setUsername('User');
+          } catch (err) {
+            console.error("Error fetching followings:", err);
           }
-        }
-      } catch (err) {
-        console.log('Error in fetchUsername:', err);
-        setUsername('User');
-      }
-    };
-    fetchUsernameAndFollowings();
-  }, []);
+        };
+        fetchUsernameAndFollowings();
+      }, []);
 
   const handlePostSubmit = async () => {
     if (!content) {

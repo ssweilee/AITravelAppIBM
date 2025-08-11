@@ -7,7 +7,7 @@ const sendNotification = require('../utils/notify');
 
 exports.createTrip = async (req, res) => {
   try {
-    const { title, destination, description, budget, startDate, endDate, selectedPosts, selectedItineraries, tags } = req.body;
+    const { title, destination, description, budget, startDate, endDate, selectedPosts, selectedItineraries, tags, taggedUsers } = req.body;
     const userId = req.user.userId;
 
     console.log('Tags: ', tags);
@@ -44,6 +44,7 @@ exports.createTrip = async (req, res) => {
       destination,
       description: description || '',
       tags: tags || [],
+      taggedUsers: Array.isArray(taggedUsers) ? taggedUsers : [],
       budget,
       startDate: new Date(startDate),
       endDate: new Date(endDate),
@@ -58,6 +59,7 @@ exports.createTrip = async (req, res) => {
     // Populate the response
     const populatedTrip = await Trip.findById(trip._id)
       .populate('userId', 'firstName lastName profilePicture')
+      .populate('taggedUsers', '_id firstName lastName profilePicture')
       .populate('posts');
 
     res.status(201).json({
@@ -76,6 +78,7 @@ exports.getUserTrips = async (req, res) => {
 
     const trips = await Trip.find({ userId })
       .populate('userId', 'firstName lastName profilePicture')
+      .populate('taggedUsers', '_id firstName lastName profilePicture')
       .populate('posts')
       .populate('comments')
       .sort({ createdAt: -1 });
@@ -93,6 +96,7 @@ exports.getTripsByUserId = async (req, res) => {
 
     const trips = await Trip.find({ userId, isPublic: true })
       .populate('userId', 'firstName lastName profilePicture')
+      .populate('taggedUsers', '_id firstName lastName profilePicture')
       .populate('posts')
       .populate('comments')
       .sort({ createdAt: -1 });
@@ -108,6 +112,7 @@ exports.getAllTrips = async (req, res) => {
   try {
     const trips = await Trip.find({ isPublic: true })
       .populate('userId', 'firstName lastName profilePicture')
+      .populate('taggedUsers', '_id firstName lastName profilePicture')
       .populate('posts')
       .populate('comments')
       .sort({ createdAt: -1 });
@@ -125,6 +130,7 @@ exports.getTripById = async (req, res) => {
 
     const trip = await Trip.findById(tripId)
       .populate('userId', 'firstName lastName profilePicture')
+      .populate('taggedUsers', '_id firstName lastName profilePicture')
       .populate('posts')
       .populate({
         path: 'comments',
@@ -181,9 +187,11 @@ exports.updateTrip = async (req, res) => {
     if (selectedPosts) updateData.posts = selectedPosts;
     if (isPublic !== undefined) updateData.isPublic = isPublic;
     if (tags) updateData.tags = tags;
+    if (taggedUsers !== undefined) updateData.taggedUsers = taggedUsers;
 
     const updatedTrip = await Trip.findByIdAndUpdate(tripId, updateData, { new: true })
       .populate('userId', 'firstName lastName profilePicture')
+      .populate('taggedUsers', '_id firstName lastName profilePicture')
       .populate('posts');
 
     res.status(200).json({

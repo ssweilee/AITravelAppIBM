@@ -45,6 +45,11 @@ const TripDetailScreen = ({ route, navigation }) => {
   const [menuComment, setMenuComment] = useState(null);
   const [deletingComment, setDeletingComment] = useState(false);
   const [commentDeleteError, setCommentDeleteError] = useState(null);
+  const [taggedUsers, setTaggedUsers] = useState([]); // Selected users to tag
+
+  useEffect(() => {
+    setTaggedUsers(trip.taggedUsers || []);
+  }, [trip.taggedUsers]);
 
   useEffect(() => {
     const initializeData = async () => {
@@ -370,6 +375,27 @@ const TripDetailScreen = ({ route, navigation }) => {
             <Text style={styles.dateText}>
               {formatDate(trip.startDate)} - {formatDate(trip.endDate)}
             </Text>
+            {taggedUsers.length > 0 && (
+              <View style={styles.taggedPeopleContainer}>
+              {taggedUsers.map((user, i) => (
+                <Text
+                  key={user._id}
+                  style={styles.taggedPersonName}
+                  onPress={() => {
+                    console.log('JClicked userId:', user._id);
+                    if (userId === user._id) {
+                      navigation.navigate('Profile');
+                    } else {
+                      navigation.navigate('UserProfile', { userId: user._id });
+                    }
+                  }}
+                >
+                  @{user.firstName} {user.lastName}
+                  {i !== taggedUsers.length - 1 && ', '}
+                </Text>
+              ))}
+            </View>
+            )}
             <Text style={styles.budget}>Budget: ${trip.budget}</Text>
           </View>
 
@@ -893,6 +919,15 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 20,
   },
+    taggedPersonName: {
+  fontWeight: 'bold',
+  color: 'blue',
+  fontSize: 16,
+},
+taggedPeopleContainer: {
+  flexDirection: 'row',
+  flexWrap: 'wrap',
+},
 });
 
 export default TripDetailScreen;

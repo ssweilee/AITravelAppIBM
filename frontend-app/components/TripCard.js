@@ -44,6 +44,11 @@ const TripCard = ({ trip, onPress, onToggleSave, onDeleted }) => {
   const [menuVisible, setMenuVisible] = useState(false);
 
   const { deleteResource, loading: deleting, error: deleteError } = useDeleteResource();
+  const [taggedUsers, setTaggedUsers] = useState([]); // Selected users to tag
+    
+  useEffect(() => {
+    setTaggedUsers(trip.taggedUsers || []);
+  }, [trip.taggedUsers]);
 
   useEffect(() => {
     (async () => {
@@ -296,6 +301,8 @@ const TripCard = ({ trip, onPress, onToggleSave, onDeleted }) => {
     }
   };
 
+  console.log('JtaggedUsers:', trip.taggedUsers)
+
   return (
     <View style={styles.container}>
       {/* Top row: user + more menu */}
@@ -342,6 +349,27 @@ const TripCard = ({ trip, onPress, onToggleSave, onDeleted }) => {
           </TouchableOpacity>
         )}
       </View>
+
+      {trip.taggedUsers && trip.taggedUsers.length > 0 && (
+  <View style={styles.taggedPeopleContainer}>
+    {trip.taggedUsers.map((user, i) => (
+      <Text
+        key={user._id}
+        style={styles.taggedPersonName}
+        onPress={() => {
+          if (userId === user._id) {
+            navigation.navigate('Profile');
+          } else {
+            navigation.navigate('UserProfile', { userId: user._id });
+          }
+        }}
+      >
+        @{user.firstName} {user.lastName}
+        {i !== trip.taggedUsers.length - 1 && ', '}
+      </Text>
+    ))}
+  </View>
+)}
 
       {/* Trip content */}
       <TouchableOpacity onPress={() => (onPress ? onPress(trip) : goToTripDetail())}>
