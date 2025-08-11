@@ -230,7 +230,7 @@ const ItineraryCard = ({ item, onPress, onDeleted }) => {
       {canDelete && (
         <View style={styles.dotContainer}>
           <TouchableOpacity onPress={() => setMenuVisible(true)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-            <Feather name="more-vertical" size={20} />
+            <Feather name="more-vertical" size={20} color="#FFFFFF"/>
           </TouchableOpacity>
         </View>
       )}
