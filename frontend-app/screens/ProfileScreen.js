@@ -65,7 +65,7 @@ const ProfileScreen = () => {
             </View>
           </TouchableOpacity>
           <TouchableOpacity onPress={() => setShowDropdown(v => !v)} style={styles.iconButton}>
-            <MaterialIcons name="add-circle-outline" size={24} color="white" />
+            <MaterialIcons name="create-outline" size={24} color="white" />
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.iconButton}
