@@ -155,8 +155,8 @@ const UserProfileScreen = ({ route }) => {
 
           <View style={styles.statRow}>
             <Text>
-              <Text style={styles.statNumber}>{user?.reviews?.length || 0}</Text>
-              <Text style={styles.statLabel}> Reviews</Text>
+              <Text style={styles.statNumber}>{user?.itineraries?.length || 0}</Text>
+              <Text style={styles.statLabel}> Itineraries</Text>
             </Text>
           </View>
         </View>
@@ -185,7 +185,7 @@ const UserProfileScreen = ({ route }) => {
       </View>
 
       <View style={styles.tabRow}>
-        {['Post', 'Itinerary', 'Trip', 'Review'].map(tab => (
+        {['Post', 'Itinerary', 'Trip'].map(tab => (
           <TouchableOpacity
             key={tab}
             onPress={() => setSelectedTab(tab)}
@@ -282,6 +282,8 @@ const styles = StyleSheet.create({
     borderColor: '#eee'
   },
   tabItem: {
+    flex: 1, // This makes each tab take equal width (1/3 each instead of 1/4)
+    alignItems: 'center',
     paddingVertical: 10,
     paddingHorizontal: 12,
     borderBottomWidth: 2,

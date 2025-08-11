@@ -65,7 +65,7 @@ const ProfileScreen = () => {
             </View>
           </TouchableOpacity>
           <TouchableOpacity onPress={() => setShowDropdown(v => !v)} style={styles.iconButton}>
-            <MaterialIcons name="create-outline" size={24} color="white" />
+            <MaterialIcons name="add-circle-outline" size={24} color="white" />
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.iconButton}
@@ -196,8 +196,8 @@ console.log('[ProfileScreen] profilePicture:', userInfo?.profilePicture);
           
           <View style={styles.statRow}>
             <Text>
-              <Text style={styles.statNumber}>{userInfo?.reviews?.length || 0}</Text>
-              <Text style={styles.statLabel}> Reviews</Text>
+              <Text style={styles.statNumber}>{userInfo?.itineraries?.length || 0}</Text>
+              <Text style={styles.statLabel}> Itineraries</Text>
             </Text>
           </View>
         </View>
@@ -214,7 +214,7 @@ console.log('[ProfileScreen] profilePicture:', userInfo?.profilePicture);
       </View>
 
       <View style={styles.tabRow}>
-        {['Post', 'Itinerary', 'Trip', 'Review'].map(tab => (
+        {['Post', 'Itinerary', 'Trip'].map(tab => (
           <TouchableOpacity
             key={tab}
             onPress={() => setSelectedTab(tab)}
@@ -294,7 +294,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row', justifyContent: 'space-around',
     marginTop: 20, borderBottomWidth: 1, borderColor: '#eee'
   },
-  tabItem: { paddingVertical: 10, paddingHorizontal: 12, borderBottomWidth: 2, borderColor: 'transparent' },
+  tabItem: { 
+    flex: 1, // This makes each tab take equal width
+    alignItems: 'center',
+    paddingVertical: 10, 
+    paddingHorizontal: 12, 
+    borderBottomWidth: 2, 
+    borderColor: 'transparent' 
+  },
   tabItemActive: { borderBottomColor: '#00c7be' },
   tabText: { color: '#777', fontSize: 16 },
   tabTextActive: { color: '#00c7be', fontWeight: 'bold' },
