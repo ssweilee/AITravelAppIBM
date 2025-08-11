@@ -4,6 +4,7 @@ from pymongo import MongoClient
 from bson import ObjectId
 import os
 from math import sqrt
+from collaborative import collaborative_recommendations
 
 app = Flask(__name__)
 CORS(app)
@@ -165,10 +166,6 @@ def content_based_recommendations(user_profile, all_trips):
     # Return only the selected diversified list
     return [serialize_doc(t) for t in selected[:TOP_K]]
 
-def collaborative_recommendations(user_profile, all_trips):
-    # Placeholder: implement collaborative filtering logic here
-    return []
-
 def hybrid_recommendations(content_recs, collab_recs):
     # Placeholder hybrid: simply prioritize content (already diversified)
     return content_recs
@@ -185,7 +182,15 @@ def recommend():
 
     # Run each recommendation strategy
     content_recs = content_based_recommendations(user_profile, all_trips)
-    collab_recs = collaborative_recommendations(user_profile, all_trips)
+    try:
+        collab_recs_raw = collaborative_recommendations(user_profile, all_trips)
+        collab_recs = [serialize_doc(t) for t in collab_recs_raw]
+    except Exception as e:
+        if DEBUG_LOG:
+            print('[recommend] collaborative error:', e)
+        collab_recs = []
+    if DEBUG_LOG:
+        print(f"[recommend] content_recs={len(content_recs)} collab_recs={len(collab_recs)}")
     hybrid_recs = hybrid_recommendations(content_recs, collab_recs)
 
     response = {
