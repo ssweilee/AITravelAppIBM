@@ -53,8 +53,8 @@ const ProfileScreen = () => {
         </Text>
       ),
       headerRight: () => (
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingRight: 10 }}>
-          <TouchableOpacity onPress={() => navigation.navigate('Notifications')} style={{ marginRight: 8 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', paddingRight: 10 }}>
+          <TouchableOpacity onPress={() => navigation.navigate('Notifications')} style={styles.iconButton}>
             <View style={{ position: 'relative' }}>
               <Ionicons name="notifications-outline" size={24} color="white" />
               {unreadCount > 0 && (
@@ -64,7 +64,7 @@ const ProfileScreen = () => {
               )}
             </View>
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => setShowDropdown(v => !v)}>
+          <TouchableOpacity onPress={() => setShowDropdown(v => !v)} style={styles.iconButton}>
             <MaterialIcons name="add-circle-outline" size={24} color="white" />
           </TouchableOpacity>
           <TouchableOpacity
@@ -141,6 +141,22 @@ console.log('[ProfileScreen] profilePicture:', userInfo?.profilePicture);
             />
             <Text>Itinerary</Text>
           </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.dropdownItem}
+            onPress={() => {
+              setShowDropdown(false);
+              navigation.navigate('CreateTrip');
+            }}
+          >
+            <MaterialIcons
+              name="luggage"
+              size={22}
+              color="#222"
+              style={{ marginRight: 10 }}
+            />
+            <Text>Trip</Text>
+          </TouchableOpacity>
         </View>
       )}
 
@@ -180,8 +196,8 @@ console.log('[ProfileScreen] profilePicture:', userInfo?.profilePicture);
           
           <View style={styles.statRow}>
             <Text>
-              <Text style={styles.statNumber}>{userInfo?.reviews?.length || 0}</Text>
-              <Text style={styles.statLabel}> Reviews</Text>
+              <Text style={styles.statNumber}>{userInfo?.itineraries?.length || 0}</Text>
+              <Text style={styles.statLabel}> Itineraries</Text>
             </Text>
           </View>
         </View>
@@ -198,7 +214,7 @@ console.log('[ProfileScreen] profilePicture:', userInfo?.profilePicture);
       </View>
 
       <View style={styles.tabRow}>
-        {['Post', 'Itinerary', 'Trip', 'Review'].map(tab => (
+        {['Post', 'Itinerary', 'Trip'].map(tab => (
           <TouchableOpacity
             key={tab}
             onPress={() => setSelectedTab(tab)}
@@ -209,25 +225,27 @@ console.log('[ProfileScreen] profilePicture:', userInfo?.profilePicture);
         ))}
       </View>
 
-      {selectedTab === 'Post' && (
-        <PostList refreshTrigger={refreshKey} />
-      )}
+      <View style={{ flex: 1 }}>
+        {selectedTab === 'Post' && (
+          <PostList refreshTrigger={refreshKey} />
+        )}
 
-      {selectedTab === 'Itinerary' && (
-        <ItineraryList 
-          refreshTrigger={refreshKey}
-          userId={userInfo?._id}
-          onPress={(itinerary) => navigation.navigate('ItineraryDetail', { itinerary })}
-        />
-      )}
-      
-      {selectedTab === 'Trip' && (
-        <TripList 
-          refreshTrigger={refreshKey}
-          userId={userInfo?._id}
-          onPress={(trip) => navigation.navigate('TripDetail', { trip })}
-        />
-      )}
+        {selectedTab === 'Itinerary' && (
+          <ItineraryList 
+            refreshTrigger={refreshKey}
+            userId={userInfo?._id}
+            onPress={(itinerary) => navigation.navigate('ItineraryDetail', { itinerary })}
+          />
+        )}
+        
+        {selectedTab === 'Trip' && (
+          <TripList 
+            refreshTrigger={refreshKey}
+            userId={userInfo?._id}
+            onPress={(trip) => navigation.navigate('TripDetail', { trip })}
+          />
+        )}
+      </View>
 
       <FollowersModal
         visible={followersModalVisible}
@@ -276,7 +294,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row', justifyContent: 'space-around',
     marginTop: 20, borderBottomWidth: 1, borderColor: '#eee'
   },
-  tabItem: { paddingVertical: 10, paddingHorizontal: 12, borderBottomWidth: 2, borderColor: 'transparent' },
+  tabItem: { 
+    flex: 1, // This makes each tab take equal width
+    alignItems: 'center',
+    paddingVertical: 10, 
+    paddingHorizontal: 12, 
+    borderBottomWidth: 2, 
+    borderColor: 'transparent' 
+  },
   tabItemActive: { borderBottomColor: '#00c7be' },
   tabText: { color: '#777', fontSize: 16 },
   tabTextActive: { color: '#00c7be', fontWeight: 'bold' },
@@ -308,7 +333,8 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 10,
     fontWeight: 'bold',
-  }
+  },
+  iconButton: { marginLeft: 12 },
 });
 
 export default ProfileScreen;
