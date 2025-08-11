@@ -295,10 +295,10 @@ const CreateItineraryScreen = ({ navigation, route }) => {
         ]}
       >
         <View style={styles.headerRow}>
-          <TouchableOpacity onPress={() => navigation.goBack?.()}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={{ zIndex: 2, elevation: 2 }}>
             <Ionicons name="arrow-back" size={26} color="#222" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Create Itinerary</Text>
+          <Text style={styles.headerTitle} pointerEvents="none">Create Itinerary</Text>
           <TouchableOpacity style={styles.saveButton} onPress={handleShare}>
             <Text style={styles.saveButtonText}>Share</Text>
           </TouchableOpacity>
