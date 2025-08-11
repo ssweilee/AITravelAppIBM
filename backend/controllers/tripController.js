@@ -181,7 +181,7 @@ exports.updateTrip = async (req, res) => {
       }
     }
 
-    // ADD VALIDATION FOR ITINERARIES
+   
     if (selectedItineraries && selectedItineraries.length > 0) {
       const userItineraries = await Itinerary.find({ _id: { $in: selectedItineraries }, createdBy: userId });
       if (userItineraries.length !== selectedItineraries.length) {
@@ -197,7 +197,7 @@ exports.updateTrip = async (req, res) => {
     if (startDate) updateData.startDate = new Date(startDate);
     if (endDate) updateData.endDate = new Date(endDate);
     if (selectedPosts) updateData.posts = selectedPosts;
-    if (selectedItineraries) updateData.itineraries = selectedItineraries; // ADD THIS LINE
+    if (selectedItineraries) updateData.itineraries = selectedItineraries; 
     if (isPublic !== undefined) updateData.isPublic = isPublic;
     if (tags) updateData.tags = tags;
 
