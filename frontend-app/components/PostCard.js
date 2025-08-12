@@ -301,27 +301,27 @@ const PostCard = ({ post, onPress, onToggleSave, onDeleted }) => {
 
       <TouchableOpacity onPress={() => onPress?.(post) ?? goToComments()}>
         <Text style={styles.content}>{post.content}</Text>
+        
         {taggedUsers.length > 0 && (
-          <View style={styles.taggedPeopleContainer}>
-          {taggedUsers.map((user, i) => (
-          <Text
-           key={user._id}
-           style={styles.taggedPersonName}
-           onPress={() => {
-           console.log('JClicked userId:', user._id);
-        if (userId === user._id) {
-          navigation.navigate('Profile');
-        } else {
-          navigation.navigate('UserProfile', { userId: user._id });
-        }
-      }}
-    >
-      @{user.firstName} {user.lastName}
-      {i !== taggedUsers.length - 1 && ', '}
-    </Text>
-  ))}
-</View>
-)}
+          <Text style={styles.taggedPeopleContainer}>
+            {taggedUsers.map((user, i) => (
+              <Text
+                key={user._id}
+                style={[styles.taggedPersonName, { color: '#007AFF', fontWeight: 'bold' }]}
+                onPress={() => {
+                  if (userId === user._id) {
+                    navigation.navigate('Profile');
+                  } else {
+                    navigation.navigate('UserProfile', { userId: user._id });
+                  }
+                }}
+              >
+                @{user.firstName} {user.lastName}
+                {i !== taggedUsers.length - 1 ? ', ' : ''}
+              </Text>
+            ))}
+          </Text>
+        )}
         {post.images && post.images.length > 0 && (
           <ScrollView horizontal style={{ marginTop: 8 }}>
             {post.images.map((img, index) => {
@@ -581,11 +581,6 @@ const shareModalStyles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
   },
-taggedPersonName: {
-  fontWeight: 'bold',
-  color: 'blue',
-  fontSize: 16,
-},
 taggedPeopleContainer: {
   flexDirection: 'row',
   flexWrap: 'wrap',

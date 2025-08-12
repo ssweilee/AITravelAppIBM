@@ -375,8 +375,11 @@ const TripDetailScreen = ({ route, navigation }) => {
             <Text style={styles.dateText}>
               {formatDate(trip.startDate)} - {formatDate(trip.endDate)}
             </Text>
-            {taggedUsers.length > 0 && (
-              <View style={styles.taggedPeopleContainer}>
+            <Text style={styles.budget}>Budget: ${trip.budget}</Text>
+          </View>
+
+          {taggedUsers.length > 0 && (
+            <View style={styles.taggedPeopleContainer}>
               {taggedUsers.map((user, i) => (
                 <Text
                   key={user._id}
@@ -395,9 +398,7 @@ const TripDetailScreen = ({ route, navigation }) => {
                 </Text>
               ))}
             </View>
-            )}
-            <Text style={styles.budget}>Budget: ${trip.budget}</Text>
-          </View>
+          )}
 
           {trip.description && (
             <Text style={styles.description}>{trip.description}</Text>
@@ -733,7 +734,7 @@ const styles = StyleSheet.create({
   },
   dateText: {
     fontSize: 16,
-    color: '#007AFF',
+    color: '#666',
     fontWeight: '500',
   },
   budget: {
@@ -919,15 +920,16 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 20,
   },
-    taggedPersonName: {
-  fontWeight: 'bold',
-  color: 'blue',
-  fontSize: 16,
-},
-taggedPeopleContainer: {
-  flexDirection: 'row',
-  flexWrap: 'wrap',
-},
+  taggedPersonName: {
+    fontWeight: 'bold',
+    color: '#007AFF',
+    fontSize: 16,
+  },
+  taggedPeopleContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginBottom: 12,
+  },
 });
 
 export default TripDetailScreen;

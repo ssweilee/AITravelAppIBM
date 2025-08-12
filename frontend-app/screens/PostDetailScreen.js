@@ -851,7 +851,7 @@ const styles = StyleSheet.create({
   },
   taggedPersonName: {
   fontWeight: 'bold',
-  color: 'blue',
+  color: '#007AFF',
   fontSize: 16,
 },
 taggedPeopleContainer: {
