@@ -613,7 +613,7 @@ const TagFriendsInput = ({ selectedUsers, setSelectedUsers }) => {
     )}
 
       {/* Date Pickers */}
-      {Platform.OS === 'andriod' && showStartPicker && (
+      {Platform.OS === 'android' && showStartPicker && (
         <DateTimePicker
           value={startDate}
           mode="date"
@@ -623,7 +623,7 @@ const TagFriendsInput = ({ selectedUsers, setSelectedUsers }) => {
         />
       )}
 
-      {Platform.OS === 'andriod' && showEndPicker && (
+      {Platform.OS === 'android' && showEndPicker && (
         <DateTimePicker
           value={endDate}
           mode="date"

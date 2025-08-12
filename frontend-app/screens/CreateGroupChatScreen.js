@@ -38,6 +38,17 @@ const CreateGroupChatScreen = () => {
         fontWeight: 'bold',
         color: '#fff',
       },
+      headerLeft: () => (
+      <TouchableOpacity
+        onPress={() => navigation.goBack()}
+        style={{ paddingHorizontal: 0, paddingVertical: 6 }}
+        activeOpacity={0.7}
+      >
+        <Ionicons name="arrow-back" size={24} color="#fff" />
+      </TouchableOpacity>
+      ),
+      headerBackTitleVisible: false,
+      headerBackTitle: '',
     });
   }, [navigation]);
 
@@ -224,6 +235,7 @@ const styles = StyleSheet.create({
   },
   createButton: {
     marginTop: 15,
+    marginBottom: 30,
     backgroundColor: '#00c7be',
     paddingVertical: 14,
     borderRadius: 8,

@@ -42,6 +42,7 @@ import HotelListScreen from './screens/HotelListScreen';
 import SavedPostsScreen from './screens/SavedPostScreen';
 import AIAssistantScreen from './screens/AIAssistantScreen';
 import RecommendationScreen from './screens/RecommendationScreen';
+import PreferencesScreen from './screens/PreferencesScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab   = createBottomTabNavigator();
@@ -57,9 +58,22 @@ function MainAppTabs() {
             case 'Search':
               return <Ionicons name="search" size={size} color={color} />;
             case 'Trips':
-              return <MaterialIcons name="settings" size={size} color={color} />;
-            case 'Bookings':
-              return <FontAwesome name="calendar-check-o" size={size} color={color} />;
+              return (
+                <View style={{ position: 'relative' }}>
+                  <FontAwesome name="map-marker" size={size} color={color} />
+                  <FontAwesome
+                    name="star"
+                    size={size * 0.4}
+                    color="red"
+                    style={{ position: 'absolute', top: size * 0.2, left: size * 0.3 }}
+                  />
+                </View>
+              );
+
+            case 'Control Panel':
+              return <Ionicons name="settings" size={size} color={color} />;
+            // case 'Bookings':
+            //   return <FontAwesome name="calendar-check-o" size={size} color={color} />;
             case 'AI Assistant':
               return <Ionicons name="chatbubbles-outline" size={size} color={color} />;
             case 'Profile':
@@ -68,6 +82,7 @@ function MainAppTabs() {
               return null;
           }
         },
+
         tabBarActiveTintColor: '#00C7BE',
         tabBarInactiveTintColor: '#aaa',
         headerStyle: { backgroundColor: '#00C7BE' },
@@ -78,7 +93,8 @@ function MainAppTabs() {
       <Tab.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
       <Tab.Screen name="Search" component={SearchScreen} />
       <Tab.Screen name="Trips" component={RecommendationScreen} />
-      <Tab.Screen name="Bookings" component={BookingsScreen} />
+      <Tab.Screen name="Control Panel" component={ControlPanelScreen} options={{ title: 'Control Panel' }} />
+      {/* <Tab.Screen name="Bookings" component={BookingsScreen} /> */}
       <Tab.Screen name="AI Assistant" component={AIAssistantScreen} options={{ title: 'AI Assistant' }} />
       <Tab.Screen name="Profile" component={ProfileScreen} options={{ headerTitle: '' }} />
     </Tab.Navigator>
@@ -156,6 +172,7 @@ export default function App() {
                 <Stack.Screen name="FlightSearch" component={FlightSearchScreen} />
                 <Stack.Screen name="HotelList" component={HotelListScreen} />
                 <Stack.Screen name="SavedPosts" component={SavedPostsScreen} options={{ title: 'Saved Content' }} />
+                <Stack.Screen name="PreferencesScreen" component={PreferencesScreen} options={{ title: 'Edit Preferences' }} />
               </Stack.Navigator>
             </NavigationContainer>
           </NotificationsProvider>

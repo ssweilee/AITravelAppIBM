@@ -24,7 +24,7 @@ function MessagesScreen() {
         style={{ marginRight: 4, padding: 0, borderRadius: 50 }}
         activeOpacity={0.7}
       >
-        <Ionicons name="add-circle-outline" size={28} color="#fff" />
+        <Ionicons name="create-outline" size={28} color="#fff" />
       </TouchableOpacity>
     ),
     headerLeft: () => (

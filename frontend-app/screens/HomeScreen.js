@@ -55,7 +55,7 @@ const HomeScreen = ({ navigation }) => {
         <View style={styles.iconRow}>
           <TouchableOpacity
             onPress={() => navigation.navigate('Notifications')}
-            style={{ marginRight: 8 }}
+            style={styles.iconButton}
           >
             <View style={{ position: 'relative' }}>
               <Ionicons name="notifications-outline" size={24} color="white" />

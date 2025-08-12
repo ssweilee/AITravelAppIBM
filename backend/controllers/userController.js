@@ -66,6 +66,13 @@ exports.getUserProfile = async (req, res) => {
       .populate('followers', 'firstName lastName profilePicture')
       .populate('trips')
       .populate('reviews');
+    console.log('[getUserProfile] returning user fields snapshot:', {
+      _id: user?._id,
+      travelStyle: user?.travelStyle,
+      avgBudget: user?.avgBudget,
+      tags: user?.tags,
+      recentDestinations: user?.recentDestinations
+    });
     res.json({ user });
   } catch (err) {
     res.status(500).json({ message: 'Failed to fecth profile', error: err.message });
@@ -91,7 +98,18 @@ exports.getSingleUser = async (req, res) => {
 
 exports.updateUserProfile = async (userId, updatedData) => {
   try {
-    const allowedFields = ['firstName', 'lastName', 'bio', 'isPublic', 'location', 'travelStyle', 'dob', 'profilePicture'];
+    // NORMALIZATION: convert object formats to arrays where schema expects arrays
+    if (updatedData && updatedData.tags && !Array.isArray(updatedData.tags) && typeof updatedData.tags === 'object') {
+      updatedData.tags = Object.keys(updatedData.tags);
+    }
+    if (updatedData && updatedData.recentDestinations && !Array.isArray(updatedData.recentDestinations) && typeof updatedData.recentDestinations === 'object') {
+      updatedData.recentDestinations = Object.keys(updatedData.recentDestinations);
+    }
+    if (updatedData && updatedData.favoriteDestinations && !Array.isArray(updatedData.favoriteDestinations) && typeof updatedData.favoriteDestinations === 'object') {
+      updatedData.favoriteDestinations = Object.keys(updatedData.favoriteDestinations);
+    }
+
+    const allowedFields = ['firstName', 'lastName', 'bio', 'isPublic', 'location', 'travelStyle', 'dob', 'profilePicture', 'tags', 'avgBudget', 'recentDestinations', 'favoriteDestinations'];
     const updates = {};
     const unsets = {}; 
     for (const field of allowedFields) {
@@ -102,9 +120,10 @@ exports.updateUserProfile = async (userId, updatedData) => {
       }
     }
 
-    console.log('updateUserProfile - Updating user:', userId, 'with data:', updates);
-    console.log('User Controller: Received data to update:', updatedData);
-    console.log('User Controller: Filtered updates to be saved:', updates);
+    console.log('[updateUserProfile] userId:', userId);
+    console.log('[updateUserProfile] normalized incoming data:', updatedData);
+    console.log('[updateUserProfile] updates:', updates);
+    console.log('[updateUserProfile] unsets:', unsets);
 
     const operations = {};
     if (Object.keys(updates).length > 0) {
@@ -126,14 +145,16 @@ exports.updateUserProfile = async (userId, updatedData) => {
       { new: true, runValidators: true, select: '-password' } // Return updated document, validate, exclude password
     );
 
+    // LOGGING: Show the updated user document
+    console.log('[updateUserProfile] updated user:', user);
+
     if (!user) {
       console.error('[ERROR] userController - User not found during update:', userId);      return null;
     }
 
-    console.log('updateUserProfile - Updated user:', user);
     return user;
   } catch (error) {
-    console.error('[ERROR] userController - Database update error:', error.message);
+    console.error('[ERROR] userController - Database update error:', error.message, error.stack);
   }
 };
 

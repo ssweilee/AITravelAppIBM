@@ -2,6 +2,7 @@ import React, { createContext, useState, useContext, useEffect, useCallback } fr
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fetchUserProfile } from '../utils/ProfileInfo'; 
 import { NavigationContainerRefContext } from '@react-navigation/native';
+import { getAvatarUrl } from '../utils/getAvatarUrl'; 
 
 const AuthContext = createContext(null);
 
@@ -13,10 +14,12 @@ export const AuthProvider = ({ children }) => {
 
   const logout = useCallback(async () => { 
    await AsyncStorage.removeItem('token');
+   await AsyncStorage.removeItem('refreshToken');
    await AsyncStorage.removeItem('userInfoCache');
    setToken(null);
    setUser(null);
  }, []);
+
 
   const refreshUser = useCallback(async () => {
     try {
@@ -61,9 +64,35 @@ export const AuthProvider = ({ children }) => {
         return null;
       }
 
-      const userData = await fetchUserProfile(navigation);
+      const userData = await fetchUserProfile(navigation, currentToken);
       if (userData?.success && userData.user) {
-        setUser(userData.user);
+
+        const refreshedUser = { ...userData.user }; 
+        if (refreshedUser && refreshedUser.profilePicture) {
+          refreshedUser.profilePicture = getAvatarUrl(refreshedUser.profilePicture);
+        }
+        
+        setUser(refreshedUser); 
+        await AsyncStorage.setItem('userInfoCache', JSON.stringify(refreshedUser));
+        return refreshedUser;
+
+      } else {
+        console.error("Failed to refresh user:", userData.error);
+        if (userData.error?.message === 'Invalid token' || userData.error?.message === 'No auth token found') {
+          console.log("Invalid token detected, logging out.");
+          await logout();
+          if (navigation && navigation.reset) {
+            navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+          }
+        } else {
+          setUser(null);
+        }
+        return null;
+      }
+
+
+{/**
+  setUser(userData.user);
         await AsyncStorage.setItem('userInfoCache', JSON.stringify(userData.user));
         return userData.user;
       } else {
@@ -79,42 +108,77 @@ export const AuthProvider = ({ children }) => {
         }
         return null;
       }
-    } catch (error) {
-      console.error("An unexpected error occurred while refreshing user:", error);
-      setUser(null);
-      if (navigation && navigation.reset) {
-        navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
-      }
-      return null;
-    }
-  }, [logout, navigation]);
+  
+  */}
 
-  useEffect(() => {
-    const initializeApp = async () => {
-      try {
-         const currentToken = await AsyncStorage.getItem('token');
-         if (currentToken) {
-           await refreshUser();
+
+      } catch (error) {
+  console.error("An unexpected error occurred while refreshing user:", error);
+  setUser(null);
+  if (navigation && navigation.reset) {
+    navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+  }
+  return null;
+}
+}, [logout, navigation]);
+
+useEffect(() => {
+  const initializeApp = async () => {
+    try {
+       const currentToken = await AsyncStorage.getItem('token');
+       if (currentToken) {
+         // Validate cache belongs to this token user
+         let cache = await AsyncStorage.getItem('userInfoCache');
+         if (cache) {
+           try {
+             const cachedUser = JSON.parse(cache);
+             const payload = JSON.parse(atob(currentToken.split('.')[1]));
+             if (cachedUser?._id !== payload?.userId) {
+               await AsyncStorage.removeItem('userInfoCache');
+             }
+           } catch { /* ignore */ }
          }
-      } catch (e) {
-        console.error("Failed to initialize app state:", e);
-        setUser(null);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    initializeApp();
-  }, [refreshUser]);
+         setToken(currentToken);
+         await refreshUser();
+       }
+    } catch (e) {
+      console.error("Failed to initialize app state:", e);
+      await logout(); 
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  initializeApp();
+}, []);
 
   const login = async (newToken, newUserInfo) => {
+    setIsLoading(true);
     await AsyncStorage.setItem('token', newToken);
-    if (newUserInfo) {
-      await AsyncStorage.setItem('userInfoCache', JSON.stringify(newUserInfo));
-      setUser(newUserInfo);
-    } else {
-      await refreshUser(); 
-    }
     setToken(newToken);
+    let userToSet = null;
+    if (newUserInfo) {
+      userToSet = { ...newUserInfo };
+      if (userToSet.profilePicture) {
+        userToSet.profilePicture = getAvatarUrl(userToSet.profilePicture);
+      }
+      setUser(userToSet);
+      await AsyncStorage.setItem('userInfoCache', JSON.stringify(userToSet));
+    } else {
+      // Fetch profile if backend didn’t send user
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/users/profile`, { headers: { Authorization: `Bearer ${newToken}` } });
+        const data = await res.json();
+        if (res.ok && data?.user?._id) {
+          userToSet = data.user;
+          if (userToSet.profilePicture) {
+            userToSet.profilePicture = getAvatarUrl(userToSet.profilePicture);
+          }
+          setUser(userToSet);
+          await AsyncStorage.setItem('userInfoCache', JSON.stringify(userToSet));
+        }
+      } catch (e) { console.log('[login] profile fetch after login failed:', e.message); }
+    }
+    setIsLoading(false);
   };
   
   // Always redirect to login if not authenticated

@@ -65,7 +65,9 @@ router.put(
      body('isPublic').optional().isBoolean().withMessage('isPublic must be a boolean'),
    ],
    async (req, res) => {
-      console.log('Edit profile route - User ID:', req.params.id, 'Body:', req.body);
+      console.log('[/api/users/edit/:id] route hit');
+      console.log('Headers auth userId from token:', req.user?.userId);
+      console.log('Edit profile route - User ID param:', req.params.id, 'Body:', req.body);
       const { id } = req.params;
       const userIdFromToken = req.user.userId;
   
@@ -92,6 +94,23 @@ router.put(
        }
     }
   );
+router.put(
+  '/edit',
+  authenticateToken,
+  async (req, res) => {
+    const userId = req.user.userId;
+    const updatedData = req.body;
+    try {
+      const result = await userController.updateUserProfile(userId, updatedData);
+      if (!result) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      res.status(200).json({ success: true, user: result });
+    } catch (error) {
+      res.status(500).json({ message: 'Error updating profile', error: error.message });
+    }
+  }
+);
 router.put('/change-email', authenticateToken, userController.changeEmail);
 router.put('/change-password', authenticateToken, userController.changePassword);
 

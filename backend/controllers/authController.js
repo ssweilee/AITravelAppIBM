@@ -32,7 +32,8 @@ const signup = async (req, res) => {
     });
 
     await newUser.save();
-    res.status(201).json({ message: 'Signup successful', userId: newUser.id });
+    const sanitized = { _id: newUser._id, email: newUser.email, firstName: newUser.firstName, lastName: newUser.lastName, travelStyle: newUser.travelStyle, avgBudget: newUser.avgBudget || null, tags: newUser.tags || [], recentDestinations: newUser.recentDestinations || [] };
+    res.status(201).json({ message: 'Signup successful', userId: newUser.id, user: sanitized });
   } catch (err) {
     console.error('Error during signup:', err);
     res.status(500).json({ message: 'Internal server error' });
@@ -66,7 +67,8 @@ const login = async (req, res) => {
     currentUser.refreshToken = refreshToken;
     await currentUser.save();
 
-    res.json({ message: 'Login successul', token, refreshToken });
+    const sanitized = { _id: currentUser._id, email: currentUser.email, firstName: currentUser.firstName, lastName: currentUser.lastName, travelStyle: currentUser.travelStyle, avgBudget: currentUser.avgBudget || null, tags: currentUser.tags || [], recentDestinations: currentUser.recentDestinations || [] };
+    res.json({ message: 'Login successul', token, refreshToken, user: sanitized });
   } catch (err) {
     console.error('Error during login:', err);
     res.status(500).json({ message: 'Internal server error' });

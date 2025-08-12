@@ -24,15 +24,31 @@ function LoginForm() {
 
       const data = await reponse.json();
       if (reponse.ok) {
+        // Persist tokens first
         await AsyncStorage.setItem('token', data.token);
         if (data.refreshToken) {
           await AsyncStorage.setItem('refreshToken', data.refreshToken);
         }
-        if (data.user) {
-          await AsyncStorage.setItem('userInfoCache', JSON.stringify(data.user));
+        // Clear any cached user to avoid stale cross-account residue
+        await AsyncStorage.removeItem('userInfoCache');
+
+        // If backend did not send user object, fetch profile explicitly
+        let userObj = data.user || null;
+        if (!userObj) {
+          try {
+            const profRes = await fetch(`${API_BASE_URL}/api/users/profile`, { headers: { Authorization: `Bearer ${data.token}` } });
+            const profData = await profRes.json();
+            if (profRes.ok && profData?.user) {
+              userObj = profData.user;
+            }
+          } catch (e) {
+            console.log('[LoginForm] profile fetch fallback failed:', e.message);
+          }
         }
-        // Ensure AuthContext is updated
-        await login(data.token, data.user);
+
+        // Delegate caching & state update to AuthContext.login (it will fetch profile again if userObj null)
+        await login(data.token, userObj);
+
         const alreadySelected = await AsyncStorage.getItem('hasSelectedInterests');
         if (alreadySelected === 'true') {
           navigation.navigate('Main', { screen: 'Home' });
@@ -40,7 +56,7 @@ function LoginForm() {
           navigation.navigate('Interest');
         }
       } else {
-        Alert.alert('Login failed: ' + data.message);
+        Alert.alert('Login failed: ' + (data.message || 'Unknown error'));
       }
     } catch (error) {
       Alert.alert('Error', error.message);

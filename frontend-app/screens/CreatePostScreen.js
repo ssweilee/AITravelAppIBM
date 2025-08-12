@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, Alert, StyleSheet, TouchableOpacity, TextInput, Image, ScrollView, Platform, StatusBar as RNStatusBar, Modal, FlatList } from 'react-native';
 import { Ionicons, MaterialIcons, FontAwesome } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -40,6 +40,16 @@ const CreatePostScreen = ({ navigation, route }) => {
         };
         fetchUsernameAndFollowings();
       }, []);
+
+  if (!user) {
+    // If user data is not yet available, show a loading spinner or a blank screen
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#00c7be" />
+      </View>
+    );
+  }
+
 
   const handlePostSubmit = async () => {
     if (!content) {
@@ -98,10 +108,8 @@ const CreatePostScreen = ({ navigation, route }) => {
 
   // Helper for avatar (show image if available, else initials or icon)
   const renderAvatar = (user) => {
-    if (user.profilePicture) {
-      return (
-        <Image source={{ uri: user.profilePicture }} style={styles.avatarImg} />
-      );
+    if (user?.profilePicture) { 
+      return <Image source={{ uri: user.profilePicture }} style={styles.avatarImg} />;
     }
     const initials = (user.firstName?.[0] || '') + (user.lastName?.[0] || '');
     return (
@@ -165,10 +173,10 @@ const CreatePostScreen = ({ navigation, route }) => {
     <View style={[styles.container, { paddingTop: Platform.OS === 'android' ? RNStatusBar.currentHeight : 40 }]}>
       {/* Header */}
       <View style={styles.headerRow}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={{ zIndex: 2, elevation: 2 }}>
           <Ionicons name="arrow-back" size={26} color="#222" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Create Post</Text>
+        <Text style={styles.headerTitle} pointerEvents="none">Create Post</Text>
         <TouchableOpacity style={[styles.postButton, { backgroundColor: '#00c7be' }]} onPress={handlePostSubmit}>
           <Text style={[styles.postButtonText, { color: '#fff' }]}>Post</Text>
         </TouchableOpacity>
@@ -185,7 +193,6 @@ const CreatePostScreen = ({ navigation, route }) => {
             </Text>
           </View>
         )}
-        {/* 直接使用 context 中的用戶名 */}
         <Text style={styles.userName}>{`${user.firstName} ${user.lastName}`}</Text>
       </View>
 
@@ -241,18 +248,6 @@ const CreatePostScreen = ({ navigation, route }) => {
         <TouchableOpacity style={styles.optionRow} onPress={() => setModalVisible(true)}>
           <MaterialIcons name="person-add" size={24} color="#1877f2" style={{ marginRight: 12 }} />
           <Text style={styles.optionText}>Tag people</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.optionRow} onPress={() => Alert.alert('Under Developing!')}>
-          <Ionicons name="location-outline" size={24} color="#fa3e3e" style={{ marginRight: 12 }} />
-          <Text style={styles.optionText}>Location</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.optionRow} onPress={() => Alert.alert('Under Developing!')}>
-          <MaterialIcons name="link" size={24} color="#00b894" style={{ marginRight: 12 }} />
-          <Text style={styles.bindLabel}>
-            {itinerary?.createdBy
-              ? `Sharing ${itinerary.createdBy.firstName} ${itinerary.createdBy.lastName}’s Itinerary`
-              : 'Share Itinerary'}
-          </Text>
         </TouchableOpacity>
       </ScrollView>
 
@@ -376,9 +371,6 @@ const styles = StyleSheet.create({
   modalContent: { backgroundColor: '#fff', borderRadius: 16, padding: 20, width: '85%', maxHeight: '70%' },
   modalTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 16, textAlign: 'center' },
   modalUserRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, paddingHorizontal: 2 },
-  avatarImg: { width: 38, height: 38, borderRadius: 19, backgroundColor: '#eee' },
-  avatarCircle: { width: 38, height: 38, borderRadius: 19, backgroundColor: '#bbb', justifyContent: 'center', alignItems: 'center' },
-  avatarInitials: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
   checkboxBox: { marginLeft: 8 },
   checkbox: { width: 22, height: 22, borderRadius: 6, borderWidth: 2, borderColor: '#bbb', backgroundColor: '#fff', justifyContent: 'center', alignItems: 'center' },
   checkboxChecked: { backgroundColor: '#007bff', borderColor: '#007bff' },
