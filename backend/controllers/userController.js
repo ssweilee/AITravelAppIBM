@@ -60,12 +60,29 @@ exports.followUser = async (req, res) => {
   }
 };
 
+exports.getUserFollowings = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const user = await User.findById(id)
+      .populate('followings', 'firstName lastName profilePicture bio location');
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.status(200).json({ followings: user.followings });
+  } catch (error) {
+    console.error('Error fetching followings:', error);
+    res.status(500).json({ message: 'Failed to fetch followings' });
+  }
+};
+
 exports.getUserProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user.userId)
       .populate('followers', 'firstName lastName profilePicture')
-      .populate('trips')
-      .populate('reviews');
+      .populate('followings', 'firstName lastName profilePicture')
+      .populate('trips');
     console.log('[getUserProfile] returning user fields snapshot:', {
       _id: user?._id,
       travelStyle: user?.travelStyle,
@@ -83,8 +100,8 @@ exports.getSingleUser = async (req, res) => {
   try {
     const user = await User.findById(req.params.id)
       .populate('followers', 'firstName lastName profilePicture')
-      .populate('trips')
-      .populate('reviews');
+      .populate('followings', 'firstName lastName profilePicture')
+      .populate('trips');
     
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
@@ -158,7 +175,7 @@ exports.updateUserProfile = async (userId, updatedData) => {
   }
 };
 
-exports.getUserFollowings = async (req, res) => {
+/*exports.getUserFollowings = async (req, res) => {
   try {
     const user = await require('../models/User').findById(req.user.userId)
       .populate('followings', '_id firstName lastName profilePicture');
@@ -167,7 +184,7 @@ exports.getUserFollowings = async (req, res) => {
     console.error('Error fetching followings:', error);
     res.status(500).json({ message: 'Failed to fetch followings' });
   }
-};
+};*/
 
 exports.changeEmail = async (req, res) => {
   try {

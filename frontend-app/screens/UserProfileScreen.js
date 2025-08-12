@@ -8,6 +8,7 @@ import { API_BASE_URL } from '../config';
 import ItineraryList from '../components/profileComponents/ItineraryList';
 import TripList from '../components/profileComponents/TripList';
 import FollowersModal from '../modals/FollowersModal';
+import FollowingsModal from '../modals/FollowingsModal';
 import { StatusBar } from 'expo-status-bar';
 import Feather from 'react-native-vector-icons/Feather';
 import { useNavigation } from '@react-navigation/native';
@@ -20,6 +21,7 @@ const UserProfileScreen = ({ route }) => {
   const [currentUserId, setCurrentUserId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [followersModalVisible, setFollowersModalVisible] = useState(false);
+  const [followingsModalVisible, setFollowingsModalVisible] = useState(false);
   const navigation = useNavigation();
 
   const decodeUserIdFromToken = async () => {
@@ -43,10 +45,11 @@ const UserProfileScreen = ({ route }) => {
       setCurrentUserId(decodedUserId);
 
       let result = await fetchUserById(userId);
+      // If token missing, retry once after short delay
       if (!result.success && result.error?.toLowerCase().includes('token')) {
         if (!didRetry) {
           didRetry = true;
-          setTimeout(loadProfileData, 300);
+          setTimeout(loadProfileData, 300); // Retry after 300ms
           return;
         }
       }
@@ -58,6 +61,7 @@ const UserProfileScreen = ({ route }) => {
       setLoading(false);
     };
 
+    // Call the async function
     loadProfileData();
   }, [userId]);
 
@@ -146,17 +150,21 @@ const UserProfileScreen = ({ route }) => {
             </Text>
           </TouchableOpacity>
 
+          <TouchableOpacity
+            style={styles.statRow}
+            onPress={() => setFollowingsModalVisible(true)}
+            activeOpacity={0.7}
+          >
+            <Text>
+              <Text style={styles.statNumber}>{user?.followings?.length || 0}</Text>
+              <Text style={styles.statLabel}> Followings</Text>
+            </Text>
+          </TouchableOpacity>
+
           <View style={styles.statRow}>
             <Text>
               <Text style={styles.statNumber}>{user?.trips?.length || 0}</Text>
               <Text style={styles.statLabel}> Trips</Text>
-            </Text>
-          </View>
-
-          <View style={styles.statRow}>
-            <Text>
-              <Text style={styles.statNumber}>{user?.itineraries?.length || 0}</Text>
-              <Text style={styles.statLabel}> Itineraries</Text>
             </Text>
           </View>
         </View>
@@ -196,21 +204,19 @@ const UserProfileScreen = ({ route }) => {
         ))}
       </View>
 
-      <View style={{ flex: 1 }}>
-        {selectedTab === 'Post' && <UserPostList userId={user._id} />}
-        {selectedTab === 'Itinerary' && (
-          <ItineraryList
-            userId={currentUserId !== user._id ? user._id : undefined}
-            onPress={(itinerary) => navigation.navigate('ItineraryDetail', { itinerary })}
-          />
-        )}
-        {selectedTab === 'Trip' && (
-          <TripList
-            userId={user._id}
-            onPress={(trip) => navigation.navigate('TripDetail', { trip })}
-          />
-        )}
-      </View>
+      {selectedTab === 'Post' && <UserPostList userId={user._id} />}
+      {selectedTab === 'Itinerary' && (
+        <ItineraryList
+          userId={currentUserId !== user._id ? user._id : undefined}
+          onPress={(itinerary) => navigation.navigate('ItineraryDetail', { itinerary })}
+        />
+      )}
+      {selectedTab === 'Trip' && (
+        <TripList
+          userId={user._id}
+          onPress={(trip) => navigation.navigate('TripDetail', { trip })}
+        />
+      )}
 
       <FollowersModal
         visible={followersModalVisible}
@@ -218,6 +224,14 @@ const UserProfileScreen = ({ route }) => {
         userId={user?._id}
         title="Followers"
         type="followers"
+      />
+
+      <FollowingsModal
+        visible={followingsModalVisible}
+        onClose={() => setFollowingsModalVisible(false)}
+        userId={user?._id}
+        title="Followings"
+        type="followings"
       />
     </View>
   );
@@ -282,8 +296,6 @@ const styles = StyleSheet.create({
     borderColor: '#eee'
   },
   tabItem: {
-    flex: 1, // This makes each tab take equal width (1/3 each instead of 1/4)
-    alignItems: 'center',
     paddingVertical: 10,
     paddingHorizontal: 12,
     borderBottomWidth: 2,

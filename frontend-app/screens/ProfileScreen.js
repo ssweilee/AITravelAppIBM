@@ -13,6 +13,7 @@ import debounce from 'lodash.debounce';
 import ItineraryList from '../components/profileComponents/ItineraryList';
 import TripList from '../components/profileComponents/TripList'; 
 import FollowersModal from '../modals/FollowersModal';
+import FollowingsModal from '../modals/FollowingsModal';
 import { getAvatarUrl } from '../utils/getAvatarUrl';
 
 const ProfileScreen = () => {
@@ -22,6 +23,7 @@ const ProfileScreen = () => {
   const [showDropdown, setShowDropdown] = useState(false);
   const [selectedTab, setSelectedTab] = useState('Post');
   const [followersModalVisible, setFollowersModalVisible] = useState(false);
+  const [followingsModalVisible, setFollowingsModalVisible] = useState(false);
 
   const navigation = useNavigation();
   const route = useRoute();
@@ -186,18 +188,22 @@ console.log('[ProfileScreen] profilePicture:', userInfo?.profilePicture);
               <Text style={styles.statLabel}> Followers</Text>
             </Text>
           </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.statRow}
+            onPress={() => setFollowingsModalVisible(true)}
+            activeOpacity={0.7}
+          >
+            <Text>
+              <Text style={styles.statNumber}>{userInfo?.followings?.length || 0}</Text>
+              <Text style={styles.statLabel}> Followings</Text>
+            </Text>
+          </TouchableOpacity>
           
           <View style={styles.statRow}>
             <Text>
               <Text style={styles.statNumber}>{userInfo?.trips?.length || 0}</Text>
               <Text style={styles.statLabel}> Trips</Text>
-            </Text>
-          </View>
-          
-          <View style={styles.statRow}>
-            <Text>
-              <Text style={styles.statNumber}>{userInfo?.itineraries?.length || 0}</Text>
-              <Text style={styles.statLabel}> Itineraries</Text>
             </Text>
           </View>
         </View>
@@ -254,6 +260,14 @@ console.log('[ProfileScreen] profilePicture:', userInfo?.profilePicture);
         title="Followers"
         type="followers"
       />
+
+      <FollowingsModal
+        visible={followingsModalVisible}
+        onClose={() => setFollowingsModalVisible(false)}
+        userId={userInfo?._id}
+        title="Followings"
+        type="followings"
+     />
     </View>
   );
 };

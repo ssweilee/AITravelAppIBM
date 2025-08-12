@@ -7,7 +7,7 @@ const User = require('../models/User');
 
 router.get('/followers-following', authenticateToken, userController.getFollowersAndFollowing);
 router.get('/profile', authenticateToken, userController.getUserProfile);
-router.get('/followings', authenticateToken, userController.getUserFollowings)
+router.get('/:id/followings', authenticateToken, userController.getUserFollowings);
 router.put('/:id/follow', authenticateToken, userController.followUser);
 router.get('/:id', authenticateToken, userController.getSingleUser);
 // get the saved posts of the user

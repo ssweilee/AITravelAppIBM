@@ -7,7 +7,7 @@ import { API_BASE_URL } from '../config';
 
 const { height: screenHeight } = Dimensions.get('window');
 
-const FollowersModal = ({ visible, onClose, userId, title = 'Followers', type = 'followers' }) => {
+const FollowingsModal = ({ visible, onClose, userId, title = 'Followings', type = 'followings' }) => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [currentUserId, setCurrentUserId] = useState(null);
@@ -36,24 +36,24 @@ const FollowersModal = ({ visible, onClose, userId, title = 'Followers', type = 
     setLoading(true);
     try {
       const token = await AsyncStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/api/users/${userId}/followers`, {
+      const response = await fetch(`${API_BASE_URL}/api/users/${userId}/followings`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        const userList = type === 'followers' ? data.followers : data.following;
-        setUsers(userList || []);
-      } else {
-        console.error('Failed to fetch users');
-        setUsers([]);
-      }
-    } catch (error) {
-      console.error('Error fetching users:', error);
-      setUsers([]);
-    } finally {
-      setLoading(false);
+      if (!response.ok) {
+      const errorData = await response.json();
+      console.error('API error:', errorData);
+      throw new Error(`HTTP error!status: ${response.status}, message: ${errorData.message || '未知錯誤'}`);
     }
+      const data = await response.json();
+
+    setUsers(type === 'followings' ? data.followings || [] : data.followers || []);
+  } catch (error) {
+    console.error('Failed to fetch users:', error);
+    setUsers([]);
+  } finally {
+    setLoading(false);
+  }
   };
 
   const navigateToProfile = (user) => {
@@ -145,7 +145,7 @@ const FollowersModal = ({ visible, onClose, userId, title = 'Followers', type = 
               <View style={styles.emptyContainer}>
                 <Ionicons name="people-outline" size={48} color="#ccc" />
                 <Text style={styles.emptyText}>
-                  No {type === 'followers' ? 'followers' : 'following'} yet
+                  No {type === 'followings' ? 'followings' : 'followers'} yet
                 </Text>
               </View>
             ) : (
@@ -278,4 +278,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default FollowersModal;
+export default FollowingsModal;
