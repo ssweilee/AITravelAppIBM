@@ -45,6 +45,11 @@ const TripDetailScreen = ({ route, navigation }) => {
   const [menuComment, setMenuComment] = useState(null);
   const [deletingComment, setDeletingComment] = useState(false);
   const [commentDeleteError, setCommentDeleteError] = useState(null);
+  const [taggedUsers, setTaggedUsers] = useState([]); // Selected users to tag
+
+  useEffect(() => {
+    setTaggedUsers(trip.taggedUsers || []);
+  }, [trip.taggedUsers]);
 
   useEffect(() => {
     const initializeData = async () => {
@@ -372,6 +377,28 @@ const TripDetailScreen = ({ route, navigation }) => {
             </Text>
             <Text style={styles.budget}>Budget: ${trip.budget}</Text>
           </View>
+
+          {taggedUsers.length > 0 && (
+            <View style={styles.taggedPeopleContainer}>
+              {taggedUsers.map((user, i) => (
+                <Text
+                  key={user._id}
+                  style={styles.taggedPersonName}
+                  onPress={() => {
+                    console.log('JClicked userId:', user._id);
+                    if (userId === user._id) {
+                      navigation.navigate('Profile');
+                    } else {
+                      navigation.navigate('UserProfile', { userId: user._id });
+                    }
+                  }}
+                >
+                  @{user.firstName} {user.lastName}
+                  {i !== taggedUsers.length - 1 && ', '}
+                </Text>
+              ))}
+            </View>
+          )}
 
           {trip.description && (
             <Text style={styles.description}>{trip.description}</Text>
@@ -763,7 +790,7 @@ const styles = StyleSheet.create({
   },
   dateText: {
     fontSize: 16,
-    color: '#007AFF',
+    color: '#666',
     fontWeight: '500',
   },
   budget: {
@@ -1026,6 +1053,16 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     textAlign: 'center',
     marginTop: 20,
+  },
+  taggedPersonName: {
+    fontWeight: 'bold',
+    color: '#007AFF',
+    fontSize: 16,
+  },
+  taggedPeopleContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginBottom: 12,
   },
 });
 

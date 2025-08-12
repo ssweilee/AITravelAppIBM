@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   Switch,
   Platform,
+  FlatList,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -42,6 +43,8 @@ const CreateTripScreen = ({ navigation }) => {
   const [selectedPosts, setSelectedPosts] = useState([]);
   const [selectedItineraries, setSelectedItineraries] = useState([]);
   const [contentLoading, setContentLoading] = useState(true);
+  const [selectedUsers, setSelectedUsers] = useState([]);
+  //const [taggedUsers, setTaggedUsers] = useState([]); // Selected users to tag
 
   useEffect(() => {
     fetchUserContent();
@@ -72,6 +75,102 @@ const CreateTripScreen = ({ navigation }) => {
       setContentLoading(false);
     }
   };
+
+const TagFriendsInput = ({ selectedUsers, setSelectedUsers }) => {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [followings, setFollowings] = useState([]);
+  const [matchedUsers, setMatchedUsers] = useState([]);
+
+  useEffect(() => {
+    const fetchFollowings = async () => {
+      try {
+        const token = await AsyncStorage.getItem('token');
+        const response = await fetch(`${API_BASE_URL}/api/users/followings`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await response.json();
+        if (response.ok && Array.isArray(data)) {
+          setFollowings(data);
+        } else {
+          console.error('Unexpected followings response:', data);
+        }
+      } catch (err) {
+        console.error('Error fetching followings:', err);
+      }
+    };
+    fetchFollowings();
+  }, []);
+
+  useEffect(() => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) {
+      setMatchedUsers([]);
+      return;
+    }
+
+    const filtered = followings.filter(
+      (user) =>
+        user.firstName?.toLowerCase().includes(query) ||
+        user.lastName?.toLowerCase().includes(query)
+    );
+
+    setMatchedUsers(filtered);
+  }, [searchQuery, followings]);
+
+  const toggleUserSelection = (user) => {
+    if (selectedUsers.some((u) => u._id === user._id)) {
+      setSelectedUsers(selectedUsers.filter((u) => u._id !== user._id));
+    } else {
+      setSelectedUsers([...selectedUsers, user]);
+    }
+  };
+
+  return (
+    <View style={styles.container}>
+      <Text style={styles.label}>People</Text>
+      <TextInput
+        style={styles.input}
+        placeholder="Tag friends (optional)"
+        value={searchQuery}
+        onChangeText={setSearchQuery}
+      />
+
+      {/* SelectedUser*/}
+      <View style={styles.selectedList}>
+        {selectedUsers.map((user) => (
+          <View key={user._id} style={styles.selectedUserChip}>
+            <Text style={styles.selectedUserText}>
+              {user.firstName} {user.lastName}
+            </Text>
+            <TouchableOpacity onPress={() => toggleUserSelection(user)}>
+              <Ionicons name="close-circle" size={18} color="red" />
+            </TouchableOpacity>
+          </View>
+        ))}
+      </View>
+
+      {/* Search List */}
+      {matchedUsers.length > 0 && (
+        <View style={styles.list}>
+          {matchedUsers.map((item) => (
+            <TouchableOpacity
+              key={item._id}
+              style={styles.userItem}
+              onPress={() => toggleUserSelection(item)}
+            >
+              <Text style={styles.userName}>
+                {item.firstName} {item.lastName}
+              </Text>
+              {selectedUsers.some((u) => u._id === item._id) && (
+                <Ionicons name="checkmark-circle" size={20} color="#007AFF" />
+              )}
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
+    </View>
+  );
+};
 
   const handleDateChange = (event, selectedDate, type) => {
     if (type === 'start') {
@@ -161,7 +260,8 @@ const CreateTripScreen = ({ navigation }) => {
           endDate: endDate.toISOString(),
           selectedPosts,
           selectedItineraries,
-          isPublic
+          isPublic,
+          taggedUsers: selectedUsers.map(user => user._id),
         })
       });
 
@@ -296,6 +396,13 @@ const CreateTripScreen = ({ navigation }) => {
           </View>
 
           <View style={styles.inputContainer}>
+            <TagFriendsInput
+  selectedUsers={selectedUsers}
+  setSelectedUsers={setSelectedUsers}
+/>
+          </View>
+
+        <View style={styles.inputContainer}>
             <Text style={styles.label}>Budget * ($)</Text>
             <TextInput
               style={styles.input}
@@ -717,6 +824,36 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textAlign: 'right',
     marginBottom: 12,
+  },
+  selectedList: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingVertical: 10,
+    paddingHorizontal: 5,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ddd',
+    marginBottom: 10,
+  },
+  selectedUserChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#e1eaff',
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    marginRight: 8,
+    borderRadius: 20,
+  },
+  selectedUserText: {
+    marginRight: 6,
+    fontSize: 14,
+  },
+  userItem: {
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
 });
 

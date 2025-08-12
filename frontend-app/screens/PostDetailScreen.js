@@ -57,6 +57,7 @@ const PostDetailScreen = ({ route }) => {
   const [menuComment, setMenuComment] = useState(null);
   const [deletingComment, setDeletingComment] = useState(false);
   const [commentDeleteError, setCommentDeleteError] = useState(null);
+  const [taggedUsers, setTaggedUsers] = useState([]); // Selected users to tag
 
   // Initialize user and post metadata
   useEffect(() => {
@@ -86,6 +87,10 @@ const PostDetailScreen = ({ route }) => {
       setSaved(post.savedBy?.includes(userId) || false);
     }
   }, [post, userId]);
+
+  useEffect(() => {
+    setTaggedUsers(post.taggedUsers || []);
+  }, [post.taggedUsers]);
 
   const fetchPostDetails = async () => {
     try {
@@ -307,6 +312,8 @@ const PostDetailScreen = ({ route }) => {
     );
   };
 
+  console.log('taggedUsers:', post.taggedUsers);
+
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
@@ -353,6 +360,27 @@ const PostDetailScreen = ({ route }) => {
           <View style={styles.postBox}>
             <Text style={styles.content}>{post.content}</Text>
 
+            {taggedUsers.length > 0 && (
+  <View style={styles.taggedPeopleContainer}>
+  {taggedUsers.map((user, i) => (
+    <Text
+      key={user._id}
+      style={styles.taggedPersonName}
+      onPress={() => {
+        console.log('JClicked userId:', user._id);
+        if (userId === user._id) {
+          navigation.navigate('Profile');
+        } else {
+          navigation.navigate('UserProfile', { userId: user._id });
+        }
+      }}
+    >
+      @{user.firstName} {user.lastName}
+      {i !== taggedUsers.length - 1 && ', '}
+    </Text>
+  ))}
+</View>
+)}
             {post.images && post.images.length > 0 && (
               <ScrollView
                 horizontal
@@ -821,6 +849,15 @@ const styles = StyleSheet.create({
   nextButton: {
     right: 20,
   },
+  taggedPersonName: {
+  fontWeight: 'bold',
+  color: '#007AFF',
+  fontSize: 16,
+},
+taggedPeopleContainer: {
+  flexDirection: 'row',
+  flexWrap: 'wrap',
+},
 });
 
 export default PostDetailScreen;
