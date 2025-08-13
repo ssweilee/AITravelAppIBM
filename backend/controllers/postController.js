@@ -119,6 +119,7 @@ exports.getPostsByUserId = async (req, res) => {
     const userId = req.params.userId;
     const posts = await Post.find({ userId })
       .populate('userId', 'firstName lastName profilePicture')
+      .populate('taggedUsers', '_id firstName lastName profilePicture')
       .populate({
         path: 'bindItinerary',
         populate: { path: 'createdBy', select: 'firstName lastName profilePicture' }

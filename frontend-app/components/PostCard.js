@@ -303,25 +303,27 @@ const PostCard = ({ post, onPress, onToggleSave, onDeleted }) => {
         <Text style={styles.content}>{post.content}</Text>
         
         {taggedUsers.length > 0 && (
-          <Text style={styles.taggedPeopleContainer}>
-            {taggedUsers.map((user, i) => (
-              <Text
-                key={user._id}
-                style={[styles.taggedPersonName, { color: '#007AFF', fontWeight: 'bold' }]}
-                onPress={() => {
-                  if (userId === user._id) {
-                    navigation.navigate('Profile');
-                  } else {
-                    navigation.navigate('UserProfile', { userId: user._id });
-                  }
-                }}
-              >
-                @{user.firstName} {user.lastName}
-                {i !== taggedUsers.length - 1 ? ', ' : ''}
-              </Text>
-            ))}
-          </Text>
-        )}
+  <Text style={styles.taggedPeopleContainer}>
+    {taggedUsers
+      .filter(Boolean)
+      .map((user, i) => (
+        <Text
+          key={user._id ?? `tagged-${i}`}
+          style={[styles.taggedPersonName, { color: '#007AFF', fontWeight: 'bold' }]}
+          onPress={() => {
+            if (userId === user._id) {
+              navigation.navigate('Profile');
+            } else {
+              navigation.navigate('UserProfile', { userId: user._id });
+            }
+          }}
+        >
+          @{user?.firstName ?? 'Unknown'} {user?.lastName ?? ''}
+          {i !== taggedUsers.length - 1 ? ', ' : ''}
+        </Text>
+      ))}
+  </Text>
+)}
         {post.images && post.images.length > 0 && (
           <ScrollView horizontal style={{ marginTop: 8 }}>
             {post.images.map((img, index) => {
