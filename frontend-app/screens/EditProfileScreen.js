@@ -190,40 +190,61 @@ const EditProfileScreen = ({ route, navigation }) => {
   }, []); 
 
 
-  const uploadAvatar = async (token) => {
-    setUploadingAvatar(true);
-    try {
-      const startTime = Date.now();
-      const formData = new FormData();
-      formData.append('avatar', {
-        uri: avatarFile.uri,
-        name: avatarFile.name,
-        type: avatarFile.type,
-      });
-  
-      const uploadResponse = await fetch(`${API_BASE_URL}/api/users/upload-avatar`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'multipart/form-data',
-          Authorization: `Bearer ${token}`,
-        },
-        body: formData,
-      });
-  
-      const uploadResult = await uploadResponse.json();
-      console.log('[DEBUG] uploadAvatar response:', uploadResult);
-      if (!uploadResponse.ok) {
-        throw new Error(uploadResult.message || 'Failed to upload avatar');
-      }
-      return uploadResult.profilePicture; 
-    } catch (err) {
-      console.error('[DEBUG] uploadAvatar: Error:', err.message);
-      Alert.alert('Upload Error', err.message);
-      return null;
-    } finally {
-      setUploadingAvatar(false);
+ const uploadAvatar = async (token) => {
+  setUploadingAvatar(true);
+  try {
+    console.log('[DEBUG] About to upload:', {
+      uri: avatarFile.uri,
+      name: avatarFile.name,
+      type: avatarFile.type,
+      platform: Platform.OS
+    });
+
+    const formData = new FormData();
+    
+    // Create the file object for Android
+    const fileToUpload = {
+      uri: avatarFile.uri,
+      type: avatarFile.type || 'image/jpeg',
+      name: avatarFile.name || 'avatar.jpg',
+    };
+    
+    // For Android, sometimes we need to ensure the type is set correctly
+    if (Platform.OS === 'android') {
+      fileToUpload.type = 'image/jpeg'; // Force JPEG type for Android
     }
-  };
+    
+    formData.append('avatar', fileToUpload);
+    
+    console.log('[DEBUG] FormData file object:', fileToUpload);
+
+    const uploadResponse = await fetch(`${API_BASE_URL}/api/users/upload-avatar`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        // No Content-Type header for multipart
+      },
+      body: formData,
+    });
+
+    console.log('[DEBUG] Upload response status:', uploadResponse.status);
+    
+    const uploadResult = await uploadResponse.json();
+    console.log('[DEBUG] uploadAvatar response:', uploadResult);
+    
+    if (!uploadResponse.ok) {
+      throw new Error(uploadResult.message || 'Failed to upload avatar');
+    }
+    return uploadResult.profilePicture; 
+  } catch (err) {
+    console.error('[DEBUG] uploadAvatar: Error:', err.message);
+    console.error('[DEBUG] uploadAvatar: Full error:', err);
+    Alert.alert('Upload Error', err.message);
+    return null;
+  } finally {
+    setUploadingAvatar(false);
+  }
+};
 
   const handleBioFocus = () => {
     setTimeout(() => {

@@ -11,6 +11,8 @@ import {
   Alert,
   Image,
   Modal,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, MaterialIcons, Feather } from '@expo/vector-icons';
@@ -330,333 +332,344 @@ const TripDetailScreen = ({ route, navigation }) => {
         <View style={styles.headerRight} />
       </View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* User info row */}
-        <View style={styles.userRow}>
-          <View style={styles.avatarWrapper}>
-            <Image
-              source={
-                trip.userId?.profilePicture
-                  ? { uri: getAvatarUrl(trip.userId.profilePicture) }
-                  : require('../assets/icon.png')
-              }
-              style={styles.avatar}
-            />
-          </View>
-          <View style={styles.userInfo}>
-            <Text style={styles.username}>
-              {(trip.userId?.firstName || '') +
-                (trip.userId?.lastName ? ' ' + trip.userId.lastName : '') ||
-                'User'}
-            </Text>
-            <Text style={styles.postDate}>
-              {new Date(trip.createdAt).toLocaleDateString()}
-            </Text>
-          </View>
-        </View>
-
-        {/* Trip Info */}
-        <View style={styles.tripInfo}>
-          <Text style={styles.tripTitle}>{trip.title}</Text>
-
-          <View style={styles.tripMeta}>
-            <View style={styles.metaRow}>
-              <Ionicons name="location-outline" size={18} color="#666" />
-              <Text style={styles.destination}>{trip.destination}</Text>
+      <KeyboardAvoidingView 
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
+      >
+        <ScrollView 
+          style={styles.content} 
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          {/* User info row */}
+          <View style={styles.userRow}>
+            <View style={styles.avatarWrapper}>
+              <Image
+                source={
+                  trip.userId?.profilePicture
+                    ? { uri: getAvatarUrl(trip.userId.profilePicture) }
+                    : require('../assets/icon.png')
+                }
+                style={styles.avatar}
+              />
             </View>
-
-            <View style={styles.metaRow}>
-              <Ionicons name="time-outline" size={18} color="#666" />
-              <Text style={styles.duration}>{calculateTripDuration()}</Text>
+            <View style={styles.userInfo}>
+              <Text style={styles.username}>
+                {(trip.userId?.firstName || '') +
+                  (trip.userId?.lastName ? ' ' + trip.userId.lastName : '') ||
+                  'User'}
+              </Text>
+              <Text style={styles.postDate}>
+                {new Date(trip.createdAt).toLocaleDateString()}
+              </Text>
             </View>
           </View>
 
-          <View style={styles.dateRow}>
-            <Text style={styles.dateText}>
-              {formatDate(trip.startDate)} - {formatDate(trip.endDate)}
-            </Text>
-            <Text style={styles.budget}>Budget: ${trip.budget}</Text>
+          {/* Trip Info */}
+          <View style={styles.tripInfo}>
+            <Text style={styles.tripTitle}>{trip.title}</Text>
+
+            <View style={styles.tripMeta}>
+              <View style={styles.metaRow}>
+                <Ionicons name="location-outline" size={18} color="#666" />
+                <Text style={styles.destination}>{trip.destination}</Text>
+              </View>
+
+              <View style={styles.metaRow}>
+                <Ionicons name="time-outline" size={18} color="#666" />
+                <Text style={styles.duration}>{calculateTripDuration()}</Text>
+              </View>
+            </View>
+
+            <View style={styles.dateRow}>
+              <Text style={styles.dateText}>
+                {formatDate(trip.startDate)} - {formatDate(trip.endDate)}
+              </Text>
+              <Text style={styles.budget}>Budget: ${trip.budget}</Text>
+            </View>
+
+            {taggedUsers.length > 0 && (
+              <View style={styles.taggedPeopleContainer}>
+                {taggedUsers.map((user, i) => (
+                  <Text
+                    key={user._id}
+                    style={styles.taggedPersonName}
+                    onPress={() => {
+                      console.log('JClicked userId:', user._id);
+                      if (userId === user._id) {
+                        navigation.navigate('Profile');
+                      } else {
+                        navigation.navigate('UserProfile', { userId: user._id });
+                      }
+                    }}
+                  >
+                    @{user.firstName} {user.lastName}
+                    {i !== taggedUsers.length - 1 && ', '}
+                  </Text>
+                ))}
+              </View>
+            )}
+
+            {trip.description && (
+              <Text style={styles.description}>{trip.description}</Text>
+            )}
           </View>
 
-          {taggedUsers.length > 0 && (
-            <View style={styles.taggedPeopleContainer}>
-              {taggedUsers.map((user, i) => (
-                <Text
-                  key={user._id}
-                  style={styles.taggedPersonName}
-                  onPress={() => {
-                    console.log('JClicked userId:', user._id);
-                    if (userId === user._id) {
-                      navigation.navigate('Profile');
-                    } else {
-                      navigation.navigate('UserProfile', { userId: user._id });
-                    }
-                  }}
-                >
-                  @{user.firstName} {user.lastName}
-                  {i !== taggedUsers.length - 1 && ', '}
-                </Text>
-              ))}
-            </View>
-          )}
-
-          {trip.description && (
-            <Text style={styles.description}>{trip.description}</Text>
-          )}
-        </View>
-
-        {/* Trip Posts Grid */}
-        {trip.posts && trip.posts.length > 0 && (
-          <View style={styles.postsSection}>
-            <Text style={styles.sectionTitle}>
-              Posts in this trip ({trip.posts.length})
-            </Text>
-            <View style={styles.postsGrid}>
-              {trip.posts.map((post, index) => (
-                <TouchableOpacity
-                  key={post._id || `post-${index}`}
-                  style={styles.postBox}
-                  onPress={() => navigation.navigate('PostDetail', { post })}
-                  activeOpacity={0.7}
-                >
-                  <View style={styles.postBoxContent}>
-                    {post.images && post.images.length > 0 ? (
-                      <>
-                        <Text
-                          style={styles.postBoxTextWithImage}
-                          numberOfLines={2}
-                        >
+          {/* Trip Posts Grid */}
+          {trip.posts && trip.posts.length > 0 && (
+            <View style={styles.postsSection}>
+              <Text style={styles.sectionTitle}>
+                Posts in this trip ({trip.posts.length})
+              </Text>
+              <View style={styles.postsGrid}>
+                {trip.posts.map((post, index) => (
+                  <TouchableOpacity
+                    key={post._id || `post-${index}`}
+                    style={styles.postBox}
+                    onPress={() => navigation.navigate('PostDetail', { post })}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.postBoxContent}>
+                      {post.images && post.images.length > 0 ? (
+                        <>
+                          <Text
+                            style={styles.postBoxTextWithImage}
+                            numberOfLines={2}
+                          >
+                            {post.content || 'Post content'}
+                          </Text>
+                          <View style={styles.postImageContainer}>
+                            <Image
+                              source={{ uri: getImageUrl(post.images[0].url) }}
+                              style={styles.postBoxImage}
+                              onError={() =>
+                                console.log(
+                                  `Failed to load image: ${getImageUrl(
+                                    post.images[0].url
+                                  )}`
+                                )
+                              }
+                            />
+                            {post.images.length > 1 && (
+                              <View style={styles.imageCountBadge}>
+                                <Text style={styles.imageCountText}>
+                                  +{post.images.length - 1}
+                                </Text>
+                              </View>
+                            )}
+                          </View>
+                        </>
+                      ) : (
+                        <Text style={styles.postBoxText} numberOfLines={4}>
                           {post.content || 'Post content'}
                         </Text>
-                        <View style={styles.postImageContainer}>
-                          <Image
-                            source={{ uri: getImageUrl(post.images[0].url) }}
-                            style={styles.postBoxImage}
-                            onError={() =>
-                              console.log(
-                                `Failed to load image: ${getImageUrl(
-                                  post.images[0].url
-                                )}`
-                              )
+                      )}
+
+                      <View style={styles.postBoxFooter}>
+                        <Text style={styles.postBoxDate}>
+                          {new Date(post.createdAt).toLocaleDateString(
+                            'en-UK',
+                            {
+                              day: 'numeric',
+                              month: 'short',
                             }
-                          />
-                          {post.images.length > 1 && (
-                            <View style={styles.imageCountBadge}>
-                              <Text style={styles.imageCountText}>
-                                +{post.images.length - 1}
-                              </Text>
-                            </View>
                           )}
-                        </View>
-                      </>
-                    ) : (
-                      <Text style={styles.postBoxText} numberOfLines={4}>
-                        {post.content || 'Post content'}
+                        </Text>
+                        {post.likes && post.likes.length > 0 && (
+                          <View style={styles.postBoxLikes}>
+                            <Ionicons name="heart" size={12} color="#e74c3c" />
+                            <Text style={styles.postBoxLikesText}>
+                              {post.likes.length}
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          )}
+
+          {/* Trip Itineraries Section - NEW SECTION */}
+          {trip.itineraries && trip.itineraries.length > 0 && (
+            <View style={styles.itinerariesSection}>
+              <Text style={styles.sectionTitle}>
+                Itineraries in this trip ({trip.itineraries.length})
+              </Text>
+              <View style={styles.itinerariesList}>
+                {trip.itineraries.map((itinerary, index) => (
+                  <TouchableOpacity
+                    key={itinerary._id || `itinerary-${index}`}
+                    style={styles.itineraryCard}
+                    onPress={() => navigation.navigate('ItineraryDetail', { itinerary })}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.itineraryHeader}>
+                      <View style={styles.itineraryIcon}>
+                        <Ionicons name="map-outline" size={24} color="#007AFF" />
+                      </View>
+                      <View style={styles.itineraryInfo}>
+                        <Text style={styles.itineraryTitle} numberOfLines={1}>
+                          {itinerary.title || itinerary.destination}
+                        </Text>
+                        <Text style={styles.itineraryDestination} numberOfLines={1}>
+                          {itinerary.destination}
+                        </Text>
+                        <Text style={styles.itineraryDates}>
+                          {formatDate(itinerary.startDate)} - {formatDate(itinerary.endDate)}
+                        </Text>
+                      </View>
+                    </View>
+                    
+                    {itinerary.description && (
+                      <Text style={styles.itineraryDescription} numberOfLines={2}>
+                        {itinerary.description}
                       </Text>
                     )}
-
-                    <View style={styles.postBoxFooter}>
-                      <Text style={styles.postBoxDate}>
-                        {new Date(post.createdAt).toLocaleDateString(
-                          'en-UK',
-                          {
-                            day: 'numeric',
-                            month: 'short',
-                          }
-                        )}
+                    
+                    <View style={styles.itineraryFooter}>
+                      <Text style={styles.itineraryDays}>
+                        {itinerary.days?.length || 0} day{itinerary.days?.length !== 1 ? 's' : ''}
                       </Text>
-                      {post.likes && post.likes.length > 0 && (
-                        <View style={styles.postBoxLikes}>
+                      {itinerary.likes && itinerary.likes.length > 0 && (
+                        <View style={styles.itineraryLikes}>
                           <Ionicons name="heart" size={12} color="#e74c3c" />
-                          <Text style={styles.postBoxLikesText}>
-                            {post.likes.length}
+                          <Text style={styles.itineraryLikesText}>
+                            {itinerary.likes.length}
                           </Text>
                         </View>
                       )}
                     </View>
-                  </View>
-                </TouchableOpacity>
-              ))}
+                  </TouchableOpacity>
+                ))}
+              </View>
             </View>
-          </View>
-        )}
+          )}
 
-        {/* Trip Itineraries Section - NEW SECTION */}
-        {trip.itineraries && trip.itineraries.length > 0 && (
-          <View style={styles.itinerariesSection}>
-            <Text style={styles.sectionTitle}>
-              Itineraries in this trip ({trip.itineraries.length})
-            </Text>
-            <View style={styles.itinerariesList}>
-              {trip.itineraries.map((itinerary, index) => (
-                <TouchableOpacity
-                  key={itinerary._id || `itinerary-${index}`}
-                  style={styles.itineraryCard}
-                  onPress={() => navigation.navigate('ItineraryDetail', { itinerary })}
-                  activeOpacity={0.7}
-                >
-                  <View style={styles.itineraryHeader}>
-                    <View style={styles.itineraryIcon}>
-                      <Ionicons name="map-outline" size={24} color="#007AFF" />
-                    </View>
-                    <View style={styles.itineraryInfo}>
-                      <Text style={styles.itineraryTitle} numberOfLines={1}>
-                        {itinerary.title || itinerary.destination}
-                      </Text>
-                      <Text style={styles.itineraryDestination} numberOfLines={1}>
-                        {itinerary.destination}
-                      </Text>
-                      <Text style={styles.itineraryDates}>
-                        {formatDate(itinerary.startDate)} - {formatDate(itinerary.endDate)}
-                      </Text>
-                    </View>
-                  </View>
-                  
-                  {itinerary.description && (
-                    <Text style={styles.itineraryDescription} numberOfLines={2}>
-                      {itinerary.description}
-                    </Text>
-                  )}
-                  
-                  <View style={styles.itineraryFooter}>
-                    <Text style={styles.itineraryDays}>
-                      {itinerary.days?.length || 0} day{itinerary.days?.length !== 1 ? 's' : ''}
-                    </Text>
-                    {itinerary.likes && itinerary.likes.length > 0 && (
-                      <View style={styles.itineraryLikes}>
-                        <Ionicons name="heart" size={12} color="#e74c3c" />
-                        <Text style={styles.itineraryLikesText}>
-                          {itinerary.likes.length}
-                        </Text>
-                      </View>
-                    )}
-                  </View>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-        )}
+          {/* Trip Actions */}
+          <View style={styles.actions}>
+            <TouchableOpacity onPress={toggleLike} style={styles.actionButton}>
+              <Ionicons
+                name={liked ? 'heart' : 'heart-outline'}
+                size={24}
+                color={liked ? '#e74c3c' : '#222'}
+                style={{ marginRight: 4 }}
+              />
+              <Text style={styles.actionText}>{likesCount}</Text>
+            </TouchableOpacity>
 
-        {/* Trip Actions */}
-        <View style={styles.actions}>
-          <TouchableOpacity onPress={toggleLike} style={styles.actionButton}>
-            <Ionicons
-              name={liked ? 'heart' : 'heart-outline'}
-              size={24}
-              color={liked ? '#e74c3c' : '#222'}
-              style={{ marginRight: 4 }}
-            />
-            <Text style={styles.actionText}>{likesCount}</Text>
-          </TouchableOpacity>
+            <TouchableOpacity style={styles.actionButton}>
+              <Ionicons
+                name="chatbubble-outline"
+                size={24}
+                color="#007AFF"
+                style={{ marginRight: 4 }}
+              />
+              <Text style={styles.actionText}>{comments.length}</Text>
+            </TouchableOpacity>
 
-          <TouchableOpacity style={styles.actionButton}>
-            <Ionicons
-              name="chatbubble-outline"
-              size={24}
-              color="#007AFF"
-              style={{ marginRight: 4 }}
-            />
-            <Text style={styles.actionText}>{comments.length}</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity onPress={toggleSave} style={styles.actionButton}>
-            <MaterialIcons
-              name={saved ? 'bookmark' : 'bookmark-outline'}
-              size={24}
-              color={saved ? '#007AFF' : '#444'}
-              style={{ marginRight: 4 }}
-            />
-          </TouchableOpacity>
-        </View>
-
-        {/* Comments section */}
-        <View style={styles.commentsSection}>
-          <Text style={styles.sectionTitle}>
-            Comments ({comments.length})
-          </Text>
-
-          <View style={styles.addCommentContainer}>
-            <TextInput
-              style={styles.commentInput}
-              value={newComment}
-              onChangeText={setNewComment}
-              placeholder="Write a comment..."
-              multiline
-              maxLength={500}
-            />
-            <TouchableOpacity
-              style={[
-                styles.addCommentButton,
-                commentLoading && styles.addCommentButtonDisabled,
-              ]}
-              onPress={addComment}
-              disabled={commentLoading}
-            >
-              {commentLoading ? (
-                <ActivityIndicator size="small" color="#fff" />
-              ) : (
-                <Ionicons name="send" size={16} color="#fff" />
-              )}
+            <TouchableOpacity onPress={toggleSave} style={styles.actionButton}>
+              <MaterialIcons
+                name={saved ? 'bookmark' : 'bookmark-outline'}
+                size={24}
+                color={saved ? '#007AFF' : '#444'}
+                style={{ marginRight: 4 }}
+              />
             </TouchableOpacity>
           </View>
 
-          {comments.length === 0 ? (
-            <Text style={styles.noComments}>
-              No comments yet. Be the first to comment!
+          {/* Comments section */}
+          <View style={styles.commentsSection}>
+            <Text style={styles.sectionTitle}>
+              Comments ({comments.length})
             </Text>
-          ) : (
-            <View style={styles.commentsList}>
-              {comments.map((comment, index) => {
-                const isOwner =
-                  userId &&
-                  comment.userId?._id?.toString() === userId.toString();
-                return (
-                  <TouchableOpacity
-                    key={comment._id || `comment-${index}`}
-                    style={styles.commentItem}
-                    onLongPress={() => onCommentLongPress(comment)}
-                    delayLongPress={400}
-                    activeOpacity={0.8}
-                  >
+
+            <View style={styles.addCommentContainer}>
+              <TextInput
+                style={styles.commentInput}
+                value={newComment}
+                onChangeText={setNewComment}
+                placeholder="Write a comment..."
+                multiline
+                maxLength={500}
+                textAlignVertical="top"
+              />
+              <TouchableOpacity
+                style={[
+                  styles.addCommentButton,
+                  commentLoading && styles.addCommentButtonDisabled,
+                ]}
+                onPress={addComment}
+                disabled={commentLoading}
+              >
+                {commentLoading ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Ionicons name="send" size={16} color="#fff" />
+                )}
+              </TouchableOpacity>
+            </View>
+
+            {comments.length === 0 ? (
+              <Text style={styles.noComments}>
+                No comments yet. Be the first to comment!
+              </Text>
+            ) : (
+              <View style={styles.commentsList}>
+                {comments.map((comment, index) => {
+                  const isOwner =
+                    userId &&
+                    comment.userId?._id?.toString() === userId.toString();
+                  return (
                     <TouchableOpacity
-                      onPress={() => {
-                        if (comment.userId?._id) {
-                          if (userId === comment.userId._id) {
-                            navigation.navigate('Profile');
-                          } else {
-                            navigation.navigate('UserProfile', {
-                              userId: comment.userId._id,
-                            });
-                          }
-                        }
-                      }}
+                      key={comment._id || `comment-${index}`}
+                      style={styles.commentItem}
+                      onLongPress={() => onCommentLongPress(comment)}
+                      delayLongPress={400}
+                      activeOpacity={0.8}
                     >
-                      <Text style={styles.commentAuthor}>
-                        {comment.userId?.firstName || ''}{' '}
-                        {comment.userId?.lastName || ''}
+                      <TouchableOpacity
+                        onPress={() => {
+                          if (comment.userId?._id) {
+                            if (userId === comment.userId._id) {
+                              navigation.navigate('Profile');
+                            } else {
+                              navigation.navigate('UserProfile', {
+                                userId: comment.userId._id,
+                              });
+                            }
+                          }
+                        }}
+                      >
+                        <Text style={styles.commentAuthor}>
+                          {comment.userId?.firstName || ''}{' '}
+                          {comment.userId?.lastName || ''}
+                        </Text>
+                      </TouchableOpacity>
+                      <Text style={styles.commentContent}>
+                        {comment.content}
+                      </Text>
+                      <Text style={styles.commentDate}>
+                        {new Date(comment.createdAt).toLocaleDateString(
+                          'en-UK',
+                          {
+                            day: 'numeric',
+                            month: 'short',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          }
+                        )}
                       </Text>
                     </TouchableOpacity>
-                    <Text style={styles.commentContent}>
-                      {comment.content}
-                    </Text>
-                    <Text style={styles.commentDate}>
-                      {new Date(comment.createdAt).toLocaleDateString(
-                        'en-UK',
-                        {
-                          day: 'numeric',
-                          month: 'short',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        }
-                      )}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          )}
-        </View>
-      </ScrollView>
+                  );
+                })}
+              </View>
+            )}
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
 
       {/* Comment MoreMenu */}
       {menuComment && (
@@ -993,6 +1006,7 @@ const styles = StyleSheet.create({
   commentsSection: {
     padding: 16,
     backgroundColor: '#fff',
+    paddingBottom: 50, // Added padding to prevent keyboard overlap
   },
   addCommentContainer: {
     flexDirection: 'row',
@@ -1002,6 +1016,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     backgroundColor: '#f8f9fa',
     borderRadius: 12,
+    minHeight: 50, // Minimum height for better touch area
   },
   commentInput: {
     flex: 1,
@@ -1010,6 +1025,7 @@ const styles = StyleSheet.create({
     maxHeight: 100,
     paddingRight: 10,
     color: '#333',
+    textAlignVertical: 'top', // Ensure multiline starts at top
   },
   addCommentButton: {
     backgroundColor: '#007AFF',

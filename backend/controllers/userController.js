@@ -1,6 +1,7 @@
 const User = require('../models/User');
 const Trip = require('../models/Trip');
 const Review = require('../models/Review');
+const Itinerary = require('../models/Itinerary'); // Add this import
 const bcrypt = require('bcryptjs');
 const sendNotification = require('../utils/notify');
 
@@ -66,16 +67,27 @@ exports.getUserProfile = async (req, res) => {
       .populate('followers', 'firstName lastName profilePicture')
       .populate('trips')
       .populate('reviews');
+    
+    // Fetch itineraries for this user
+    const itineraries = await Itinerary.find({ createdBy: req.user.userId });
+    
+    // Convert user to plain object and add itineraries
+    const userObject = user.toObject();
+    userObject.itineraries = itineraries;
+    
     console.log('[getUserProfile] returning user fields snapshot:', {
-      _id: user?._id,
-      travelStyle: user?.travelStyle,
-      avgBudget: user?.avgBudget,
-      tags: user?.tags,
-      recentDestinations: user?.recentDestinations
+      _id: userObject?._id,
+      travelStyle: userObject?.travelStyle,
+      avgBudget: userObject?.avgBudget,
+      tags: userObject?.tags,
+      recentDestinations: userObject?.recentDestinations,
+      itinerariesCount: itineraries.length, // Log the count for debugging
+      tripsCount: userObject?.trips?.length
     });
-    res.json({ user });
+    
+    res.json({ user: userObject });
   } catch (err) {
-    res.status(500).json({ message: 'Failed to fecth profile', error: err.message });
+    res.status(500).json({ message: 'Failed to fetch profile', error: err.message });
   }
 }
 
@@ -90,7 +102,14 @@ exports.getSingleUser = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    res.json({ success: true, user });
+    // Fetch itineraries for this user
+    const itineraries = await Itinerary.find({ createdBy: req.params.id });
+    
+    // Convert user to plain object and add itineraries
+    const userObject = user.toObject();
+    userObject.itineraries = itineraries;
+
+    res.json({ success: true, user: userObject });
   } catch (err) {
     res.status(500).json({ message: 'Failed to load user', error: err.message });
   }
@@ -135,7 +154,11 @@ exports.updateUserProfile = async (userId, updatedData) => {
 
     if (Object.keys(operations).length === 0) {
         const user = await User.findById(userId).select('-password');
-        return user;
+        // Fetch itineraries for this user
+        const itineraries = await Itinerary.find({ createdBy: userId });
+        const userObject = user.toObject();
+        userObject.itineraries = itineraries;
+        return userObject;
     }
 
     // Update user in MongoDB using Mongoose
@@ -149,10 +172,16 @@ exports.updateUserProfile = async (userId, updatedData) => {
     console.log('[updateUserProfile] updated user:', user);
 
     if (!user) {
-      console.error('[ERROR] userController - User not found during update:', userId);      return null;
+      console.error('[ERROR] userController - User not found during update:', userId);
+      return null;
     }
 
-    return user;
+    // Fetch itineraries for this user
+    const itineraries = await Itinerary.find({ createdBy: userId });
+    const userObject = user.toObject();
+    userObject.itineraries = itineraries;
+
+    return userObject;
   } catch (error) {
     console.error('[ERROR] userController - Database update error:', error.message, error.stack);
   }
@@ -211,6 +240,7 @@ exports.changePassword = async (req, res) => {
     res.status(500).json({ message: 'Failed to update password', error: err.message });
   }
 };
+
 exports.getFollowersAndFollowing = async (req, res) => {
   try {
     const userId = req.user.userId;
