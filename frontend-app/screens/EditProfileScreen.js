@@ -279,6 +279,8 @@ const EditProfileScreen = ({ route, navigation }) => {
             return; 
           }
           payload.profilePicture = uploadedAvatarFilename;
+          const fullAvatarUrl = `${API_BASE_URL}/uploads/avatars/${uploadedAvatarFilename}`;
+          setAvatarUri(fullAvatarUrl); // ensure UI shows full URL
         } else if (removeAvatar) {
           console.log('handleSave: Removing avatar...');
           payload.profilePicture = null;
