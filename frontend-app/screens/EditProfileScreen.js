@@ -193,7 +193,7 @@ const EditProfileScreen = ({ route, navigation }) => {
   const uploadAvatar = async (token) => {
     setUploadingAvatar(true);
     try {
-      const startTime = Date.now();
+      //const startTime = Date.now();
       const formData = new FormData();
       formData.append('avatar', {
         uri: avatarFile.uri,
@@ -214,6 +214,11 @@ const EditProfileScreen = ({ route, navigation }) => {
       console.log('[DEBUG] uploadAvatar response:', uploadResult);
       if (!uploadResponse.ok) {
         throw new Error(uploadResult.message || 'Failed to upload avatar');
+      }
+      if (uploadResult.profilePictureUrl) {
+        return uploadResult; 
+      } else {
+        throw new Error("Server did not return a valid avatar URL.");
       }
       return uploadResult.profilePicture; 
     } catch (err) {
@@ -244,7 +249,6 @@ const EditProfileScreen = ({ route, navigation }) => {
 
     setLoading(true);
     try {
-
       //preparing basic payload
       const payload = {
         firstName,
@@ -272,15 +276,14 @@ const EditProfileScreen = ({ route, navigation }) => {
         if (avatarFile) {
           console.log('handleSave: Uploading new avatar...');
           const token = await AsyncStorage.getItem('token'); 
-          const uploadedAvatarFilename = await uploadAvatar(token);
-          
+          const uploadResult = await uploadAvatar(token); 
+  
           if (!uploadedAvatarFilename) {
-            setLoading(false);
-            return; 
+            throw new Error("Avatar upload failed.");
           }
-          payload.profilePicture = uploadedAvatarFilename;
-          const fullAvatarUrl = `${API_BASE_URL}/uploads/avatars/${uploadedAvatarFilename}`;
-          setAvatarUri(fullAvatarUrl); // ensure UI shows full URL
+          payload.profilePicture = uploadResult.profilePicture;
+          //const fullAvatarUrl = `${API_BASE_URL}/uploads/avatars/${uploadedAvatarFilename}`;
+          setAvatarUri(uploadResult.profilePictureUrl);  
         } else if (removeAvatar) {
           console.log('handleSave: Removing avatar...');
           payload.profilePicture = null;
@@ -297,12 +300,13 @@ const EditProfileScreen = ({ route, navigation }) => {
     });
 
     } catch (error) {
-      console.error('EditProfileScreen - Error updating profile:', error.message);
-      Alert.alert('Error', error.message);
-      // Rollback UI if save fails
-      setAvatarUri(originalAvatarUri);
-      setAvatarFile(null);
-      setRemoveAvatar(false);
+      if (error.message) {
+        console.error('EditProfileScreen - Update failed:', error.message);
+        Alert.alert('Update Failed', error.message);
+      } else {
+        console.error('EditProfileScreen - An unknown update error occurred:', error);
+        Alert.alert('Update Failed', 'An unexpected error occurred.');
+      }
     } finally {
       setLoading(false);
     }
@@ -469,3 +473,4 @@ const styles = StyleSheet.create({
 });
 
 export default EditProfileScreen;
+

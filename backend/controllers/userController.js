@@ -65,7 +65,8 @@ exports.getUserProfile = async (req, res) => {
     const user = await User.findById(req.user.userId)
       .populate('followers', 'firstName lastName profilePicture')
       .populate('trips')
-      .populate('reviews');
+      .populate('reviews')
+      .select('-password');
     console.log('[getUserProfile] returning user fields snapshot:', {
       _id: user?._id,
       travelStyle: user?.travelStyle,
@@ -73,6 +74,7 @@ exports.getUserProfile = async (req, res) => {
       tags: user?.tags,
       recentDestinations: user?.recentDestinations
     });
+
     res.json({ user });
   } catch (err) {
     res.status(500).json({ message: 'Failed to fecth profile', error: err.message });
@@ -84,12 +86,11 @@ exports.getSingleUser = async (req, res) => {
     const user = await User.findById(req.params.id)
       .populate('followers', 'firstName lastName profilePicture')
       .populate('trips')
-      .populate('reviews');
-    
+      .populate('reviews')
+      .select('-password');
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
-
     res.json({ success: true, user });
   } catch (err) {
     res.status(500).json({ message: 'Failed to load user', error: err.message });
