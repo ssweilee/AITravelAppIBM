@@ -185,7 +185,8 @@ const CreatePostScreen = ({ navigation, route }) => {
       {/* User Row */}
       <View style={styles.userRow}>
       {user.profilePicture ? (
-          <Image source={{ uri: user.profilePicture }} style={styles.avatarImg} />
+          <Image source={{ uri: user.profilePicture }} 
+          style={styles.avatarImg}  />
         ) : (
           <View style={styles.avatarCircle}>
             <Text style={styles.avatarInitials}>
