@@ -524,7 +524,7 @@ const TripCard = ({ trip, onPress, onToggleSave, onDeleted }) => {
           <Ionicons
             name="chatbubble-outline"
             size={24}
-            color="#007AFF"
+            color="#222"
             style={{ marginRight: 4 }}
           />
           <Text style={styles.actionText}>{commentsCount}</Text>
