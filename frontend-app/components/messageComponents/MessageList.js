@@ -8,6 +8,7 @@ import moment from "moment";
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from "../../contexts/AuthContext";
 import jwtDecode from 'jwt-decode';
+import { getAvatarUrl } from '../../utils/getAvatarUrl';
 
 const MessageList = ({ searchQuery }) => {
   const [chats, setChats] = useState([]);
@@ -147,7 +148,11 @@ const MessageList = ({ searchQuery }) => {
       }
       if (user.profilePicture) {
         return (
-          <Image source={{ uri: user.profilePicture }} style={styles.avatarImg} key={user.profilePicture}/>
+          <Image
+          source={{ uri: getAvatarUrl(user.profilePicture) }}
+            style={styles.avatarImg}
+            key={user.profilePicture}
+          />
         );
       }
       const initials = (user.firstName?.[0] || '') + (user.lastName?.[0] || '');
