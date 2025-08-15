@@ -10,6 +10,8 @@ export const NotificationsProvider = ({ children }) => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [isLoading, setIsLoading]     = useState(true);
 
+  const clearUnreadCount = () => setUnreadCount(0);
+
   const fetchUnreadCount = useCallback(async () => {
     try {
       const token = await AsyncStorage.getItem('token');
@@ -80,7 +82,7 @@ export const NotificationsProvider = ({ children }) => {
   }, [fetchUnreadCount]);
 
   return (
-    <NotificationsContext.Provider value={{ unreadCount, setUnreadCount, fetchUnreadCount, isLoading }}>
+    <NotificationsContext.Provider value={{ unreadCount, setUnreadCount, fetchUnreadCount, clearUnreadCount, isLoading }}>
       {children}
     </NotificationsContext.Provider>
   );
