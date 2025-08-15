@@ -21,8 +21,8 @@ WEIGHT_DESTINATION = float(os.environ.get('REC_WEIGHT_DESTINATION', '1.5'))
 WEIGHT_TRAVEL_STYLE = float(os.environ.get('REC_WEIGHT_STYLE', '1.0'))
 BOOST_LIKED = float(os.environ.get('REC_BOOST_LIKED', '1.0'))
 BOOST_SAVED = float(os.environ.get('REC_BOOST_SAVED', '0.7'))
-DEST_DUPLICATE_DECAY = float(os.environ.get('REC_DEST_DUP_DECAY', '0.15'))  # penalty per prior occurrence in selected list
-MMR_LAMBDA = float(os.environ.get('REC_MMR_LAMBDA', '0.7'))  # trade-off between relevance and diversity (0..1)
+DEST_DUPLICATE_DECAY = float(os.environ.get('REC_DEST_DUP_DECAY', '0.15'))
+MMR_LAMBDA = float(os.environ.get('REC_MMR_LAMBDA', '0.7'))
 TOP_K = int(os.environ.get('REC_TOP_K', '10'))
 DEBUG_LOG = os.environ.get('REC_DEBUG', 'false').lower() == 'true'
 
@@ -34,6 +34,69 @@ def serialize_doc(doc):
     if isinstance(doc, ObjectId):
         return str(doc)
     return doc
+
+def populate_trip_with_user(trip):
+    """Populate the userId field with user information for TripCard component."""
+    if not trip:
+        return trip
+    
+    # If userId is an ObjectId, fetch the user details
+    user_id = trip.get('userId')
+    if user_id:
+        # Convert to ObjectId if it's a string
+        if isinstance(user_id, str):
+            try:
+                user_id = ObjectId(user_id)
+            except:
+                pass
+        
+        # Fetch user from users collection
+        user = db.users.find_one({'_id': user_id})
+        if user:
+            # Include only necessary user fields for TripCard
+            trip['userId'] = {
+                '_id': serialize_doc(user.get('_id')),
+                'firstName': user.get('firstName', 'Unknown'),
+                'lastName': user.get('lastName', ''),
+                'profilePicture': user.get('profilePicture', '')
+            }
+        else:
+            # Fallback if user not found
+            trip['userId'] = {
+                '_id': serialize_doc(user_id),
+                'firstName': 'Unknown',
+                'lastName': 'User',
+                'profilePicture': ''
+            }
+    
+    # Populate taggedUsers if they exist
+    if 'taggedUsers' in trip and trip['taggedUsers']:
+        populated_tagged = []
+        for tagged_id in trip['taggedUsers']:
+            if isinstance(tagged_id, str):
+                try:
+                    tagged_id = ObjectId(tagged_id)
+                except:
+                    continue
+            
+            tagged_user = db.users.find_one({'_id': tagged_id})
+            if tagged_user:
+                populated_tagged.append({
+                    '_id': serialize_doc(tagged_user.get('_id')),
+                    'firstName': tagged_user.get('firstName', 'Unknown'),
+                    'lastName': tagged_user.get('lastName', '')
+                })
+        trip['taggedUsers'] = populated_tagged
+    
+    # Ensure these arrays exist even if empty (for TripCard compatibility)
+    trip.setdefault('likes', [])
+    trip.setdefault('savedBy', [])
+    trip.setdefault('comments', [])
+    trip.setdefault('posts', [])
+    trip.setdefault('itineraries', [])
+    trip.setdefault('repostCount', [])
+    
+    return trip
 
 def content_based_recommendations(user_profile, all_trips):
     """Return diversified top K recommendations using weighted content score + MMR."""
@@ -163,11 +226,12 @@ def content_based_recommendations(user_profile, all_trips):
                 selected.append(trip)
                 selected_ids.add(tid)
 
-    # Return only the selected diversified list
-    return [serialize_doc(t) for t in selected[:TOP_K]]
+    # Populate user data for each trip and serialize
+    populated_trips = [populate_trip_with_user(trip) for trip in selected[:TOP_K]]
+    return [serialize_doc(t) for t in populated_trips]
 
 def hybrid_recommendations(content_recs, collab_recs):
-    # Placeholder hybrid: simply prioritize content (already diversified)
+    # Already populated in content_based_recommendations
     return content_recs
 
 @app.route('/recommend', methods=['POST'])
@@ -184,7 +248,9 @@ def recommend():
     content_recs = content_based_recommendations(user_profile, all_trips)
     try:
         collab_recs_raw = collaborative_recommendations(user_profile, all_trips)
-        collab_recs = [serialize_doc(t) for t in collab_recs_raw]
+        # Populate user data for collaborative recommendations
+        collab_recs_populated = [populate_trip_with_user(trip) for trip in collab_recs_raw]
+        collab_recs = [serialize_doc(t) for t in collab_recs_populated]
     except Exception as e:
         if DEBUG_LOG:
             print('[recommend] collaborative error:', e)

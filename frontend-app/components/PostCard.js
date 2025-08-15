@@ -38,6 +38,8 @@ const PostCard = ({ post, onPress, onToggleSave, onDeleted }) => {
   const [menuVisible, setMenuVisible] = useState(false);
 
   const { deleteResource, loading: deleting, error: deleteError } = useDeleteResource();
+  const [taggedUsers, setTaggedUsers] = useState([]); // Selected users to tag
+  const [commentsCount, setCommentsCount] = useState(post.comments?.length || 0);
 
   useEffect(() => {
     (async () => {
@@ -59,8 +61,13 @@ const PostCard = ({ post, onPress, onToggleSave, onDeleted }) => {
       setLiked(post.likes?.includes(userId) || false);
       setLikesCount(post.likes?.length || 0);
       setSaved(post.savedBy?.includes(userId) || false);
+      setCommentsCount(post.comments?.length || 0);
     }
   }, [post.likes, post.savedBy, userId]);
+
+  useEffect(() => {
+    setTaggedUsers(post.taggedUsers || []);
+  }, [post.taggedUsers]);
 
   useEffect(() => {
     let isMounted = true;
@@ -293,8 +300,32 @@ const PostCard = ({ post, onPress, onToggleSave, onDeleted }) => {
         )}
       </View>
 
+
       <TouchableOpacity onPress={() => onPress?.(post) ?? goToComments()}>
         <Text style={styles.content}>{post.content}</Text>
+        
+        {taggedUsers.length > 0 && (
+  <Text style={styles.taggedPeopleContainer}>
+    {taggedUsers
+      .filter(Boolean)
+      .map((user, i) => (
+        <Text
+          key={user._id ?? `tagged-${i}`}
+          style={[styles.taggedPersonName, { color: '#007AFF', fontWeight: 'bold' }]}
+          onPress={() => {
+            if (userId === user._id) {
+              navigation.navigate('Profile');
+            } else {
+              navigation.navigate('UserProfile', { userId: user._id });
+            }
+          }}
+        >
+          @{user?.firstName ?? 'Unknown'} {user?.lastName ?? ''}
+          {i !== taggedUsers.length - 1 ? ', ' : ''}
+        </Text>
+      ))}
+  </Text>
+)}
         {post.images && post.images.length > 0 && (
           <ScrollView horizontal style={{ marginTop: 8 }}>
             {post.images.map((img, index) => {
@@ -338,22 +369,22 @@ const PostCard = ({ post, onPress, onToggleSave, onDeleted }) => {
           <Ionicons
             name={liked ? 'heart' : 'heart-outline'}
             size={24}
-            color={liked ? '#e74c3c' : '#00C7BE'}
+            color={liked ? '#e74c3c' : '#222'}
             style={{ marginRight: 4 }}
           />
           <Text style={styles.actionText}>{likesCount}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity onPress={goToComments} style={styles.actionButton}>
-          <Ionicons name="chatbubble-outline" size={24} color="#00C7BE" style={{ marginRight: 4 }} />
-          <Text style={styles.actionText}>Comments</Text>
+          <Ionicons name="chatbubble-outline" size={24} color="#222E" style={{ marginRight: 4 }} />
+          <Text style={styles.actionText}>{commentsCount}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity onPress={toggleSave} style={styles.actionButton}>
           <MaterialIcons
             name={saved ? 'bookmark' : 'bookmark-outline'}
             size={24}
-            color={saved ? '#FFFF00' : '#00C7BE'}
+            color={saved ? '#FFFF00' : '#222'}
             style={{ marginRight: 4 }}
           />
         </TouchableOpacity>
@@ -554,6 +585,10 @@ const shareModalStyles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
   },
+taggedPeopleContainer: {
+  flexDirection: 'row',
+  flexWrap: 'wrap',
+},
 });
 
 export default PostCard;

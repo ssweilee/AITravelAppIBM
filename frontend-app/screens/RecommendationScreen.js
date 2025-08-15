@@ -1,13 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_BASE_URL } from '../config';
 import { useNavigation, useFocusEffect, useRoute } from '@react-navigation/native';
+import TripCard from '../components/TripCard';
 
 function RecommendationScreen() {
   const [preferenceProfile, setPreferenceProfile] = useState(null);
   const [contentLoading, setContentLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [deletedTripIds, setDeletedTripIds] = useState(new Set());
   const navigation = useNavigation();
   const route = useRoute();
   const requestSeq = useRef(0);
@@ -27,7 +29,7 @@ function RecommendationScreen() {
         },
       });
       const preferenceProfileData = await preferenceProfileResponse.json();
-      if (seq !== requestSeq.current) return; // ignore out-of-date response
+      if (seq !== requestSeq.current) return;
       if (preferenceProfileResponse.ok) {
         setPreferenceProfile(preferenceProfileData);
       } else {
@@ -41,9 +43,6 @@ function RecommendationScreen() {
     }
   };
 
-  // Remove initial useEffect fetch to avoid double fetch race (focus effect covers initial mount)
-  // useEffect(() => { fetchPreferenceProfile(); }, []);
-
   // Refetch when screen gains focus OR when refreshTs param changes
   useFocusEffect(
     React.useCallback(() => {
@@ -51,75 +50,180 @@ function RecommendationScreen() {
     }, [route.params?.refreshTs])
   );
 
+  const handleTripDeleted = (tripId) => {
+    setDeletedTripIds(prev => new Set([...prev, tripId]));
+  };
+
+  const filterDeleted = (trips) => {
+    if (!Array.isArray(trips)) return [];
+    return trips.filter(trip => !deletedTripIds.has(trip._id));
+  };
+
+  const renderTripSection = (title, trips, backgroundColor = '#f8f9fa') => {
+    const filteredTrips = filterDeleted(trips);
+    
+    if (!filteredTrips || filteredTrips.length === 0) {
+      return (
+        <View style={styles.sectionContainer}>
+          <Text style={styles.sectionTitle}>{title}</Text>
+          <Text style={styles.noDataText}>No recommendations found.</Text>
+        </View>
+      );
+    }
+
+    return (
+      <View style={styles.sectionContainer}>
+        <Text style={styles.sectionTitle}>{title}</Text>
+        {filteredTrips.slice(0, 5).map((trip, idx) => (
+          <View key={trip._id || idx} style={styles.tripCardWrapper}>
+            <TripCard
+              trip={trip}
+              onPress={(tripData) => navigation.navigate('TripDetail', { trip: tripData })}
+              onDeleted={handleTripDeleted}
+            />
+          </View>
+        ))}
+      </View>
+    );
+  };
+
+  if (contentLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#00C7BE" />
+        <Text style={styles.loadingText}>Loading recommendations...</Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.errorContainer}>
+        <Text style={styles.errorText}>{error}</Text>
+        <TouchableOpacity 
+          style={styles.retryButton}
+          onPress={fetchPreferenceProfile}
+        >
+          <Text style={styles.retryButtonText}>Retry</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, backgroundColor: '#f5f5f5' }}>
       <TouchableOpacity
-        style={{ backgroundColor: '#007AFF', padding: 12, borderRadius: 8, margin: 16, alignItems: 'center' }}
+        style={styles.preferencesButton}
         onPress={() => navigation.navigate('PreferencesScreen')}
       >
-        <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>Edit Preferences</Text>
+        <Text style={styles.preferencesButtonText}>Edit Preferences</Text>
       </TouchableOpacity>
-      <View style={{ flex: 1 }}>
-        <ScrollView contentContainerStyle={{ padding: 16 }}>
-          {contentLoading ? (
-            <Text>Loading recommendations...</Text>
-          ) : error ? (
-            <Text style={{ color: 'red' }}>{error}</Text>
-          ) : (
-            <>
-              <Text style={{ fontSize: 22, fontWeight: 'bold', marginBottom: 12 }}>
-                Top Hybrid Recommendations
-              </Text>
-              {preferenceProfile && Array.isArray(preferenceProfile.topTenPicks) && preferenceProfile.topTenPicks.length > 0 ? (
-                preferenceProfile.topTenPicks.slice(0, 5).map((trip, idx) => (
-                  <View key={trip._id || idx} style={{ marginBottom: 16, padding: 12, backgroundColor: '#f2f2f2', borderRadius: 8 }}>
-                    <Text style={{ fontSize: 18, fontWeight: 'bold' }}>{trip.title || 'Trip Title'}</Text>
-                    <Text>Location: {trip.destination || 'N/A'}</Text>
-                    <Text>Budget: {trip.budget ? `$${trip.budget}` : 'N/A'}</Text>
-                    <Text>Travel Style: {trip.travelStyle || 'N/A'}</Text>
-                  </View>
-                ))
-              ) : (
-                <Text>No recommendations found.</Text>
-              )}
+      
+      <ScrollView 
+        contentContainerStyle={styles.scrollContainer}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Top Hybrid Recommendations */}
+        {renderTripSection(
+          '🌟 Top Picks For You',
+          preferenceProfile?.topTenPicks,
+          '#fff3e0'
+        )}
 
-              <Text style={{ fontSize: 22, fontWeight: 'bold', marginTop: 24, marginBottom: 12 }}>
-                Content-Based Recommendations
-              </Text>
-              {preferenceProfile && Array.isArray(preferenceProfile.contentBased) && preferenceProfile.contentBased.length > 0 ? (
-                preferenceProfile.contentBased.slice(0, 5).map((trip, idx) => (
-                  <View key={trip._id || idx} style={{ marginBottom: 16, padding: 12, backgroundColor: '#e6f7ff', borderRadius: 8 }}>
-                    <Text style={{ fontSize: 18, fontWeight: 'bold' }}>{trip.title || 'Trip Title'}</Text>
-                    <Text>Location: {trip.destination || 'N/A'}</Text>
-                    <Text>Budget: {trip.budget ? `$${trip.budget}` : 'N/A'}</Text>
-                    <Text>Travel Style: {trip.travelStyle || 'N/A'}</Text>
-                  </View>
-                ))
-              ) : (
-                <Text>No content-based recommendations found.</Text>
-              )}
+        {/* Content-Based Recommendations */}
+        {renderTripSection(
+          '📍 Based on Your Interests',
+          preferenceProfile?.contentBased,
+          '#e6f7ff'
+        )}
 
-              <Text style={{ fontSize: 22, fontWeight: 'bold', marginTop: 24, marginBottom: 12 }}>
-                Collaborative Filtering Recommendations
-              </Text>
-              {preferenceProfile && Array.isArray(preferenceProfile.collaborative) && preferenceProfile.collaborative.length > 0 ? (
-                preferenceProfile.collaborative.slice(0, 5).map((trip, idx) => (
-                  <View key={trip._id || idx} style={{ marginBottom: 16, padding: 12, backgroundColor: '#fff7e6', borderRadius: 8 }}>
-                    <Text style={{ fontSize: 18, fontWeight: 'bold' }}>{trip.title || 'Trip Title'}</Text>
-                    <Text>Location: {trip.destination || 'N/A'}</Text>
-                    <Text>Budget: {trip.budget ? `$${trip.budget}` : 'N/A'}</Text>
-                    <Text>Travel Style: {trip.travelStyle || 'N/A'}</Text>
-                  </View>
-                ))
-              ) : (
-                <Text>No collaborative recommendations found.</Text>
-              )}
-            </>
-          )}
-        </ScrollView>
-      </View>
+        {/* Collaborative Filtering Recommendations */}
+        {renderTripSection(
+          '👥 Popular with Similar Travelers',
+          preferenceProfile?.collaborative,
+          '#f0f5ff'
+        )}
+      </ScrollView>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f5f5f5',
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: '#666',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+    backgroundColor: '#f5f5f5',
+  },
+  errorText: {
+    color: '#d32f2f',
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  retryButton: {
+    backgroundColor: '#00C7BE',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  preferencesButton: {
+    backgroundColor: '#007AFF',
+    padding: 12,
+    borderRadius: 8,
+    margin: 16,
+    alignItems: 'center',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  preferencesButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  scrollContainer: {
+    paddingBottom: 20,
+  },
+  sectionContainer: {
+    marginBottom: 24,
+  },
+  sectionTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    marginBottom: 12,
+    paddingHorizontal: 16,
+    color: '#222',
+  },
+  tripCardWrapper: {
+    paddingHorizontal: 16,
+    marginBottom: 4,
+  },
+  noDataText: {
+    fontSize: 14,
+    color: '#666',
+    paddingHorizontal: 16,
+    fontStyle: 'italic',
+  },
+});
 
 export default RecommendationScreen;
