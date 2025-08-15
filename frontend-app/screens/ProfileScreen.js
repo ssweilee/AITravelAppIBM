@@ -22,19 +22,47 @@ const ProfileScreen = () => {
   const [showDropdown, setShowDropdown] = useState(false);
   const [selectedTab, setSelectedTab] = useState('Post');
   const [followersModalVisible, setFollowersModalVisible] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const navigation = useNavigation();
   const route = useRoute();
   const triggerRefresh = () => setRefreshKey(prev => prev + 1);
 
+  // Fetch user profile data when screen comes into focus
   useFocusEffect(
     useCallback(() => {
+      let isActive = true;
+      
+      const fetchProfile = async () => {
+        try {
+          setIsRefreshing(true);
+          await refreshUser();
+          
+          // Also trigger refresh for the lists
+          if (isActive) {
+            triggerRefresh();
+          }
+        } catch (error) {
+          console.error('[ProfileScreen] Error fetching profile:', error);
+        } finally {
+          if (isActive) {
+            setIsRefreshing(false);
+          }
+        }
+      };
+
+      // Fetch profile data every time screen comes into focus
+      fetchProfile();
+
+      // Also handle the profileUpdated param if it exists
       if (route.params?.profileUpdated) {
-        console.log('[ProfileScreen] Refreshing user data from context...');
-        refreshUser();
-        navigation.setParams({ profileUpdated: false }); 
+        navigation.setParams({ profileUpdated: false });
       }
-    }, [route.params?.profileUpdated, refreshUser, navigation])
+
+      return () => {
+        isActive = false;
+      };
+    }, [route.params?.profileUpdated])
   );
 
   const formatLocation = (locationString) => {
@@ -84,7 +112,7 @@ const ProfileScreen = () => {
     });
   }, [navigation, userInfo, unreadCount]);
 
-  if (isLoading) {
+  if (isLoading || isRefreshing) {
     return <View style={styles.loadingContainer}><ActivityIndicator size="large" color="#00c7be" /></View>;
   }
 
@@ -101,8 +129,24 @@ const ProfileScreen = () => {
   };
 
   console.log('[ProfileScreen] userInfo:', userInfo);
-console.log('[ProfileScreen] profilePicture:', userInfo?.profilePicture);
+  console.log('[ProfileScreen] profilePicture:', userInfo?.profilePicture);
+  console.log('[ProfileScreen] itineraries count:', userInfo?.itineraries?.length);
+  console.log('[ProfileScreen] trips count:', userInfo?.trips?.length);
 
+  // Helper function to get the correct profile picture URL
+  const getProfilePictureUrl = () => {
+    if (!userInfo?.profilePicture) return null;
+    
+    // If it's already a full URL, use it
+    if (userInfo.profilePicture.startsWith('http')) {
+      return userInfo.profilePicture;
+    }
+    
+    // If it's just a filename, construct the full URL
+    return getAvatarUrl(userInfo.profilePicture);
+  };
+
+  const profilePictureUrl = getProfilePictureUrl();
 
   return (
     <View style={[styles.container, { paddingTop: Platform.OS === 'android' ? RNStatusBar.currentHeight :10 }]}>
@@ -165,11 +209,14 @@ console.log('[ProfileScreen] profilePicture:', userInfo?.profilePicture);
           style={styles.profilePictureWrapper} 
           onPress={navigateToEdit}  
         >
-          {userInfo?.profilePicture ? (   
-        <Image
-          source={{ uri: userInfo.profilePicture }}
-          style={styles.profilePicture}
-        />
+          {profilePictureUrl ? (   
+            <Image
+              source={{ uri: profilePictureUrl }}
+              style={styles.profilePicture}
+              onError={(e) => {
+                console.log('[ProfileScreen] Image load error:', e.nativeEvent.error);
+              }}
+            />
           ) : (
             <Ionicons name="person" size={40} color="#999" />
           )}
