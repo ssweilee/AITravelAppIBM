@@ -3,7 +3,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fetchUserProfile } from '../utils/ProfileInfo'; 
 import { NavigationContainerRefContext } from '@react-navigation/native';
 import { getAvatarUrl } from '../utils/getAvatarUrl'; 
-import { API_BASE_URL } from '../config';
 
 const AuthContext = createContext(null);
 
@@ -12,28 +11,6 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-
-  const processAndSetUser = useCallback(async (rawUserData) => {
-    if (!rawUserData) {
-      setUser(null);
-      await AsyncStorage.removeItem('userInfoCache');
-      return;
-    }
-    const processedUser = { ...rawUserData };
-
-    if (processedUser.profilePicture) {
-      processedUser.profilePicture = getAvatarUrl(processedUser.profilePicture);
-    }
-    
-    if (processedUser.followers && processedUser.followers.length > 0) {
-      processedUser.followers.forEach(f => {
-        if (f.profilePicture) f.profilePicture = getAvatarUrl(f.profilePicture);
-      });
-    }
-    
-    setUser(processedUser);
-    await AsyncStorage.setItem('userInfoCache', JSON.stringify(processedUser));
-  }, []);
 
   const logout = useCallback(async () => { 
    await AsyncStorage.removeItem('token');
@@ -90,8 +67,14 @@ export const AuthProvider = ({ children }) => {
       const userData = await fetchUserProfile(navigation, currentToken);
       if (userData?.success && userData.user) {
 
-        await processAndSetUser(userData.user);
-        return userData.user;
+        const refreshedUser = { ...userData.user }; 
+        if (refreshedUser && refreshedUser.profilePicture) {
+          refreshedUser.profilePicture = getAvatarUrl(refreshedUser.profilePicture);
+        }
+        
+        setUser(refreshedUser); 
+        await AsyncStorage.setItem('userInfoCache', JSON.stringify(refreshedUser));
+        return refreshedUser;
 
       } else {
         console.error("Failed to refresh user:", userData.error);
@@ -106,6 +89,29 @@ export const AuthProvider = ({ children }) => {
         }
         return null;
       }
+
+
+{/**
+  setUser(userData.user);
+        await AsyncStorage.setItem('userInfoCache', JSON.stringify(userData.user));
+        return userData.user;
+      } else {
+        console.error("Failed to refresh user:", userData.error);
+        if (userData.error?.message === 'Invalid token' || userData.error?.message === 'No auth token found') {
+          console.log("Invalid token detected, logging out.");
+          await logout();
+          if (navigation && navigation.reset) {
+            navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+          }
+        } else {
+          setUser(null);
+        }
+        return null;
+      }
+  
+  */}
+
+
       } catch (error) {
   console.error("An unexpected error occurred while refreshing user:", error);
   setUser(null);
@@ -114,7 +120,7 @@ export const AuthProvider = ({ children }) => {
   }
   return null;
 }
-}, [logout, navigation, processAndSetUser]);
+}, [logout, navigation]);
 
 useEffect(() => {
   const initializeApp = async () => {
@@ -149,7 +155,30 @@ useEffect(() => {
     setIsLoading(true);
     await AsyncStorage.setItem('token', newToken);
     setToken(newToken);
-    await processAndSetUser(newUserInfo);
+    let userToSet = null;
+    if (newUserInfo) {
+      userToSet = { ...newUserInfo };
+      if (userToSet.profilePicture) {
+        userToSet.profilePicture = getAvatarUrl(userToSet.profilePicture);
+      }
+      setUser(userToSet);
+      await AsyncStorage.setItem('userInfoCache', JSON.stringify(userToSet));
+    } else {
+      // Fetch profile if backend didn’t send user
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/users/profile`, { headers: { Authorization: `Bearer ${newToken}` } });
+        const data = await res.json();
+        if (res.ok && data?.user?._id) {
+          userToSet = data.user;
+          if (userToSet.profilePicture) {
+            userToSet.profilePicture = getAvatarUrl(userToSet.profilePicture);
+          }
+          setUser(userToSet);
+          await AsyncStorage.setItem('userInfoCache', JSON.stringify(userToSet));
+        }
+      } catch (e) { console.log('[login] profile fetch after login failed:', e.message); }
+    }
+    setIsLoading(false);
   };
   
   // Always redirect to login if not authenticated

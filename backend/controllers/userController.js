@@ -63,10 +63,11 @@ exports.followUser = async (req, res) => {
 exports.getUserProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user.userId)
+      .select('-password')
       .populate('followers', 'firstName lastName profilePicture')
       .populate('trips')
-      .populate('reviews')
-      .select('-password');
+      .populate('reviews');
+      
     console.log('[getUserProfile] returning user fields snapshot:', {
       _id: user?._id,
       travelStyle: user?.travelStyle,

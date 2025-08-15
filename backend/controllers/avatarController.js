@@ -9,10 +9,12 @@ exports.uploadAvatar = async (req, res) => {
     const userId = req.user.id; 
     const filename = req.file.filename;
 
-    const relativePath = `/uploads/avatars/${filename}`;
-    await User.findByIdAndUpdate(userId, { profilePicture: relativePath });
-
-    res.json({ success: true, profilePicture: relativePath });
+    //const relativePath = `/uploads/avatars/${filename}`;
+    //await User.findByIdAndUpdate(userId, { profilePicture: relativePath });
+    const fullUrl = `${req.protocol}://${req.get('host')}/uploads/avatars/${filename}`;
+    await User.findByIdAndUpdate(userId, { profilePicture: fullUrl });
+    res.json({ success: true, profilePicture: fullUrl });
+    //res.json({ success: true, profilePicture: relativePath });
 
   } catch (error) {
     console.error('Error uploading avatar:', error);
