@@ -1,5 +1,5 @@
 // screens/PostDetailScreen.js
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useLayoutEffect } from 'react';
 import {
   View,
   Text,
@@ -16,6 +16,7 @@ import {
   Modal,
   Dimensions,
   Alert,
+  StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -59,6 +60,40 @@ const PostDetailScreen = ({ route }) => {
   const [commentDeleteError, setCommentDeleteError] = useState(null);
   const [taggedUsers, setTaggedUsers] = useState([]); // Selected users to tag
 
+  useLayoutEffect(() => {
+      navigation.setOptions({
+        headerShown: true,
+        headerStyle: {
+          backgroundColor: '#00c7be',
+          elevation: 0,
+          shadowOpacity: 0,
+          borderBottomWidth: 0,
+          shadowColor: 'transparent',
+        },
+        headerTintColor: '#fff',
+        headerShadowVisible: false,
+        headerTitle: 'Psot Details',
+        headerTitleStyle: {
+          fontSize: 18,
+          fontWeight: 'bold',
+        },
+        headerLeft: () => (
+          <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginLeft: 16 }}>
+            <Ionicons name="arrow-back" size={24} color="#fff" />
+          </TouchableOpacity>
+        ),
+        headerRight: () => <View style={{ width: 24, marginRight: 16 }} />,
+      });
+    }, [navigation]);
+  
+    useEffect(() => {
+      StatusBar.setBarStyle('light-content');
+      if (Platform.OS === 'android') {
+        StatusBar.setBackgroundColor('#00c7be');
+        //StatusBar.setTranslucent(false);
+      }
+    }, []);
+  
   // Initialize user and post metadata
   useEffect(() => {
     const initializeData = async () => {
@@ -427,7 +462,7 @@ const PostDetailScreen = ({ route }) => {
               <Ionicons
                 name="chatbubble-outline"
                 size={24}
-                color="#007AFF"
+                color="#222"
                 style={{ marginRight: 4 }}
               />
               <Text style={styles.actionText}>{comments.length}</Text>
@@ -738,7 +773,7 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   addCommentButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#00c7be',
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 8,

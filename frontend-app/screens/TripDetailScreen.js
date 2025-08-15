@@ -1,5 +1,5 @@
 // screens/TripDetailScreen.js
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useLayoutEffect } from 'react';
 import {
   View,
   Text,
@@ -13,6 +13,7 @@ import {
   Modal,
   KeyboardAvoidingView,
   Platform,
+  StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, MaterialIcons, Feather } from '@expo/vector-icons';
@@ -49,6 +50,40 @@ const TripDetailScreen = ({ route, navigation }) => {
   const [commentDeleteError, setCommentDeleteError] = useState(null);
   const [taggedUsers, setTaggedUsers] = useState([]); // Selected users to tag
 
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerShown: true,
+      headerStyle: {
+        backgroundColor: '#00c7be',
+        elevation: 0,
+        shadowOpacity: 0,
+        borderBottomWidth: 0,
+        shadowColor: 'transparent',
+      },
+      headerTintColor: '#fff',
+      headerShadowVisible: false,
+      headerTitle: 'Trip Details',
+      headerTitleStyle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+      },
+      headerLeft: () => (
+        <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginLeft: 16 }}>
+          <Ionicons name="arrow-back" size={24} color="#fff" />
+        </TouchableOpacity>
+      ),
+      headerRight: () => <View style={{ width: 24, marginRight: 16 }} />,
+    });
+  }, [navigation]);
+
+  useEffect(() => {
+    StatusBar.setBarStyle('light-content');
+    if (Platform.OS === 'android') {
+      StatusBar.setBackgroundColor('#00c7be');
+      //StatusBar.setTranslucent(false);
+    }
+  }, []);
+  
   useEffect(() => {
     setTaggedUsers(trip.taggedUsers || []);
   }, [trip.taggedUsers]);
@@ -315,23 +350,14 @@ const TripDetailScreen = ({ route, navigation }) => {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
+          <ActivityIndicator size="large" color="#00c7be" />
         </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color="#222" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Trip Details</Text>
-        <View style={styles.headerRight} />
-      </View>
-
+    <SafeAreaView style={styles.container}>  
       <KeyboardAvoidingView 
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -564,7 +590,7 @@ const TripDetailScreen = ({ route, navigation }) => {
               <Ionicons
                 name="chatbubble-outline"
                 size={24}
-                color="#007AFF"
+                color="#222"
                 style={{ marginRight: 4 }}
               />
               <Text style={styles.actionText}>{comments.length}</Text>
@@ -705,27 +731,30 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#fff',
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#222',
-  },
-  headerRight: {
-    width: 24,
-  },
+  // header: {
+  //   backgroundColor: '#00c7be',
+  //   flexDirection: 'row',
+  //   alignItems: 'center',
+  //   justifyContent: 'space-between',
+  //   paddingHorizontal: 16,
+  //   paddingVertical: 12,
+  //   borderBottomWidth: 0,
+  //   //borderBottomColor: '#eee',
+  // },
+  // headerTitle: {
+  //   fontSize: 18,
+  //   fontWeight: 'bold',
+  //   color: '#fff',
+  // },
+  // headerRight: {
+  //   width: 24,
+  //   color: '#fff',
+  // },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#fff',
   },
   content: {
     flex: 1,
@@ -1028,7 +1057,7 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top', // Ensure multiline starts at top
   },
   addCommentButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#00c7be',
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 8,
