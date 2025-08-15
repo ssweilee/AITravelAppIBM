@@ -75,26 +75,34 @@ const login = async (req, res) => {
   }
 };
 
-// Endpoint to refresh JWT using refresh token
+// Endpoint to refresh JWT using refresh token (rotates refresh token)
 const refresh = async (req, res) => {
   const { refreshToken } = req.body;
   if (!refreshToken) {
     return res.status(400).json({ message: 'Refresh token required' });
+  }
+  // Quick validation: reject if it looks like a JWT (contains dots)
+  if (refreshToken.includes('.')) {
+    return res.status(400).json({ message: 'Provided token is not a refresh token' });
   }
   try {
     const user = await User.findOne({ refreshToken });
     if (!user) {
       return res.status(401).json({ message: 'Invalid refresh token' });
     }
-    // Log when refresh token is used
-    console.log(`Refresh token used for user: ${user.email} (${user._id})`);
-    // Issue new JWT
+    console.log(`[auth.refresh] Refresh token valid for user: ${user.email} (${user._id})`);
+    // Issue new access token
     const token = jwt.sign(
       { userId: user._id, email: user.email },
       process.env.JWT_SECRET || 'dev_secret',
       { expiresIn: '1h' }
     );
-    res.json({ token });
+    // Rotate refresh token
+    const newRefresh = generateRefreshToken();
+    user.refreshToken = newRefresh;
+    await user.save();
+    const sanitized = { _id: user._id, email: user.email, firstName: user.firstName, lastName: user.lastName, travelStyle: user.travelStyle, avgBudget: user.avgBudget || null, tags: user.tags || [], recentDestinations: user.recentDestinations || [] };
+    res.json({ token, refreshToken: newRefresh, user: sanitized });
   } catch (err) {
     console.error('Error refreshing token:', err);
     res.status(500).json({ message: 'Internal server error' });

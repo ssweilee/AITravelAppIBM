@@ -42,7 +42,7 @@ export async function authFetch(url, options = {}, { logout, navigation } = {}) 
     // Try to refresh the token if refreshToken exists
     if (refreshToken) {
       try {
-        const refreshRes = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
+  const refreshRes = await fetch(`${API_BASE_URL}/api/refresh`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ refreshToken }),
@@ -50,6 +50,12 @@ export async function authFetch(url, options = {}, { logout, navigation } = {}) 
         const refreshData = await refreshRes.json();
         if (refreshRes.ok && refreshData.token) {
           await AsyncStorage.setItem('token', refreshData.token);
+          if (refreshData.refreshToken) {
+            await AsyncStorage.setItem('refreshToken', refreshData.refreshToken);
+          }
+          if (refreshData.user) {
+            await AsyncStorage.setItem('userInfoCache', JSON.stringify(refreshData.user));
+          }
           // Retry original request with new token
           options.headers['Authorization'] = `Bearer ${refreshData.token}`;
           const retryRes = await fetch(url, options);

@@ -68,7 +68,7 @@ function RecommendationScreen() {
           ) : (
             <>
               <Text style={{ fontSize: 22, fontWeight: 'bold', marginBottom: 12 }}>
-                Top Hybrid Recommendations
+                Top recommendations for you [Hybrid: Content + UserCF + ItemCF]
               </Text>
               {preferenceProfile && Array.isArray(preferenceProfile.topTenPicks) && preferenceProfile.topTenPicks.length > 0 ? (
                 preferenceProfile.topTenPicks.slice(0, 5).map((trip, idx) => (
@@ -84,7 +84,7 @@ function RecommendationScreen() {
               )}
 
               <Text style={{ fontSize: 22, fontWeight: 'bold', marginTop: 24, marginBottom: 12 }}>
-                Content-Based Recommendations
+                Based on your preferences [Content-based]
               </Text>
               {preferenceProfile && Array.isArray(preferenceProfile.contentBased) && preferenceProfile.contentBased.length > 0 ? (
                 preferenceProfile.contentBased.slice(0, 5).map((trip, idx) => (
@@ -100,7 +100,7 @@ function RecommendationScreen() {
               )}
 
               <Text style={{ fontSize: 22, fontWeight: 'bold', marginTop: 24, marginBottom: 12 }}>
-                Collaborative Filtering Recommendations
+                Others like you liked these [Item-based CF]
               </Text>
               {preferenceProfile && Array.isArray(preferenceProfile.collaborative) && preferenceProfile.collaborative.length > 0 ? (
                 preferenceProfile.collaborative.slice(0, 5).map((trip, idx) => (
@@ -113,6 +113,34 @@ function RecommendationScreen() {
                 ))
               ) : (
                 <Text>No collaborative recommendations found.</Text>
+              )}
+              <Text style={{ fontSize: 22, fontWeight: 'bold', marginTop: 24, marginBottom: 12 }}>
+                From similar users [User-based CF]
+              </Text>
+              {preferenceProfile && Array.isArray(preferenceProfile.userCollaborative) && preferenceProfile.userCollaborative.length > 0 ? (
+                preferenceProfile.userCollaborative.slice(0, 5).map((trip, idx) => (
+                  <View key={(trip._id || 'ucf') + idx} style={{ marginBottom: 16, padding: 12, backgroundColor: '#fff0f6', borderRadius: 8 }}>
+                    <Text style={{ fontSize: 18, fontWeight: 'bold' }}>{trip.title || 'Trip Title'}</Text>
+                    <Text>Location: {trip.destination || 'N/A'}</Text>
+                    <Text>Budget: {trip.budget ? `$${trip.budget}` : 'N/A'}</Text>
+                    <Text>Travel Style: {trip.travelStyle || 'N/A'}</Text>
+                  </View>
+                ))
+              ) : (
+                <Text>No user-based collaborative recommendations found.</Text>
+              )}
+              {preferenceProfile && Array.isArray(preferenceProfile.matrixFactorization) && preferenceProfile.matrixFactorization.length > 0 && (
+                <>
+                  <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 8, marginTop: 8 }}>Personalized picks [XGBoost re-ranker]</Text>
+                  {preferenceProfile.matrixFactorization.slice(0,5).map((trip, idx) => (
+                    <View key={(trip._id || 'mf') + idx} style={{ marginBottom: 16, padding: 12, backgroundColor: '#f0e6ff', borderRadius: 8 }}>
+                      <Text style={{ fontSize: 18, fontWeight: 'bold' }}>{trip.title || 'Trip Title'}</Text>
+                      <Text>Location: {trip.destination || 'N/A'}</Text>
+                      <Text>Budget: {trip.budget ? `$${trip.budget}` : 'N/A'}</Text>
+                      <Text>Travel Style: {trip.travelStyle || 'N/A'}</Text>
+                    </View>
+                  ))}
+                </>
               )}
             </>
           )}
