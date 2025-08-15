@@ -5,4 +5,5 @@ node_modules/
 android/
 ios/
 
-.env
+.env__pycache__/
+*.pyc
