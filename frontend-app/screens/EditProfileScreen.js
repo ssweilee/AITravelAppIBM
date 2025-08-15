@@ -9,7 +9,7 @@ import { Image } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../contexts/AuthContext';
 import { updateUserProfile } from '../services/userService';
-//import * as Linking from 'expo-linking'; 
+import { getAvatarUrl } from '../utils/getAvatarUrl';
 
 
 const EditProfileScreen = ({ route, navigation }) => {
@@ -193,7 +193,6 @@ const EditProfileScreen = ({ route, navigation }) => {
   const uploadAvatar = async (token) => {
     setUploadingAvatar(true);
     try {
-      //const startTime = Date.now();
       const formData = new FormData();
       formData.append('avatar', {
         uri: avatarFile.uri,
@@ -215,12 +214,11 @@ const EditProfileScreen = ({ route, navigation }) => {
       if (!uploadResponse.ok) {
         throw new Error(uploadResult.message || 'Failed to upload avatar');
       }
-      if (uploadResult.profilePictureUrl) {
-        return uploadResult; 
+      if (uploadResponse.ok && uploadResult.profilePicture) {
+        return uploadResult.profilePicture;
       } else {
-        throw new Error("Server did not return a valid avatar URL.");
+        throw new Error(uploadResult.message || 'Failed to upload avatar or server returned invalid data.');
       }
-      return uploadResult.profilePicture; 
     } catch (err) {
       console.error('[DEBUG] uploadAvatar: Error:', err.message);
       Alert.alert('Upload Error', err.message);
@@ -276,14 +274,16 @@ const EditProfileScreen = ({ route, navigation }) => {
         if (avatarFile) {
           console.log('handleSave: Uploading new avatar...');
           const token = await AsyncStorage.getItem('token'); 
-          const uploadResult = await uploadAvatar(token); 
+          const newProfilePicturePath = await uploadAvatar(token); 
   
-          if (!uploadedAvatarFilename) {
-            throw new Error("Avatar upload failed.");
+          if (!newProfilePicturePath) {
+            setLoading(false);
+            return;
           }
-          payload.profilePicture = uploadResult.profilePicture;
-          //const fullAvatarUrl = `${API_BASE_URL}/uploads/avatars/${uploadedAvatarFilename}`;
-          setAvatarUri(uploadResult.profilePictureUrl);  
+          payload.profilePicture = newProfilePicturePath;
+          const fullAvatarUrl = getAvatarUrl(newProfilePicturePath);
+          setAvatarUri(fullAvatarUrl); 
+          await Image.prefetch(fullAvatarUrl);
         } else if (removeAvatar) {
           console.log('handleSave: Removing avatar...');
           payload.profilePicture = null;
