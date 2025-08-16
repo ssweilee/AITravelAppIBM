@@ -9,10 +9,13 @@ exports.uploadAvatar = async (req, res) => {
     const userId = req.user.id; 
     const filename = req.file.filename;
 
-    
-    await User.findByIdAndUpdate(userId, { profilePicture: filename });
+    //const relativePath = `/uploads/avatars/${filename}`;
+    //await User.findByIdAndUpdate(userId, { profilePicture: relativePath });
+    const fullUrl = `${req.protocol}://${req.get('host')}/uploads/avatars/${filename}`;
+    await User.findByIdAndUpdate(userId, { profilePicture: fullUrl });
+    res.json({ success: true, profilePicture: fullUrl });
+    //res.json({ success: true, profilePicture: relativePath });
 
-    return res.json({ success: true, profilePicture: filename });
   } catch (error) {
     console.error('Error uploading avatar:', error);
     return res.status(500).json({ message: 'Internal server error' });

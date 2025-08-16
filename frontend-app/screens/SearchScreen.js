@@ -22,6 +22,7 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { API_BASE_URL } from '../config';
 import HotelSearchScreen from './HotelSearchScreen';
 import FlightSearchScreen from './FlightSearchScreen';
+import { getAvatarUrl } from '../utils/getAvatarUrl';
 
 const TABS = ['Users', 'Posts', 'Hotels', 'Flights'];
 const LIMIT = 20;
@@ -281,11 +282,20 @@ export default function SearchScreen() {
           style={styles.cardRow}
           onPress={() => navigation.navigate('UserProfile', { userId: item._id })}
         >
-          {item.profilePicture
-            ? <Image source={{ uri: item.profilePicture }} style={styles.avatar} />
-            : <View style={styles.avatarPlaceholder}>
-                <Ionicons name="person" size={24} color="#fff" />
-              </View>}
+          <View style={styles.avatarWrapper}>
+        {item.profilePicture ? (
+          <Image
+          source={{ uri: getAvatarUrl(item.profilePicture) }}
+          style={styles.avatar}
+          />
+        ) : (
+          <View style={styles.avatarPlaceholder}>
+            <Text style={styles.avatarInitials}>
+              {(item.firstName?.[0] || '') + (item.lastName?.[0] || '')}
+            </Text>
+          </View>
+        )}
+      </View>
           <View style={styles.info}>
             <Text style={styles.name}>{item.firstName} {item.lastName}</Text>
             {!!loc && <Text style={styles.meta}>{loc}</Text>}

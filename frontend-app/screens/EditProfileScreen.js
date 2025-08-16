@@ -9,7 +9,7 @@ import { Image } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../contexts/AuthContext';
 import { updateUserProfile } from '../services/userService';
-//import * as Linking from 'expo-linking'; 
+import { getAvatarUrl } from '../utils/getAvatarUrl';
 
 
 const EditProfileScreen = ({ route, navigation }) => {
@@ -235,7 +235,11 @@ const EditProfileScreen = ({ route, navigation }) => {
     if (!uploadResponse.ok) {
       throw new Error(uploadResult.message || 'Failed to upload avatar');
     }
-    return uploadResult.profilePicture; 
+    if (uploadResponse.ok && uploadResult.profilePicture) {
+      return uploadResult.profilePicture;
+    } else {
+      throw new Error(uploadResult.message || 'Failed to upload avatar or server returned invalid data.');
+    }
   } catch (err) {
     console.error('[DEBUG] uploadAvatar: Error:', err.message);
     console.error('[DEBUG] uploadAvatar: Full error:', err);
@@ -265,7 +269,6 @@ const EditProfileScreen = ({ route, navigation }) => {
 
     setLoading(true);
     try {
-
       //preparing basic payload
       const payload = {
         firstName,
@@ -293,15 +296,16 @@ const EditProfileScreen = ({ route, navigation }) => {
         if (avatarFile) {
           console.log('handleSave: Uploading new avatar...');
           const token = await AsyncStorage.getItem('token'); 
-          const uploadedAvatarFilename = await uploadAvatar(token);
-          
-          if (!uploadedAvatarFilename) {
+          const newProfilePicturePath = await uploadAvatar(token); 
+  
+          if (!newProfilePicturePath) {
             setLoading(false);
-            return; 
+            return;
           }
-          payload.profilePicture = uploadedAvatarFilename;
-          const fullAvatarUrl = `${API_BASE_URL}/uploads/avatars/${uploadedAvatarFilename}`;
-          setAvatarUri(fullAvatarUrl); // ensure UI shows full URL
+          payload.profilePicture = newProfilePicturePath;
+          const fullAvatarUrl = getAvatarUrl(newProfilePicturePath);
+          setAvatarUri(fullAvatarUrl); 
+          await Image.prefetch(fullAvatarUrl);
         } else if (removeAvatar) {
           console.log('handleSave: Removing avatar...');
           payload.profilePicture = null;
@@ -318,12 +322,13 @@ const EditProfileScreen = ({ route, navigation }) => {
     });
 
     } catch (error) {
-      console.error('EditProfileScreen - Error updating profile:', error.message);
-      Alert.alert('Error', error.message);
-      // Rollback UI if save fails
-      setAvatarUri(originalAvatarUri);
-      setAvatarFile(null);
-      setRemoveAvatar(false);
+      if (error.message) {
+        console.error('EditProfileScreen - Update failed:', error.message);
+        Alert.alert('Update Failed', error.message);
+      } else {
+        console.error('EditProfileScreen - An unknown update error occurred:', error);
+        Alert.alert('Update Failed', 'An unexpected error occurred.');
+      }
     } finally {
       setLoading(false);
     }
@@ -490,3 +495,4 @@ const styles = StyleSheet.create({
 });
 
 export default EditProfileScreen;
+
