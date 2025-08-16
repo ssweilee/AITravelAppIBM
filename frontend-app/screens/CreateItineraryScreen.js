@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   View, Text, TextInput, StyleSheet, ScrollView,
   TouchableOpacity, Platform, StatusBar as RNStatusBar,
-  Alert
+  Alert, KeyboardAvoidingView
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -280,19 +280,25 @@ const CreateItineraryScreen = ({ navigation, route }) => {
       month: 'short',
       ...(sameYear ? {} : { year: 'numeric' }),
     };
-    return `${start.toLocaleDateString('en-UK', options)} – ${end.toLocaleDateString(
+    return `${start.toLocaleDateString('en-UK', options)} â€" ${end.toLocaleDateString(
       'en-UK',
       options
     )}`;
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#fff' }}>
+    <KeyboardAvoidingView 
+      style={{ flex: 1, backgroundColor: '#fff' }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
+    >
       <ScrollView
         contentContainerStyle={[
           styles.container,
           { paddingTop: Platform.OS === 'android' ? RNStatusBar.currentHeight : 40 },
         ]}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
       >
         <View style={styles.headerRow}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={{ zIndex: 2, elevation: 2 }}>
@@ -312,6 +318,7 @@ const CreateItineraryScreen = ({ navigation, route }) => {
           value={description}
           onChangeText={setDescription}
           multiline
+          textAlignVertical="top"
         />
 
         <TouchableOpacity onPress={() => setShowDateModal(true)} style={styles.input}>
@@ -356,9 +363,9 @@ const CreateItineraryScreen = ({ navigation, route }) => {
       <TripDateModal
         visible={showDateModal}
         startDate={startDate}
-        endDate={endDate}              // ← added
+        endDate={endDate}              // â† added
         setStartDate={setStartDate}
-        setEndDate={setEndDate}        // ← added
+        setEndDate={setEndDate}        // â† added
         onClose={() => setShowDateModal(false)}
         styles={styles}
       />
@@ -373,12 +380,12 @@ const CreateItineraryScreen = ({ navigation, route }) => {
         contentType="itinerary"
         styles={shareModalStyles}
       />
-    </View>
+    </KeyboardAvoidingView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { padding: 10, backgroundColor: '#fff', flexGrow: 1 },
+  container: { padding: 10, backgroundColor: '#fff', flexGrow: 1, paddingBottom: 50 },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',

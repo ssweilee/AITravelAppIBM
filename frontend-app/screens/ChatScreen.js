@@ -1,12 +1,12 @@
 import React, { useEffect, useState, useRef, useLayoutEffect } from 'react';
-import { View, Text, StyleSheet, Platform, TouchableOpacity, KeyboardAvoidingView } from 'react-native';
+import { View, Text, StyleSheet, Platform, TouchableOpacity, KeyboardAvoidingView, Keyboard } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { API_BASE_URL } from '../config';
 import MessageItem from '../components/messageComponents/MessageItem';
 import MessageInput from '../components/messageComponents/MessageInput';
 import socket from '../utils/socket';
-import { KeyboardAwareFlatList } from 'react-native-keyboard-aware-scroll-view';
+import { FlatList } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -20,6 +20,26 @@ const ChatScreen = () => {
   const [currentUserId, setCurrentUserId] = useState(null);
   const flatListRef = useRef(null);
   const insets = useSafeAreaInsets();
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  useEffect(() => {
+    if (messages.length > 0) {
+      setTimeout(() => {
+        flatListRef.current?.scrollToEnd({ animated: true });
+      }, 50);
+    }
+  }, [messages.length, keyboardHeight]);
+
+  useEffect(() => {
+    const keyboardDidShow = Keyboard.addListener('keyboardDidShow', () => {
+      setTimeout(() => {
+        flatListRef.current?.scrollToEnd({ animated: true });
+      }, 5);
+    });
+    return () => {
+      keyboardDidShow.remove();
+    };
+  }, []);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -58,7 +78,7 @@ const ChatScreen = () => {
     });
   }, [navigation, chatId, otherUserName]);
 
-  // ✅ Fetch current user
+  // Fetch current user
   useEffect(() => {
     const getUserId = async () => {
       const token = await AsyncStorage.getItem('token');
@@ -68,14 +88,14 @@ const ChatScreen = () => {
     getUserId();
   }, []);
 
-  // ✅ Join socket room
+  // Join socket room
   useEffect(() => {
     if (chatId) {
       socket.emit('joinChat', chatId);
     }
   }, [chatId]);
 
-  // ✅ Fetch message history once
+  // Fetch message history once
   useEffect(() => {
     const fetchMessages = async () => {
       try {
@@ -98,7 +118,7 @@ const ChatScreen = () => {
     fetchMessages();
   }, [chatId]);
 
-  // ✅ Real-time receive via socket
+  // Real-time receive via socket
   useEffect(() => {
     const handleIncoming = (message) => {
       if (message.chatId === chatId) {
@@ -128,7 +148,7 @@ const ChatScreen = () => {
     };
   }, [chatId, currentUserId]);
 
-  // ✅ Socket-only send (no optimistic UI)
+  // Socket-only send (no optimistic UI)
   const handleSend = async () => {
     if (!text.trim()) return;
     try {
@@ -156,23 +176,22 @@ const ChatScreen = () => {
       keyboardVerticalOffset={Platform.OS === 'ios' ? (insets.top + 64) : 84}
     >
       <View style={{ flex: 1, flexDirection: 'column' }}>
-        <KeyboardAwareFlatList
+        <FlatList
           ref={flatListRef}
           data={messages}
           keyExtractor={(item) => item._id}
           renderItem={({ item }) => (
             <MessageItem message={item} currentUserId={currentUserId} isGroup={route.params?.isGroup} />
           )}
-          contentContainerStyle={{ padding: 10, paddingBottom: 16, flexGrow: 1 }}
+          contentContainerStyle={{ padding: 10, paddingBottom: insets.bottom + 8, flexGrow: 1}}
           style={{ flex: 1 }}
           keyboardShouldPersistTaps="handled"
-          extraHeight={0}
-          enableOnAndroid={true}
+          onContentSizeChange={() => {
+            setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 50);
+          }}
           showsVerticalScrollIndicator={false}
-          onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
-          keyboardOpeningTime={0}
         />
-        <View style={{ backgroundColor: '#fff', paddingBottom: insets.bottom }}>
+        <View style={{ backgroundColor: '#fff', paddingBottom: Platform.OS === 'ios' ? 8 : 4 }}>
           <MessageInput text={text} setText={setText} onSend={handleSend} />
         </View>
       </View>

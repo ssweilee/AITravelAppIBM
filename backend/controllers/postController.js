@@ -68,6 +68,7 @@ exports.getUserPosts = async (req, res) => {
   try {
     const posts = await Post.find({ userId })
       .populate('userId', 'firstName lastName profilePicture')
+      .populate('taggedUsers', '_id firstName lastName profilePicture')
       .populate({
         path: 'bindItinerary',
         populate: { path: 'createdBy', select: 'firstName lastName profilePicture' }
@@ -95,6 +96,7 @@ exports.getFeedPosts = async (req, res) => {
 
     const posts = await Post.find({ userId: { $in: userAndFollowings } })
       .populate('userId', 'firstName lastName profilePicture')
+      .populate('taggedUsers', '_id firstName lastName profilePicture')
       .populate({
         path: 'bindItinerary',
         populate: { path: 'createdBy', select: 'firstName lastName profilePicture' }
@@ -117,15 +119,17 @@ exports.getPostsByUserId = async (req, res) => {
     const userId = req.params.userId;
     const posts = await Post.find({ userId })
       .populate('userId', 'firstName lastName profilePicture')
+      .populate('taggedUsers', '_id firstName lastName profilePicture')
       .populate({
         path: 'bindItinerary',
         populate: { path: 'createdBy', select: 'firstName lastName profilePicture' }
       })
       .populate({
         path: 'bindTrip',
-        populate: { path: 'createdBy', select: 'firstName lastName profilePicture' }
+        populate: { path: 'userId', select: 'firstName lastName profilePicture' } // Changed from 'createdBy' to 'userId'
       })
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .setOptions({ strictPopulate: false }); // Add this to prevent errors
 
     res.status(200).json(posts);
   } catch (err) {
@@ -240,6 +244,7 @@ exports.getPostById = async (req, res) => {
   try {
     const post = await Post.findById(req.params.postId)
       .populate('userId', 'firstName lastName profilePicture')
+      .populate('taggedUsers', '_id firstName lastName profilePicture')
       .populate({
         path: 'comments',
         populate: { path: 'userId', select: 'firstName lastName profilePicture' }

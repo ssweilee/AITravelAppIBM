@@ -2,13 +2,16 @@ import React from 'react';
 import { View, Text, StyleSheet, Button, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
+import { useNotifications } from '../contexts/NotificationsContext';
 
 const ControlPanelScreen = () => {
   const navigation = useNavigation();
+  const { clearUnreadCount } = useNotifications();
 
   const handleLogout = async () => {
     try {
       await AsyncStorage.removeItem('token');
+      clearUnreadCount();
       navigation.reset({
         index: 0,
         routes: [{ name: 'Login' }],

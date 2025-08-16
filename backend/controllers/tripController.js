@@ -7,7 +7,7 @@ const sendNotification = require('../utils/notify');
 
 exports.createTrip = async (req, res) => {
   try {
-    const { title, destination, description, budget, startDate, endDate, selectedPosts, selectedItineraries, tags } = req.body;
+    const { title, destination, description, budget, startDate, endDate, selectedPosts, selectedItineraries, tags, taggedUsers } = req.body;
     const userId = req.user.userId;
 
     console.log('Tags: ', tags);
@@ -44,6 +44,7 @@ exports.createTrip = async (req, res) => {
       destination,
       description: description || '',
       tags: tags || [],
+      taggedUsers: Array.isArray(taggedUsers) ? taggedUsers : [],
       budget,
       startDate: new Date(startDate),
       endDate: new Date(endDate),
@@ -58,11 +59,10 @@ exports.createTrip = async (req, res) => {
 
     // Populate the response - UPDATED TO INCLUDE ITINERARIES
     const populatedTrip = await Trip.findById(trip._id)
-
-      .populate('userId', 'firstName lastName')
+      .populate('userId', 'firstName lastName profilePicture')
+      .populate('taggedUsers', '_id firstName lastName profilePicture')
       .populate('posts')
-      .populate('itineraries'); 
-
+      .populate('itineraries');
 
     res.status(201).json({
       message: 'Trip created successfully',
@@ -80,6 +80,7 @@ exports.getUserTrips = async (req, res) => {
 
     const trips = await Trip.find({ userId })
       .populate('userId', 'firstName lastName profilePicture')
+      .populate('taggedUsers', '_id firstName lastName profilePicture')
       .populate('posts')
       .populate('itineraries') // ADD THIS LINE
       .populate('comments')
@@ -98,6 +99,7 @@ exports.getTripsByUserId = async (req, res) => {
 
     const trips = await Trip.find({ userId, isPublic: true })
       .populate('userId', 'firstName lastName profilePicture')
+      .populate('taggedUsers', '_id firstName lastName profilePicture')
       .populate('posts')
       .populate('itineraries') // ADD THIS LINE
       .populate('comments')
@@ -114,6 +116,7 @@ exports.getAllTrips = async (req, res) => {
   try {
     const trips = await Trip.find({ isPublic: true })
       .populate('userId', 'firstName lastName profilePicture')
+      .populate('taggedUsers', '_id firstName lastName profilePicture')
       .populate('posts')
       .populate('itineraries') // ADD THIS LINE
       .populate('comments')
@@ -132,6 +135,7 @@ exports.getTripById = async (req, res) => {
 
     const trip = await Trip.findById(tripId)
       .populate('userId', 'firstName lastName profilePicture')
+      .populate('taggedUsers', '_id firstName lastName profilePicture')
       .populate('posts')
       .populate('itineraries') // ADD THIS LINE
       .populate({
@@ -200,12 +204,13 @@ exports.updateTrip = async (req, res) => {
     if (selectedItineraries) updateData.itineraries = selectedItineraries; 
     if (isPublic !== undefined) updateData.isPublic = isPublic;
     if (tags) updateData.tags = tags;
+    if (taggedUsers !== undefined) updateData.taggedUsers = taggedUsers;
 
     const updatedTrip = await Trip.findByIdAndUpdate(tripId, updateData, { new: true })
-
-      .populate('userId', 'firstName lastName')
+      .populate('userId', 'firstName lastName profilePicture')
+      .populate('taggedUsers', '_id firstName lastName profilePicture')
       .populate('posts')
-      .populate('itineraries'); 
+      .populate('itineraries');
 
     res.status(200).json({
       message: 'Trip updated successfully',

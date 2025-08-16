@@ -12,6 +12,7 @@ import { StatusBar } from 'expo-status-bar';
 import Feather from 'react-native-vector-icons/Feather';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { getAvatarUrl } from '../utils/getAvatarUrl';
 
 const UserProfileScreen = ({ route }) => {
   const { userId } = route.params;
@@ -21,6 +22,14 @@ const UserProfileScreen = ({ route }) => {
   const [loading, setLoading] = useState(true);
   const [followersModalVisible, setFollowersModalVisible] = useState(false);
   const navigation = useNavigation();
+
+  const formatLocation = (locationString) => {
+    if (!locationString || !locationString.includes('|')) {
+      return locationString || ''; 
+    }
+    const [country, city] = locationString.split('|');
+    return `${city}, ${country}`;
+  };
 
   const decodeUserIdFromToken = async () => {
     const token = await AsyncStorage.getItem('token');
@@ -126,7 +135,10 @@ const UserProfileScreen = ({ route }) => {
       <View style={styles.profileSection}>
         <TouchableOpacity style={styles.profilePictureWrapper}>
           {user.profilePicture ? (
-            <Image source={{ uri: user.profilePicture }} style={styles.profilePicture} />
+            <Image
+              source={{ uri: getAvatarUrl(user.profilePicture) }}
+              style={styles.profilePicture}
+          />
           ) : (
             <View style={styles.avatarFallback}>
               <Text style={styles.avatarFallbackText}>{user.firstName?.[0]?.toUpperCase() || '?'}</Text>
@@ -164,7 +176,7 @@ const UserProfileScreen = ({ route }) => {
 
       <View style={styles.profileInfoRow}>
         <View style={styles.profileTextBlock}>
-          {user?.location && <Text style={styles.locationText}>{user.location}</Text>}
+          <Text style={styles.locationText}>{formatLocation(user.location)}</Text>
           {user?.bio && <Text style={styles.bioText}>{user.bio}</Text>}
         </View>
         {currentUserId !== user._id && (

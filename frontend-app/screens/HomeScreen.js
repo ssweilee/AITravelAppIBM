@@ -23,6 +23,8 @@ const HomeScreen = ({ navigation }) => {
 
   const triggerRefresh = () => setRefreshKey(prev => prev + 1);
 
+  const { fetchUnreadCount } = useNotifications();
+
   // Check token validity on focus
   useFocusEffect(
     useCallback(() => {
@@ -38,6 +40,7 @@ const HomeScreen = ({ navigation }) => {
           return;
         }
         setRefreshKey((prevKey) => prevKey + 1);
+        await fetchUnreadCount();
       })();
       return () => { isActive = false; };
     }, [logout, navigation])

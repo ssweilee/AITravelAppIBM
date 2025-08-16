@@ -4,6 +4,7 @@ import { Alert, Button, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { API_BASE_URL } from '../config';
 import { useAuth } from '../contexts/AuthContext';
+import { useNotifications } from '../contexts/NotificationsContext';
 
 function LoginForm() {
   const navigation = useNavigation();
@@ -11,6 +12,8 @@ function LoginForm() {
 
   const [ email, setEmail ] = useState('');
   const [ password, setPassword ] = useState('');
+
+  const { fetchUnreadCount } = useNotifications();
 
   const handleLogin = async () => {
     try {
@@ -31,6 +34,8 @@ function LoginForm() {
         }
         // Clear any cached user to avoid stale cross-account residue
         await AsyncStorage.removeItem('userInfoCache');
+
+        await fetchUnreadCount();
 
         // If backend did not send user object, fetch profile explicitly
         let userObj = data.user || null;

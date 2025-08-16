@@ -1,5 +1,5 @@
 // screens/PostDetailScreen.js
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useLayoutEffect } from 'react';
 import {
   View,
   Text,
@@ -16,6 +16,7 @@ import {
   Modal,
   Dimensions,
   Alert,
+  StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -57,7 +58,42 @@ const PostDetailScreen = ({ route }) => {
   const [menuComment, setMenuComment] = useState(null);
   const [deletingComment, setDeletingComment] = useState(false);
   const [commentDeleteError, setCommentDeleteError] = useState(null);
+  const [taggedUsers, setTaggedUsers] = useState([]); // Selected users to tag
 
+  useLayoutEffect(() => {
+      navigation.setOptions({
+        headerShown: true,
+        headerStyle: {
+          backgroundColor: '#00c7be',
+          elevation: 0,
+          shadowOpacity: 0,
+          borderBottomWidth: 0,
+          shadowColor: 'transparent',
+        },
+        headerTintColor: '#fff',
+        headerShadowVisible: false,
+        headerTitle: 'Psot Details',
+        headerTitleStyle: {
+          fontSize: 18,
+          fontWeight: 'bold',
+        },
+        headerLeft: () => (
+          <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginLeft: 16 }}>
+            <Ionicons name="arrow-back" size={24} color="#fff" />
+          </TouchableOpacity>
+        ),
+        headerRight: () => <View style={{ width: 24, marginRight: 16 }} />,
+      });
+    }, [navigation]);
+  
+    useEffect(() => {
+      StatusBar.setBarStyle('light-content');
+      if (Platform.OS === 'android') {
+        StatusBar.setBackgroundColor('#00c7be');
+        //StatusBar.setTranslucent(false);
+      }
+    }, []);
+  
   // Initialize user and post metadata
   useEffect(() => {
     const initializeData = async () => {
@@ -86,6 +122,10 @@ const PostDetailScreen = ({ route }) => {
       setSaved(post.savedBy?.includes(userId) || false);
     }
   }, [post, userId]);
+
+  useEffect(() => {
+    setTaggedUsers(post.taggedUsers || []);
+  }, [post.taggedUsers]);
 
   const fetchPostDetails = async () => {
     try {
@@ -307,6 +347,8 @@ const PostDetailScreen = ({ route }) => {
     );
   };
 
+  console.log('taggedUsers:', post.taggedUsers);
+
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
@@ -353,6 +395,27 @@ const PostDetailScreen = ({ route }) => {
           <View style={styles.postBox}>
             <Text style={styles.content}>{post.content}</Text>
 
+            {taggedUsers.length > 0 && (
+  <View style={styles.taggedPeopleContainer}>
+  {taggedUsers.map((user, i) => (
+    <Text
+      key={user._id}
+      style={styles.taggedPersonName}
+      onPress={() => {
+        console.log('JClicked userId:', user._id);
+        if (userId === user._id) {
+          navigation.navigate('Profile');
+        } else {
+          navigation.navigate('UserProfile', { userId: user._id });
+        }
+      }}
+    >
+      @{user.firstName} {user.lastName}
+      {i !== taggedUsers.length - 1 && ', '}
+    </Text>
+  ))}
+</View>
+)}
             {post.images && post.images.length > 0 && (
               <ScrollView
                 horizontal
@@ -399,7 +462,7 @@ const PostDetailScreen = ({ route }) => {
               <Ionicons
                 name="chatbubble-outline"
                 size={24}
-                color="#007AFF"
+                color="#222"
                 style={{ marginRight: 4 }}
               />
               <Text style={styles.actionText}>{comments.length}</Text>
@@ -710,7 +773,7 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   addCommentButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#00c7be',
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 8,
@@ -821,6 +884,15 @@ const styles = StyleSheet.create({
   nextButton: {
     right: 20,
   },
+  taggedPersonName: {
+  fontWeight: 'bold',
+  color: '#007AFF',
+  fontSize: 16,
+},
+taggedPeopleContainer: {
+  flexDirection: 'row',
+  flexWrap: 'wrap',
+},
 });
 
 export default PostDetailScreen;

@@ -44,6 +44,11 @@ const TripCard = ({ trip, onPress, onToggleSave, onDeleted }) => {
   const [menuVisible, setMenuVisible] = useState(false);
 
   const { deleteResource, loading: deleting, error: deleteError } = useDeleteResource();
+  const [taggedUsers, setTaggedUsers] = useState([]); // Selected users to tag
+    
+  useEffect(() => {
+    setTaggedUsers(trip.taggedUsers || []);
+  }, [trip.taggedUsers]);
 
   useEffect(() => {
     (async () => {
@@ -296,6 +301,8 @@ const TripCard = ({ trip, onPress, onToggleSave, onDeleted }) => {
     }
   };
 
+  console.log('JtaggedUsers:', trip.taggedUsers)
+
   return (
     <View style={styles.container}>
       {/* Top row: user + more menu */}
@@ -361,6 +368,27 @@ const TripCard = ({ trip, onPress, onToggleSave, onDeleted }) => {
           </Text>
           <Text style={styles.budget}>Budget: ${trip.budget}</Text>
         </View>
+
+      {trip.taggedUsers && trip.taggedUsers.length > 0 && (
+        <Text style={styles.taggedPeopleContainer}>
+          {trip.taggedUsers.map((user, i) => (
+            <Text
+              key={user._id}
+              style={[styles.taggedPersonName, { color: '#007AFF', fontWeight: 'bold' }]}
+              onPress={() => {
+                if (userId === user._id) {
+                  navigation.navigate('Profile');
+                } else {
+                  navigation.navigate('UserProfile', { userId: user._id });
+                }
+              }}
+            >
+              @{user.firstName} {user.lastName}
+              {i !== trip.taggedUsers.length - 1 ? ', ' : ''}
+            </Text>  
+          ))}  
+        </Text>  
+      )}  
 
         {trip.description && (
           <Text style={styles.description} numberOfLines={3}>
@@ -496,7 +524,7 @@ const TripCard = ({ trip, onPress, onToggleSave, onDeleted }) => {
           <Ionicons
             name="chatbubble-outline"
             size={24}
-            color="#007AFF"
+            color="#222"
             style={{ marginRight: 4 }}
           />
           <Text style={styles.actionText}>{commentsCount}</Text>
@@ -720,7 +748,7 @@ const styles = StyleSheet.create({
   },
   dateText: {
     fontSize: 14,
-    color: '#007AFF',
+    color: '#666',
     fontWeight: '500',
   },
   budget: {
@@ -1057,6 +1085,28 @@ const shareModalStyles = StyleSheet.create({
   modalCloseButtonText: {
     color: '#fff',
     fontWeight: 'bold',
+  },
+    taggedPeopleContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 8,
+    marginBottom: 12,
+  },
+  taggedPerson: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 8,
+    marginBottom: 4,
+  },
+  taggedPersonAvatar: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+  },
+  taggedPersonName: {
+    marginLeft: 4,
+    fontSize: 14,
+    color: '#555',
   },
 });
 

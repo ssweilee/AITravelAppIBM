@@ -20,6 +20,7 @@ import { Swipeable, RectButton } from 'react-native-gesture-handler';
 import { getSocket } from '../utils/socket';
 import { API_BASE_URL } from '../config';
 import { useNotifications } from '../contexts/NotificationsContext';
+import { getAvatarUrl } from '../utils/getAvatarUrl';
 
 export default function NotificationsScreen() {
   const [notifications, setNotifications] = useState([]);
@@ -286,7 +287,10 @@ export default function NotificationsScreen() {
             <Pressable onPress={() => handlePress(item)} style={styles.innerRow}>
               <View style={styles.avatarContainer}>
                 {avatar ? (
-                  <Image source={{ uri: avatar }} style={styles.avatar} />
+                  <Image
+                  source={{ uri: getAvatarUrl(avatar) }}
+                  style={styles.avatar}
+                  />
                 ) : (
                   <View style={[styles.avatar, styles.placeholder]}>
                     <Ionicons name="person" size={20} color="#fff" />
