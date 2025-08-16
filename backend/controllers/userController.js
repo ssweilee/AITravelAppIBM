@@ -64,6 +64,7 @@ exports.followUser = async (req, res) => {
 exports.getUserProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user.userId)
+      .select('-password')
       .populate('followers', 'firstName lastName profilePicture')
       .populate('trips')
       .populate('reviews');
@@ -74,7 +75,7 @@ exports.getUserProfile = async (req, res) => {
     // Convert user to plain object and add itineraries
     const userObject = user.toObject();
     userObject.itineraries = itineraries;
-    
+      
     console.log('[getUserProfile] returning user fields snapshot:', {
       _id: userObject?._id,
       travelStyle: userObject?.travelStyle,
@@ -86,6 +87,7 @@ exports.getUserProfile = async (req, res) => {
     });
     
     res.json({ user: userObject });
+
   } catch (err) {
     res.status(500).json({ message: 'Failed to fetch profile', error: err.message });
   }
@@ -96,8 +98,8 @@ exports.getSingleUser = async (req, res) => {
     const user = await User.findById(req.params.id)
       .populate('followers', 'firstName lastName profilePicture')
       .populate('trips')
-      .populate('reviews');
-    
+      .populate('reviews')
+      .select('-password');
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }

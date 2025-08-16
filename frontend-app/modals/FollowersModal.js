@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import { API_BASE_URL } from '../config';
+import { getAvatarUrl } from '../utils/getAvatarUrl';
 
 const { height: screenHeight } = Dimensions.get('window');
 
@@ -76,8 +77,8 @@ const FollowersModal = ({ visible, onClose, userId, title = 'Followers', type = 
       <View style={styles.avatarWrapper}>
         {item.profilePicture ? (
           <Image
-          source={{ uri: item.profilePicture }}
-            style={styles.avatar}
+          source={{ uri: getAvatarUrl(item.profilePicture) }}
+          style={styles.avatar}
           />
         ) : (
           <View style={styles.avatarPlaceholder}>

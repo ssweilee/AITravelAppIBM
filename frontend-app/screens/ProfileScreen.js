@@ -13,7 +13,7 @@ import debounce from 'lodash.debounce';
 import ItineraryList from '../components/profileComponents/ItineraryList';
 import TripList from '../components/profileComponents/TripList'; 
 import FollowersModal from '../modals/FollowersModal';
-import { getAvatarUrl } from '../utils/getAvatarUrl';
+//import { getAvatarUrl } from '../utils/getAvatarUrl';
 
 const ProfileScreen = () => {
   const { user: userInfo, isLoading, refreshUser } = useAuth();
