@@ -20,6 +20,25 @@ async function createRealSocket() {
     socketInstance.auth = { token: freshToken };
   });
 
+  // Periodically ensure auth token is fresh (helps when refresh occurs quietly)
+  let lastToken = token;
+  const interval = setInterval(async () => {
+    try {
+      const current = await AsyncStorage.getItem('token');
+      if (current && current !== lastToken) {
+        lastToken = current;
+        socketInstance.auth = { token: current };
+        if (socketInstance.disconnected) {
+          socketInstance.connect();
+        }
+      }
+    } catch {}
+  }, 5000);
+
+  socketInstance.on('disconnect', () => {
+    // keep interval running; connect cycle will pick up fresh token
+  });
+
   return socketInstance;
 }
 

@@ -4,7 +4,9 @@ from pymongo import MongoClient
 from bson import ObjectId
 import os
 from math import sqrt
-from collaborative import collaborative_recommendations
+from collaborative import collaborative_recommendations, user_based_collaborative_recommendations
+from content import content_based_recommendations
+from ranker import recommend_by_ranker
 
 app = Flask(__name__)
 CORS(app)
@@ -25,6 +27,8 @@ DEST_DUPLICATE_DECAY = float(os.environ.get('REC_DEST_DUP_DECAY', '0.15'))
 MMR_LAMBDA = float(os.environ.get('REC_MMR_LAMBDA', '0.7'))
 TOP_K = int(os.environ.get('REC_TOP_K', '10'))
 DEBUG_LOG = os.environ.get('REC_DEBUG', 'false').lower() == 'true'
+WEIGHT_USERCF = float(os.environ.get('REC_WEIGHT_USERCF', '0.5'))  # weight for user-based CF in hybrid
+WEIGHT_ITEMCF = float(os.environ.get('REC_WEIGHT_ITEMCF', '0.7'))  # weight for item-based CF in hybrid
 
 def serialize_doc(doc):
     if isinstance(doc, list):
@@ -34,6 +38,8 @@ def serialize_doc(doc):
     if isinstance(doc, ObjectId):
         return str(doc)
     return doc
+
+
 
 def populate_trip_with_user(trip):
     """Populate the userId field with user information for TripCard component."""
@@ -229,10 +235,30 @@ def content_based_recommendations(user_profile, all_trips):
     # Populate user data for each trip and serialize
     populated_trips = [populate_trip_with_user(trip) for trip in selected[:TOP_K]]
     return [serialize_doc(t) for t in populated_trips]
+  
+## content_based_recommendations now lives in content.py and is imported above
 
-def hybrid_recommendations(content_recs, collab_recs):
-    # Already populated in content_based_recommendations
-    return content_recs
+def hybrid_recommendations(content_recs, item_collab_recs, user_collab_recs):
+    """Additive blending of content + user-based CF + item-based CF."""
+    score = {}
+    trip_lookup = {}
+    # Base content scores (descending weight)
+    for i, t in enumerate(content_recs):
+        tid = str(t.get('_id'))
+        trip_lookup[tid] = t
+        score[tid] = score.get(tid, 0) + (1.0 - i / (len(content_recs) + 1))
+    # User CF contribution
+    for j, t in enumerate(user_collab_recs):
+        tid = str(t.get('_id'))
+        trip_lookup.setdefault(tid, t)
+        score[tid] = score.get(tid, 0) + WEIGHT_USERCF * (1.0 - j / (len(user_collab_recs) + 1))
+    # Item CF contribution
+    for k, t in enumerate(item_collab_recs):
+        tid = str(t.get('_id'))
+        trip_lookup.setdefault(tid, t)
+        score[tid] = score.get(tid, 0) + WEIGHT_ITEMCF * (1.0 - k / (len(item_collab_recs) + 1))
+    ranked = sorted(score.items(), key=lambda x: x[1], reverse=True)[:TOP_K]
+    return [trip_lookup[tid] for tid, _ in ranked]
 
 @app.route('/recommend', methods=['POST'])
 def recommend():
@@ -245,24 +271,80 @@ def recommend():
     all_trips = list(db.trips.find({}))
 
     # Run each recommendation strategy
-    content_recs = content_based_recommendations(user_profile, all_trips)
+    content_recs_raw = content_based_recommendations(user_profile, all_trips)
+    content_recs = [serialize_doc(t) for t in content_recs_raw]
+    # Item-based collaborative (existing)
+    item_collab_raw = []
     try:
+        item_collab_raw = collaborative_recommendations(user_profile, all_trips)
+        item_collab_recs = [serialize_doc(t) for t in item_collab_raw]
+
         collab_recs_raw = collaborative_recommendations(user_profile, all_trips)
         # Populate user data for collaborative recommendations
         collab_recs_populated = [populate_trip_with_user(trip) for trip in collab_recs_raw]
         collab_recs = [serialize_doc(t) for t in collab_recs_populated]
+
     except Exception as e:
         if DEBUG_LOG:
             print('[recommend] collaborative error:', e)
-        collab_recs = []
+        item_collab_recs = []
+    # User-based collaborative
+    user_collab_raw = []
+    try:
+        user_collab_raw = user_based_collaborative_recommendations(user_profile, all_trips)
+        user_collab_recs = [serialize_doc(t) for t in user_collab_raw]
+    except Exception as e:
+        if DEBUG_LOG:
+            print('[recommend] user_collaborative error:', e)
+        user_collab_recs = []
+    # Ranker-based supervised re-ranker
+    ranker_recs_raw = []
+    try:
+        # Load user doc minimally from profile shape
+        user_stub = {
+            '_id': user_profile.get('userId'),
+            'preferences': {
+                'tags': user_profile.get('tags', {}),
+                'travelStyle': user_profile.get('travelStyle'),
+                'avgBudget': user_profile.get('avgBudget'),
+                'recentDestinations': user_profile.get('recentDestinations', {}),
+                'favoriteDestinations': user_profile.get('favoriteDestinations', [])
+            },
+            'followings': user_profile.get('followings', [])
+        }
+        # Build candidate pool: union of content + item CF + user CF
+        cand_map = {}
+        for lst in (content_recs_raw or [] , item_collab_raw or [] , user_collab_raw or []):
+            for t in lst:
+                tid = str(t.get('_id'))
+                cand_map[tid] = t
+        candidates = list(cand_map.values())
+        # Backfill to a minimum pool size while preserving current candidates
+        min_pool = max(TOP_K * 2, 50)
+        if len(candidates) < min_pool:
+            backfill = [t for t in all_trips if str(t.get('_id')) not in cand_map]
+            need = min_pool - len(candidates)
+            candidates.extend(backfill[:max(0, need)])
+        if DEBUG_LOG:
+            print(f"[ranker] candidate_pool_size={len(candidates)} (content+CF union, backfilled if needed)")
+        ranker_recs_raw = recommend_by_ranker(user_stub, all_trips, top_k=TOP_K, candidates=candidates)
+        ranker_recs = [serialize_doc(t) for t in ranker_recs_raw]
+    except Exception as e:
+        if DEBUG_LOG:
+            print('[recommend] ranker error:', e)
+        ranker_recs = []
     if DEBUG_LOG:
-        print(f"[recommend] content_recs={len(content_recs)} collab_recs={len(collab_recs)}")
-    hybrid_recs = hybrid_recommendations(content_recs, collab_recs)
+        print(f"[recommend] content={len(content_recs)} itemCF={len(item_collab_recs)} userCF={len(user_collab_recs)} ranker={len(ranker_recs)}")
+    # Compute hybrid from raw docs to keep scoring consistent, then serialize
+    hybrid_recs_raw = hybrid_recommendations(content_recs_raw, item_collab_raw, user_collab_raw)
+    hybrid_recs = [serialize_doc(t) for t in hybrid_recs_raw]
 
     response = {
         'topTenPicks': hybrid_recs,
-        'contentBased': content_recs,
-        'collaborative': collab_recs,
+    'contentBased': content_recs,
+    'collaborative': item_collab_recs,
+    'userCollaborative': user_collab_recs,
+    'matrixFactorization': ranker_recs,
         'config': {
             'WEIGHT_TAG': WEIGHT_TAG,
             'WEIGHT_BUDGET': WEIGHT_BUDGET,
@@ -271,7 +353,9 @@ def recommend():
             'BOOST_LIKED': BOOST_LIKED,
             'BOOST_SAVED': BOOST_SAVED,
             'MMR_LAMBDA': MMR_LAMBDA,
-            'DEST_DUPLICATE_DECAY': DEST_DUPLICATE_DECAY
+            'DEST_DUPLICATE_DECAY': DEST_DUPLICATE_DECAY,
+            'WEIGHT_USERCF': WEIGHT_USERCF,
+            'WEIGHT_ITEMCF': WEIGHT_ITEMCF
         }
     }
     if DEBUG_LOG:

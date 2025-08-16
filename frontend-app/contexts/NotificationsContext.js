@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_BASE_URL } from '../config';
+import { authFetch } from '../utils/authFetch';
 import { getSocket } from '../utils/socket';
 
 const NotificationsContext = createContext();
@@ -20,21 +21,12 @@ export const NotificationsProvider = ({ children }) => {
         return;
       }
 
-      const res = await fetch(`${API_BASE_URL}/api/notifications/unread-count`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      const text = await res.text(); // read raw response
-      if (!res.ok) {
-        console.warn('Unread count fetch failed', res.status, text);
-        return;
-      }
-
-      let data;
-      try {
-        data = JSON.parse(text);
-      } catch (e) {
-        console.error('Failed to parse unread count JSON:', text);
+      const { success, data, error } = await authFetch(
+        `${API_BASE_URL}/api/notifications/unread-count`,
+        { method: 'GET', headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (!success) {
+        console.warn('Unread count fetch failed', error);
         return;
       }
 

@@ -118,6 +118,7 @@ function RecommendationScreen() {
       >
         <Text style={styles.preferencesButtonText}>Edit Preferences</Text>
       </TouchableOpacity>
+
       
       <ScrollView 
         contentContainerStyle={styles.scrollContainer}
@@ -137,10 +138,21 @@ function RecommendationScreen() {
           '#e6f7ff'
         )}
 
-        {/* Collaborative Filtering Recommendations */}
+        {/* item based Collaborative Filtering Recommendations */}
         {renderTripSection(
-          '👥 Popular with Similar Travelers',
+          '👥 Similar Trips',
           preferenceProfile?.collaborative,
+          '#f0f5ff'
+        )}
+         {/* user based Collaborative Filtering Recommendations */}
+        {renderTripSection(
+          '👥 popular with Similar users',
+          preferenceProfile?.userCollaborative,
+          '#f0f5ff'
+        )}
+        {renderTripSection(
+          '👥 using testathon data',
+          preferenceProfile?.matrixFactorization,
           '#f0f5ff'
         )}
       </ScrollView>
