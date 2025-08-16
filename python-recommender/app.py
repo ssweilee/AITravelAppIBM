@@ -26,7 +26,7 @@ BOOST_SAVED = float(os.environ.get('REC_BOOST_SAVED', '0.7'))
 DEST_DUPLICATE_DECAY = float(os.environ.get('REC_DEST_DUP_DECAY', '0.15'))
 MMR_LAMBDA = float(os.environ.get('REC_MMR_LAMBDA', '0.7'))
 TOP_K = int(os.environ.get('REC_TOP_K', '10'))
-DEBUG_LOG = os.environ.get('REC_DEBUG', 'false').lower() == 'true'
+DEBUG_LOG = True  # Force debug logging on for troubleshooting
 WEIGHT_USERCF = float(os.environ.get('REC_WEIGHT_USERCF', '0.5'))  # weight for user-based CF in hybrid
 WEIGHT_ITEMCF = float(os.environ.get('REC_WEIGHT_ITEMCF', '0.7'))  # weight for item-based CF in hybrid
 
@@ -260,8 +260,10 @@ def hybrid_recommendations(content_recs, item_collab_recs, user_collab_recs):
     ranked = sorted(score.items(), key=lambda x: x[1], reverse=True)[:TOP_K]
     return [trip_lookup[tid] for tid, _ in ranked]
 
+    # Removed duplicate recommend definition
 @app.route('/recommend', methods=['POST'])
 def recommend():
+    print("[recommend] /recommend endpoint called")
     user_profile = request.json
     if DEBUG_LOG:
         print('User preference profile received by recommender:', user_profile)
@@ -279,10 +281,10 @@ def recommend():
         item_collab_raw = collaborative_recommendations(user_profile, all_trips)
         item_collab_recs = [serialize_doc(t) for t in item_collab_raw]
 
-        collab_recs_raw = collaborative_recommendations(user_profile, all_trips)
-        # Populate user data for collaborative recommendations
-        collab_recs_populated = [populate_trip_with_user(trip) for trip in collab_recs_raw]
-        collab_recs = [serialize_doc(t) for t in collab_recs_populated]
+        # collab_recs_raw = collaborative_recommendations(user_profile, all_trips)
+        # # Populate user data for collaborative recommendations
+        # collab_recs_populated = [populate_trip_with_user(trip) for trip in collab_recs_raw]
+        # collab_recs = [serialize_doc(t) for t in collab_recs_populated]
 
     except Exception as e:
         if DEBUG_LOG:

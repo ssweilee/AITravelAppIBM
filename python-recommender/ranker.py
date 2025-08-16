@@ -133,18 +133,29 @@ def load_model():
 def recommend_by_ranker(user_doc: dict, all_trips: list[dict], top_k: int = 10, candidates: list[dict] | None = None):
     model, mode = load_model()
     if model is None:
+        print("[ranker] No model loaded.")
         return []
     user_id = _to_id(user_doc.get('_id') or user_doc.get('userId'))
     # Build candidates if not provided: use all trips not owned by user
     candidates = candidates if candidates is not None else [t for t in all_trips if _to_id(t.get('userId')) != user_id]
+    print(f"[ranker] Model mode: {mode}, Candidates: {len(candidates)}")
     if not candidates:
+        print("[ranker] No candidates to rank.")
         return []
-    X = np.vstack([build_features_row(user_doc, t) for t in candidates])
+    try:
+        X = np.vstack([build_features_row(user_doc, t) for t in candidates])
+    except Exception as e:
+        print(f"[ranker] Error building features: {e}")
+        return []
     # Scores
     try:
         scores = model.predict_proba(X)[:,1]
-    except Exception:
-        scores = model.predict(X)
+    except Exception as e1:
+        try:
+            scores = model.predict(X)
+        except Exception as e2:
+            print(f"[ranker] Model prediction error: {e1}, {e2}")
+            return []
 
     # Preference signal emphasizing tags, destinations, budget, and travel style
     # Indices: 1=tag_overlap_weighted, 2=style_match, 3=budget_similarity, 4=recent_dest_weight
@@ -166,8 +177,9 @@ def recommend_by_ranker(user_doc: dict, all_trips: list[dict], top_k: int = 10, 
     if DEBUG_LOG:
         try:
             print(f"[ranker] mean(scores)={float(np.mean(scores)):.4f} mean(pref)={float(np.mean(pref_signal)):.4f} alpha={PREF_ALPHA}")
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"[ranker] Debug log error: {e}")
 
     ranked = sorted(zip(final_scores, candidates), key=lambda x: x[0], reverse=True)[:top_k]
+    print(f"[ranker] Returning {len(ranked)} ranked recommendations.")
     return [t for _, t in ranked]
