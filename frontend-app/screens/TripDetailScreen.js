@@ -271,7 +271,7 @@ const TripDetailScreen = ({ route, navigation }) => {
     const start = new Date(trip.startDate);
     const end = new Date(trip.endDate);
     const diffTime = Math.abs(end - start);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24) + 1);
     return `${diffDays} day${diffDays > 1 ? 's' : ''}`;
   };
 
@@ -882,21 +882,23 @@ const styles = StyleSheet.create({
     marginHorizontal: -4,
   },
   postBox: {
-    width: '31.33%',
-    aspectRatio: 1,
-    margin: '1%',
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    shadowOffset: { width: 0, height: 1 },
-  },
+  width: '31.33%',
+  // Remove aspectRatio: 1 - this was causing the cropping
+  minHeight: 120, // Set a minimum height instead
+  margin: '1%',
+  backgroundColor: '#fff',
+  borderRadius: 12,
+  elevation: 2,
+  shadowColor: '#000',
+  shadowOpacity: 0.1,
+  shadowRadius: 3,
+  shadowOffset: { width: 0, height: 1 },
+},
   postBoxContent: {
     flex: 1,
     padding: 12,
     justifyContent: 'flex-start',
+    minHeight: 96
   },
   postImageContainer: {
     position: 'relative',
@@ -927,19 +929,20 @@ const styles = StyleSheet.create({
     color: '#333',
     lineHeight: 14,
     fontWeight: '500',
-    marginBottom: 4,
+    marginBottom: 6,
   },
   postBoxText: {
     fontSize: 12,
     color: '#333',
     lineHeight: 16,
-    flex: 1,
+    marginBottom: 8,
   },
   postBoxFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 4,
+    marginTop: 'auto',
+    paddingTop: 4,
   },
   postBoxDate: {
     fontSize: 10,
@@ -954,6 +957,14 @@ const styles = StyleSheet.create({
     color: '#e74c3c',
     marginLeft: 2,
   },
+  postBoxTextLimited: {
+  fontSize: 12,
+  color: '#333',
+  lineHeight: 16,
+  marginBottom: 8,
+  maxHeight: 64, // Limit height to ~4 lines
+  overflow: 'hidden',
+},
   // NEW STYLES FOR ITINERARIES SECTION
   itinerariesSection: {
     padding: 16,

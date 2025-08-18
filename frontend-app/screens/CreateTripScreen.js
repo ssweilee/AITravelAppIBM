@@ -619,7 +619,7 @@ const TagFriendsInput = ({ selectedUsers, setSelectedUsers }) => {
           mode="date"
           display='default'
           onChange={(event, date) => handleDateChange(event, date, 'start')}
-          minimumDate={new Date()}
+         
         />
       )}
 
