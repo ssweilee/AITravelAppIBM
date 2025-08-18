@@ -199,7 +199,8 @@ export const TOP_CITIES = [
   { id: 197, city: "Rishikesh", country: "India", searchText: "rishikesh india yoga" },
   { id: 198, city: "Ladakh", country: "India", searchText: "ladakh india himalayas" },
   { id: 199, city: "Kashmir", country: "India", searchText: "kashmir india" },
-  { id: 200, city: "Hampi", country: "India", searchText: "hampi india ruins" }
+  { id: 200, city: "Hampi", country: "India", searchText: "hampi india ruins" },
+  { id: 201, city: "Ithaca", country: "Greece", searchText: "Ionian islands Greece" },
 ];
 
 export const formatCityDisplay = (city) => {
