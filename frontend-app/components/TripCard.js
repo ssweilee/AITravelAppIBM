@@ -168,7 +168,7 @@ const TripCard = ({ trip, onPress, onToggleSave, onDeleted }) => {
     const start = new Date(trip.startDate);
     const end = new Date(trip.endDate);
     const diffTime = Math.abs(end.getTime() - start.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24) + 1);
     return `${diffDays} day${diffDays > 1 ? 's' : ''}`;
   };
 

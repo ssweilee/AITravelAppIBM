@@ -72,7 +72,7 @@ const PostDetailScreen = ({ route }) => {
         },
         headerTintColor: '#fff',
         headerShadowVisible: false,
-        headerTitle: 'Psot Details',
+        headerTitle: 'Post Details',
         headerTitleStyle: {
           fontSize: 18,
           fontWeight: 'bold',
