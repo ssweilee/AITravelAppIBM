@@ -1,3 +1,4 @@
+// CreateItineraryScreen.js
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, TextInput, StyleSheet, ScrollView,
@@ -12,8 +13,11 @@ import ShareModal from '../components/ItineraryComponents/ShareModal';
 import DaySection from '../components/ItineraryComponents/DaySection';
 
 const CreateItineraryScreen = ({ navigation, route }) => {
+
+  const cloneItinerary = route?.params?.cloneItinerary;
   const aiItinerary = route?.params?.aiItinerary;
-  // Helper to parse date string to Date object
+
+  // helper to parse date string to Date object
   const parseDate = (d) => {
     if (!d) return new Date();
     if (typeof d === 'string' && /^\d{4}-\d{2}-\d{2}/.test(d)) {
@@ -21,44 +25,83 @@ const CreateItineraryScreen = ({ navigation, route }) => {
     }
     return new Date(d);
   };
-  // If AI itinerary, get start/end from days
+
+  // For AI itinerary dates 
   let aiStart = new Date();
   let aiEnd = new Date();
   if (aiItinerary && Array.isArray(aiItinerary.days) && aiItinerary.days.length > 0) {
     aiStart = parseDate(aiItinerary.days[0].date);
     aiEnd = parseDate(aiItinerary.days[aiItinerary.days.length - 1].date);
   }
-  const [title, setTitle] = useState(aiItinerary?.title || '');
-  const [destination, setDestination] = useState(aiItinerary?.destination || '');
-  const [description, setDescription] = useState(aiItinerary?.description || route?.params?.aiSuggestion || '');
-  const [days, setDays] = useState(
-    aiItinerary?.days && Array.isArray(aiItinerary.days) && aiItinerary.days.length > 0
-      ? aiItinerary.days.map(day => ({
-          date: '', // Always set to empty string so UI uses default date
-          notes: day.notes || '',
-          activities: Array.isArray(day.activities) && day.activities.length > 0
-            ? day.activities.map(a => ({
-                time: '',
-                description: a.description || '',
-                location: a.location || ''
-              }))
-            : [{ time: '', description: '', location: '' }]
-        }))
-      : [
-          {
-            date: '',
-            notes: '',
-            activities: [{ time: '', description: '', location: '' }],
-          },
-        ]
+
+
+  const [title, setTitle] = useState(
+    cloneItinerary?.title || aiItinerary?.title || ''
   );
+  const [destination, setDestination] = useState(
+    cloneItinerary?.destination || aiItinerary?.destination || ''
+  );
+  const [description, setDescription] = useState(
+    cloneItinerary?.description || aiItinerary?.description || route?.params?.aiSuggestion || ''
+  );
+
+  // Days
+  const initialDaysFromClone = cloneItinerary?.days && Array.isArray(cloneItinerary.days) && cloneItinerary.days.length > 0
+    ? cloneItinerary.days.map((day) => ({
+        date: '',
+        notes: day.notes || '',
+        activities: Array.isArray(day.activities) && day.activities.length > 0
+          ? day.activities.map((a) => ({
+              // preserve time/location/description from the cloned itinerary
+              time: a.time || '',
+              description: a.description || '',
+              location: a.location || '',
+            }))
+          : [{ time: '', description: '', location: '' }],
+      }))
+    : null;
+
+  const initialDaysFromAI = aiItinerary?.days && Array.isArray(aiItinerary.days) && aiItinerary.days.length > 0
+    ? aiItinerary.days.map((day) => ({
+        date: '',
+        notes: day.notes || '',
+        activities: Array.isArray(day.activities) && day.activities.length > 0
+          ? day.activities.map((a) => ({
+              time: '', 
+              description: a.description || '',
+              location: a.location || ''
+            }))
+          : [{ time: '', description: '', location: '' }]
+      }))
+    : null;
+
+  const [days, setDays] = useState(
+    initialDaysFromClone ||
+    initialDaysFromAI ||
+    [
+      {
+        date: '',
+        notes: '',
+        activities: [{ time: '', description: '', location: '' }],
+      },
+    ]
+  );
+
+  const [startDate, setStartDate] = useState(
+    cloneItinerary?.startDate ? new Date(cloneItinerary.startDate)
+      : aiItinerary ? new Date() 
+      : new Date()
+  );
+  const [endDate, setEndDate] = useState(
+    cloneItinerary?.endDate ? new Date(cloneItinerary.endDate)
+      : (aiItinerary && aiItinerary.days && aiItinerary.days.length > 0) ? aiEnd
+      : new Date()
+  );
+
   const [shareModalVisible, setShareModalVisible] = useState(false);
   const [selectedFollowers, setSelectedFollowers] = useState([]);
   const [followers, setFollowers] = useState([]);
   const [followings, setFollowings] = useState([]);
-  // Use current date as startDate if AI itinerary is present
-  const [startDate, setStartDate] = useState(aiItinerary ? new Date() : (aiItinerary && aiItinerary.days && aiItinerary.days.length > 0 ? aiStart : new Date()));
-  const [endDate, setEndDate] = useState(aiItinerary && aiItinerary.days && aiItinerary.days.length > 0 ? aiEnd : new Date());
   const [showDateModal, setShowDateModal] = useState(false);
   const [expandedDayIndex, setExpandedDayIndex] = useState(0);
 
@@ -133,8 +176,6 @@ const CreateItineraryScreen = ({ navigation, route }) => {
         return;
       }
 
-      console.log('JWT token used for create itinerary:', token);
-
       const payload = {
         title,
         description,
@@ -142,6 +183,7 @@ const CreateItineraryScreen = ({ navigation, route }) => {
         startDate: startDate.toISOString(),
         endDate: endDate.toISOString(),
         days: days.map((d, i) => ({
+          // Use provided label if user typed one, else default "Day i"
           day: d.date || `Day ${i + 1}`,
           notes: d.notes,
           activities: d.activities,
@@ -235,21 +277,19 @@ const CreateItineraryScreen = ({ navigation, route }) => {
   const getOrdinalSuffix = (n) => {
     if (n > 3 && n < 21) return 'th';
     switch (n % 10) {
-      case 1:
-        return 'st';
-      case 2:
-        return 'nd';
-      case 3:
-        return 'rd';
-      default:
-        return 'th';
+      case 1: return 'st';
+      case 2: return 'nd';
+      case 3: return 'rd';
+      default: return 'th';
     }
   };
 
-  // Sync days when startDate or endDate changes, but only if not imported from AI
   useEffect(() => {
-    // Only auto-generate days if days was initialized as a single blank day
-    if (days.length === 1 && !days[0].activities[0].description && !days[0].activities[0].location) {
+    if (
+      days.length === 1 &&
+      !days[0].activities[0].description &&
+      !days[0].activities[0].location
+    ) {
       if (startDate > endDate) {
         setEndDate(new Date(startDate));
         return;
@@ -280,10 +320,7 @@ const CreateItineraryScreen = ({ navigation, route }) => {
       month: 'short',
       ...(sameYear ? {} : { year: 'numeric' }),
     };
-    return `${start.toLocaleDateString('en-UK', options)} â€" ${end.toLocaleDateString(
-      'en-UK',
-      options
-    )}`;
+    return `${start.toLocaleDateString('en-UK', options)} – ${end.toLocaleDateString('en-UK', options)}`;
   };
 
   return (
@@ -363,9 +400,9 @@ const CreateItineraryScreen = ({ navigation, route }) => {
       <TripDateModal
         visible={showDateModal}
         startDate={startDate}
-        endDate={endDate}              // â† added
+        endDate={endDate}
         setStartDate={setStartDate}
-        setEndDate={setEndDate}        // â† added
+        setEndDate={setEndDate}
         onClose={() => setShowDateModal(false)}
         styles={styles}
       />
@@ -495,7 +532,7 @@ const shareModalStyles = StyleSheet.create({
   modalUserRow: {
     flexDirection: 'row',
     alignItems: 'center',
-        paddingVertical: 10,
+    paddingVertical: 10,
   },
   avatarCircle: {
     width: 40,

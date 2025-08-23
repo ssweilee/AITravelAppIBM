@@ -1,3 +1,4 @@
+// ItineraryDetailScreen.js
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, StatusBar } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
@@ -23,6 +24,12 @@ const ItineraryDetailScreen = () => {
     const d = new Date(start);
     d.setDate(d.getDate() + offset);
     return d.toLocaleDateString('en-GB', { weekday: 'long' });
+  };
+
+  const handleCopyAndEdit = () => {
+    navigation.navigate('CreateItinerary', {
+      cloneItinerary: itinerary, // pass the full itinerary to prefill
+    });
   };
 
   return (
@@ -63,6 +70,12 @@ const ItineraryDetailScreen = () => {
             </View>
           </View>
         </View>
+
+        {/* Copy & Edit button on hero */}
+        <TouchableOpacity style={[styles.copyFab, { top: insets.top + 8 }]} onPress={handleCopyAndEdit}>
+          <Ionicons name="copy-outline" size={16} color="#0A4D47" />
+          <Text style={styles.copyFabText}>Copy & Edit</Text>
+        </TouchableOpacity>
       </View>
 
       <ScrollView
@@ -138,6 +151,22 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 10,
   },
+
+  //floating copy button
+  copyFab: {
+    position: 'absolute',
+    right: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#D7F4F2',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 16,
+    borderColor: '#BAE7E4',
+    borderWidth: 1,
+  },
+  copyFabText: { color: '#0A4D47', fontWeight: '700', fontSize: 12 },
 
   heroTextBlock: {
     position: 'absolute',
