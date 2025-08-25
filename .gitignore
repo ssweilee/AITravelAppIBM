@@ -11,3 +11,10 @@ __pycache__/
 **/__pycache__/
 .env__pycache__/
 *.pyc
+package-lock.json
+package-lock.json
+frontend-app/config.js
+frontend-app/package-lock.json
+backend/config.js
+frontend-app/package.json
+package.json
