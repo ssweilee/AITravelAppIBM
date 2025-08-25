@@ -1,99 +1,4 @@
 // backend/routes/aiRoutes.js
-
-/*
-const express = require('express');
-const router = express.Router();
-//const fetch = require('node-fetch');
-
-// POST /api/ai/chat
-// router.post('/chat', async (req, res) => {
-//   const { messages } = req.body;
-//   if (!messages || !Array.isArray(messages)) {
-//     return res.status(400).json({ error: 'Invalid messages array' });
-//   }
-//   try {
-//     const openaiRes = await fetch('https://api.openai.com/v1/chat/completions', {
-//       method: 'POST',
-//       headers: {
-//         'Content-Type': 'application/json',
-//         'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-//       },
-//       body: JSON.stringify({
-//         model: 'gpt-4o-mini',
-//         messages
-//       })
-//     });
-//     const data = await openaiRes.json();
-//     if (!openaiRes.ok) {
-//       console.error('OpenAI API error:', data);
-//       return res.status(500).json({ error: 'OpenAI API error', details: data });
-//     }
-//     res.json(data);
-//   } catch (err) {
-//     console.error('AI request failed:', err);
-//     res.status(500).json({ error: 'AI request failed', details: err.message });
-//   }
-// });
-
-const axios = require('axios');
-
-async function getWatsonxAccessToken(apiKey) {
-  const response = await axios.post(
-    'https://iam.cloud.ibm.com/identity/token',
-    new URLSearchParams({
-      'grant_type': 'urn:ibm:params:oauth:grant-type:apikey',
-      'apikey': apiKey,
-    }),
-    {
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-    }
-  );
-  return response.data.access_token;
-}
-
-// POST /api/ai/watsonx
-router.post('/watsonx', async (req, res) => {
-  try {
-    const { prompt, model_id = "ibm/granite-3-2b-instruct", max_tokens = 1000 } = req.body;
-
-    console.log("Prompt sent to watsonx:", prompt);
-
-    const watsonxUrl = process.env.WATSONX_URL;
-    const watsonxApiKey = process.env.WATSONX_API_KEY;
-    const accessToken = await getWatsonxAccessToken(watsonxApiKey);
-
-    const response = await axios.post(
-      `${watsonxUrl}/ml/v1/text/generation?version=2024-05-01`,
-      {
-        model_id,
-        input: prompt,
-        parameters: {
-          max_new_tokens: max_tokens,
-        },
-        project_id: "01cde89b-6e3b-44ce-b874-b29fec9d8b33"
-      },
-      {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
-        },
-      }
-    );
-    res.json(response.data);
-  } catch (error) {
-    console.error('Watsonx API error:', error?.response?.data || error.message);
-    res.status(500).json({ error: 'Failed to get response from watsonx.ai', details: error?.response?.data || error.message });
-  }
-});
-
-module.exports = router;
-
-ORIGINAL
-*/ 
-
-// backend/routes/aiRoutes.js
 const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
@@ -103,13 +8,12 @@ const https = require('https');
 const ChatSession = require('../models/ChatSession');
 const { authenticateToken } = require('../middleware/authMiddleware');
 
-// Optional proxy support (safe if not installed)
+//Optional proxy support
 let HttpsProxyAgent;
 try { HttpsProxyAgent = require('https-proxy-agent'); } catch { /* optional */ }
 
-/* =========================
-   Network helpers (proxy/DNS/timeout hardening)
-   ========================= */
+
+//Network helpers (proxy/DNS/timeout hardening)
 function buildHttpsAgent() {
   const proxyUrl = process.env.HTTPS_PROXY || process.env.HTTP_PROXY;
   if (proxyUrl && HttpsProxyAgent) {
@@ -118,9 +22,8 @@ function buildHttpsAgent() {
   return new https.Agent({ keepAlive: true });
 }
 
-/* =========================
-   IBM watsonx helpers
-   ========================= */
+
+//watsonx helpers
 async function getWatsonxAccessToken(apiKey) {
   const agent = buildHttpsAgent();
   try {
@@ -190,9 +93,7 @@ async function callWatsonx({
   return response.data?.results?.[0]?.generated_text || '';
 }
 
-/* =========================
-   System prompts (explicit-only policy)
-   ========================= */
+//System prompts
 const BASE_SYSTEM = `You are a helpful, accurate travel assistant.
 - Answer ONLY the next user turn.
 - Do not include lines that begin with "User:", "Assistant:", or "System:".
@@ -231,9 +132,7 @@ ${daysLine}
 ${destLine}`.trim();
 }
 
-/* =========================
-   Sanitizers & helpers
-   ========================= */
+// Sanitizers & helpers
 function sanitizeAssistantReply(text) {
   if (!text) return '';
   let out = String(text).replace(/\r/g, '');
@@ -307,10 +206,7 @@ function hasExplicitItineraryRequest(text) {
       || /\buse (this|that|these|the (ideas|suggestions)) to (create|make|generate)\b.*\bitinerary\b/.test(t);
 }
 
-/**
- * If the model mixed prose+JSON or made a small mistake, ask it once more to emit STRICT JSON only
- * (still prompt-first; minimal logic).
- */
+
 async function repairItineraryJSON(rawReply, { days_hint, destination_hint }) {
   const prompt = [
     itinerarySystem({ days_hint, destination_hint }),
@@ -330,9 +226,7 @@ async function repairItineraryJSON(rawReply, { days_hint, destination_hint }) {
   return tryParseJSONLoose(fixed);
 }
 
-/* =========================
-   Prompt builders
-   ========================= */
+// Prompt builderS
 function buildContextBlock(summary, messages, maxTurns = 14) {
   const recent = (messages || []).slice(-maxTurns).map(m => {
     if (m.role === 'user') return `- The user said: ${m.content}`;
@@ -367,9 +261,7 @@ function buildGenerationPrompt({ systemPrompt, summary, messages, extraInstructi
     .filter(Boolean).join('\n\n');
 }
 
-/* =========================
-   Intent Classifier (explicit-only)
-   ========================= */
+// Intent Classifier (explicit)
 async function classifyIntentLLM(session, latestUserMessage) {
   const context = buildContextBlock(session.summary, session.messages, 12);
   const classifierPrompt = [
@@ -411,7 +303,7 @@ async function classifyIntentLLM(session, latestUserMessage) {
 
   if (parsed && parsed.intent) return parsed;
 
-  // conservative fallback (explicit phrase only)
+  // conservative fallback (explicit phrase)
   return {
     intent: hasExplicitItineraryRequest(latestUserMessage) ? 'ITINERARY_CREATE' : 'GENERAL',
     explicit_request: hasExplicitItineraryRequest(latestUserMessage),
@@ -425,9 +317,7 @@ async function classifyIntentLLM(session, latestUserMessage) {
   };
 }
 
-/* =========================
-   Suggestions extractor (for FROM_PRIOR_SUGGESTIONS)
-   ========================= */
+//Suggestions extractor (for FROM_PRIOR_SUGGESTIONS)
 async function extractSuggestionsFromRecent(session) {
   const recent = (session.messages || []).slice(-18).map(m => {
     const who = m.role === 'assistant' ? 'Assistant' : 'User';
@@ -450,9 +340,7 @@ async function extractSuggestionsFromRecent(session) {
   try { return JSON.parse(raw); } catch { return { suggestions: [], constraints: [] }; }
 }
 
-/* =========================
-   Summarizer (keep sessions small)
-   ========================= */
+// Summarizer
 async function summarizeIfNeeded(session) {
   const MAX_MESSAGES_BEFORE_SUMMARY = 50;
   if ((session.messages?.length || 0) < MAX_MESSAGES_BEFORE_SUMMARY) return;
@@ -467,14 +355,9 @@ async function summarizeIfNeeded(session) {
   session.messages = session.messages.slice(-40);
 }
 
-/* =========================
-   Auth protect all AI routes
-   ========================= */
 router.use(authenticateToken);
 
-/* =========================
-   Health check (IAM connectivity)
-   ========================= */
+//check connectivity
 router.get('/health/ai', async (req, res) => {
   try {
     await getWatsonxAccessToken(process.env.WATSONX_API_KEY);
@@ -484,9 +367,7 @@ router.get('/health/ai', async (req, res) => {
   }
 });
 
-/* =========================
-   Session management
-   ========================= */
+//Session management
 router.post('/sessions/new', async (req, res) => {
   try {
     const userIdStr = req.user?.userId;
@@ -501,10 +382,7 @@ router.post('/sessions/new', async (req, res) => {
   }
 });
 
-/* =========================
-   Chat (explicit-only itinerary creation)
-   ========================= */
-// Body: { sessionId?: string, message: string }
+//Chat (explicit-only itinerary creation)
 router.post('/chat', async (req, res) => {
   try {
     const userIdStr = req.user?.userId;
@@ -616,7 +494,7 @@ router.post('/chat', async (req, res) => {
       );
     }
 
-    // Append assistant reply (guaranteed non-empty)
+    // Append assistant reply
     session.messages.push({ role: 'assistant', content: reply });
 
     await summarizeIfNeeded(session);
@@ -641,9 +519,7 @@ router.post('/chat', async (req, res) => {
   }
 });
 
-/* =========================
-   List / Get / Update sessions
-   ========================= */
+// List / Get / Update sessions
 router.get('/sessions', async (req, res) => {
   const userIdStr = req.user?.userId;
   if (!userIdStr || !mongoose.Types.ObjectId.isValid(userIdStr)) {

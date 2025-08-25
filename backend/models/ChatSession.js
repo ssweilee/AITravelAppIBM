@@ -21,7 +21,6 @@ const ScratchpadSchema = new mongoose.Schema({
 },{ _id:false });
 
 const ChatSessionSchema = new mongoose.Schema({
-  // IMPORTANT: ObjectId to match your previous working version.
   userId: { type: mongoose.Schema.Types.ObjectId, index: true, required: true },
   title: { type: String, default: 'Travel chat' },
   messages: { type: [MessageSchema], default: [] },
