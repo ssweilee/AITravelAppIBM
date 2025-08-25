@@ -19,7 +19,6 @@ import { API_BASE_URL } from '../config';
 import { useNavigation } from '@react-navigation/native';
 import Markdown from 'react-native-markdown-display';
 
-/* ---------------- Token helpers ---------------- */
 async function getAuthToken() {
   const keys = ['auth_token','token','access_token','accessToken','jwt','userToken','id_token'];
   for (const k of keys) {
@@ -83,7 +82,6 @@ function parseItineraryIfJSON(maybeJSON) {
   return null;
 }
 
-/* ---------------- Minimal sanitizer (keeps Markdown!) ---------------- */
 function softSanitizeForMarkdown(text) {
   if (!text) return '';
   let out = String(text).replace(/\r/g, '');
@@ -92,7 +90,7 @@ function softSanitizeForMarkdown(text) {
   out = out.replace(/^\s*Assistant\s*:\s*/i, '');
   out = out.replace(/^\s*(Answer|Response|Reply)\s*:\s*/i, '');
 
-  // If a later role label appears (rare), cut at it
+  // If a later role label appears, cut at it
   const roleIdx = out.search(/[\n\r]+(?:User|Assistant|System)\s*:/i);
   if (roleIdx !== -1) out = out.slice(0, roleIdx);
 
@@ -100,7 +98,6 @@ function softSanitizeForMarkdown(text) {
   return out.trim();
 }
 
-/* ---------------- UI subcomponents ---------------- */
 const AIMessageInput = React.memo(({ input, setInput, loading, onSend }) => (
   <View style={styles.inputContainer}>
     <TextInput
@@ -187,14 +184,13 @@ const MessageBubble = React.memo(({ item, onImportItinerary }) => {
   );
 });
 
-/* ---------------- Main screen ---------------- */
 export default function AIAssistantScreen() {
   const [messages, setMessages] = useState([
     { role: 'assistant', content: 'Hi! I am your travel AI assistant. How can I help you today?', _id: `seed-${Date.now()}` }
   ]);
   const [input, setInput] = useState('');
-  const [loading, setLoading] = useState(false);        // chat send in-flight
-  const [creating, setCreating] = useState(false);      // new chat in-flight
+  const [loading, setLoading] = useState(false);        
+  const [creating, setCreating] = useState(false);     
   const [sessionId, setSessionId] = useState(null);
 
   const navigation = useNavigation();
@@ -259,7 +255,7 @@ export default function AIAssistantScreen() {
     }
   }, [creating, loading]);
 
-  /* ---------------- Itinerary import ---------------- */
+  //Itinerary import
   const handleImportItinerary = useCallback((itinerary) => {
     if (!itinerary) {
       Alert.alert('No itinerary', 'Ask for an itinerary first (e.g., "Plan a 3-day trip to Rome").');
@@ -268,7 +264,7 @@ export default function AIAssistantScreen() {
     navigation.navigate('CreateItinerary', { aiItinerary: itinerary });
   }, [navigation]);
 
-  /* ---------------- Send message ---------------- */
+  //Send message
   const sendMessage = useCallback(async () => {
     if (!input.trim() || loading || creating) return;
 
