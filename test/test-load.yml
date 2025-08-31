@@ -1,15 +1,15 @@
 config:
   target: "http://localhost:3001"
   phases:
-  - duration: 60
-    arrivalRate: 10
+  - duration: 15
+    arrivalRate: 4
     name: "Warm up"
-  - duration: 120
-    arrivalRate: 30
-    name: "Load test"
   - duration: 30
+    arrivalRate: 6
+    name: "Load test"
+  - duration: 15
     arrivalRate: 0
-    rampTo: 50
+    rampTo: 8
     name: "Ramp up"
   defaults:
     headers:
