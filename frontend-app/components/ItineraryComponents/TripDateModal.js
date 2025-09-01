@@ -1,4 +1,3 @@
-// components/ItineraryComponents/TripDateModal.js
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, Modal, Platform } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';

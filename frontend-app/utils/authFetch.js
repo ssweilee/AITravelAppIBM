@@ -1,4 +1,3 @@
-// authFetch.js
 // A global fetch wrapper that handles token expiry and auto-logout/redirect
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_BASE_URL } from '../config';

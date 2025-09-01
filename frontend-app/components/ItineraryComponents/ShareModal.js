@@ -1,4 +1,3 @@
-// ShareModal.js
 import React from 'react';
 import { View, Text, TouchableOpacity, Modal, FlatList } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';

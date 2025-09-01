@@ -8,7 +8,7 @@ import {
 } from 'react-native';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
-import { SafeAreaView } from 'react-native-safe-area-context'; // ✅ SafeAreaView for both platforms
+import { SafeAreaView } from 'react-native-safe-area-context'; // SafeAreaView for both platforms
 import FeedList from '../components/FeedList';
 import { useFocusEffect } from '@react-navigation/native';
 import { useNotifications } from '../contexts/NotificationsContext';

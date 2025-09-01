@@ -111,7 +111,7 @@ const SharePostCard = ({ post }) => {
             {post.images.map((img, index) => {
               console.log('SharePostCard image url:', img.url);
               
-              // Smart URL conversion: use current user's API_BASE_URL with the filename
+              // use current user's API_BASE_URL with the filename
               let imageUrl;
               
               if (img.url && img.url.includes('/uploads/')) {

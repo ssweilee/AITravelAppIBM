@@ -139,7 +139,7 @@ exports.sendMessage = async (req, res) => {
   }
 };
 
-// ❌ No longer needed if using automatic read marking
+// No longer needed if using automatic read marking
 exports.markMessagesAsRead = async (req, res) => {
   const chatId = req.params.chatId;
   const userId = req.user.userId;

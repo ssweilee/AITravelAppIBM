@@ -27,7 +27,7 @@ router.post('/', upload.single('photo'), (req, res) => {
     return res.status(400).json({ message: 'No file uploaded' });
   }
 
-  // 🔧 FIX: Return full URL instead of relative path (like avatar controller)
+  // Return full URL instead of relative path
   const fullUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
   res.status(200).json({ url: fullUrl });
 });

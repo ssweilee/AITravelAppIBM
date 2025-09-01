@@ -1,4 +1,3 @@
-// models/Notification.js
 const mongoose = require('mongoose');
 
 const notificationSchema = new mongoose.Schema({
@@ -22,16 +21,16 @@ const notificationSchema = new mongoose.Schema({
     required: true
   },
   entityType: {
-    type: String, // e.g. 'Post', 'Comment', 'Itinerary'
+    type: String, 
     enum: ['Post', 'Comment', 'Itinerary', 'Custom', 'Trip'],
     required: true
   },
   entityId: {
-    type: mongoose.Schema.Types.ObjectId, // ID of the entity (e.g. Post, Comment, Itinerary)
+    type: mongoose.Schema.Types.ObjectId, 
     required: true
   },
   link: {
-    type: String, // optional URL or in-app route (e.g. `/post/123`)
+    type: String, // optional URL or in-app route 
     default: ''
   },
   isRead: {

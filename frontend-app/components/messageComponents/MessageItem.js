@@ -109,7 +109,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderTopLeftRadius: 6,
     //borderWidth: 1,
-    //borderColor: 'rgba(0,0,0,0.08)', // Mostly transparent black border
+    //borderColor: 'rgba(0,0,0,0.08)', 
   },
   messageText: {
     fontSize: 16,
@@ -118,7 +118,7 @@ const styles = StyleSheet.create({
   senderName: {
     fontWeight: 'bold',
     marginBottom: 2,
-    color: '#000', // changed from blue to black
+    color: '#000', 
     fontSize: 13,
   },
   timestamp: {

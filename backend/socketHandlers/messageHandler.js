@@ -11,7 +11,7 @@ module.exports = (io, socket) => {
   socket.on('sendMessage', async ({ chatId, message }) => {
     try {
       if (!message || !message.senderId || !message.text) {
-        console.error("🚨 Invalid message payload:", message);
+        console.error("Invalid message payload:", message);
         return;
       }
 
@@ -55,11 +55,11 @@ module.exports = (io, socket) => {
           }
         }
       } catch (notifErr) {
-        console.error('❌ Failed to queue chat notifications:', notifErr);
+        console.error('Failed to queue chat notifications:', notifErr);
       }
 
     } catch (err) {
-      console.error('❌ Full socket error stack:', err);
+      console.error('Full socket error stack:', err);
     }
   });
 

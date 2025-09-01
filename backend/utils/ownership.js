@@ -1,5 +1,3 @@
-// utils/ownership.js
-
 const requireOwnership = (model, idParam = 'id', ownerFields = 'userId') => {
   return async (req, res, next) => {
     try {

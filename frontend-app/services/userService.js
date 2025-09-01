@@ -5,14 +5,14 @@ import { getUserIdFromToken } from './authUtils';
 
 export async function getUserProfile(navigation) {
   const token = await AsyncStorage.getItem('token');
-  // FIX: use plural /api/users/profile (backend mounts userRoutes at /api/users)
+  // use plural /api/users/profile (backend mounts userRoutes at /api/users)
   const res = await authFetch(`${API_BASE_URL}/api/users/profile`, {
     method: 'GET',
     headers: { 'Authorization': `Bearer ${token}` },
   }, { navigation });
   if (res.success) {
     const user = res.data.user || res.data;
-    // LOGGING: Debug what is returned from backend
+    // Debug what is returned from backend
     console.log('[getUserProfile] raw user:', user);
     // Convert tags object to array for UI
     let tagsArr = [];
@@ -37,7 +37,7 @@ export async function updateUserProfile(profile, navigation) {
   const token = await AsyncStorage.getItem('token');
   if (!token) throw new Error('Missing auth token');
   let userId = await getUserIdFromToken();
-  // Normalize outbound payload: convert tags object back to array (backend expects array & normalizes object->array anyway)
+  // Normalise outbound payload: convert tags object back to array (backend expects array & normalises object->array anyway)
   const outbound = { ...profile };
   if (outbound.tags && typeof outbound.tags === 'object' && !Array.isArray(outbound.tags)) {
     outbound.tags = Object.keys(outbound.tags);

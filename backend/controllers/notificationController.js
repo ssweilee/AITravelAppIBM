@@ -1,4 +1,3 @@
-// controllers/notificationController.js
 const mongoose = require('mongoose');
 const Notification = require('../models/Notification');
 const User = require('../models/User');
@@ -75,7 +74,7 @@ exports.markAsRead = async (req, res) => {
 };
 
 exports.clearNotifications = async (req, res) => {
-  // legacy: mark all as read
+  // mark all as read
   const session = await mongoose.startSession();
   try {
     session.startTransaction();
@@ -114,7 +113,7 @@ exports.clearNotifications = async (req, res) => {
   }
 };
 
-// NEW: delete all notifications entirely
+// delete all notifications entirely
 exports.deleteAllNotifications = async (req, res) => {
   try {
     await Notification.deleteMany({ recipient: req.user.userId });

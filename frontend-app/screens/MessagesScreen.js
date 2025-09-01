@@ -73,7 +73,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
   },
   headerIcon: {
-    marginRight: 15,   // ✅ adds proper space from the right edge
+    marginRight: 15,   // adds proper space from the right edge
     paddingHorizontal: 8,
   
   },

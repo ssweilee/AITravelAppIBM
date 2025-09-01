@@ -83,7 +83,7 @@ const MessageList = ({ searchQuery }) => {
         const updatedChats = [...prevChats];
         const chatToUpdate = { ...updatedChats[chatIndex] };
         chatToUpdate.lastMessage = message;
-        chatToUpdate.updatedAt = message.createdAt; // ✅ REAL server time
+        chatToUpdate.updatedAt = message.createdAt; // REAL server time
 
         updatedChats.splice(chatIndex, 1);
         return [chatToUpdate, ...updatedChats];

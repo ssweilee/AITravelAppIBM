@@ -1,5 +1,3 @@
-// screens/NotificationsScreen.js
-
 import React, { useEffect, useState, useCallback, useLayoutEffect } from 'react';
 import {
   View,
@@ -95,7 +93,7 @@ export default function NotificationsScreen() {
     try {
       const token = await AsyncStorage.getItem('token');
       if (!token) return;
-      // CORRECTED endpoint: clear-all
+      // endpoint: clear-all
       const res = await fetch(`${API_BASE_URL}/api/notifications/clear-all`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },

@@ -1,4 +1,3 @@
-// screens/HotelSearchScreen.js
 import React, { useState } from 'react';
 import {
   View,

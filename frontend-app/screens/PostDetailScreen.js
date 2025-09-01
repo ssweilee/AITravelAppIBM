@@ -1,4 +1,3 @@
-// screens/PostDetailScreen.js
 import React, { useEffect, useState, useCallback, useLayoutEffect } from 'react';
 import {
   View,
@@ -94,7 +93,7 @@ const PostDetailScreen = ({ route }) => {
       }
     }, []);
   
-  // Initialize user and post metadata
+  // Initialise user and post metadata
   useEffect(() => {
     const initializeData = async () => {
       const token = await AsyncStorage.getItem('token');
@@ -152,7 +151,7 @@ const PostDetailScreen = ({ route }) => {
       });
       const data = await res.json();
       if (res.ok && Array.isArray(data)) {
-        // Normalize shape if needed
+        // Normalise shape if needed
         const normalized = data.map((c) => ({
           ...c,
           content: c.content ?? c.text ?? '',

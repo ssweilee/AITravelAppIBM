@@ -1,4 +1,3 @@
-// utils/socket.js
 import { io } from 'socket.io-client';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_BASE_URL } from '../config';
@@ -63,7 +62,7 @@ const socket = {
     getSocket().then(s => s.emit(...args))
       .catch(e => console.warn('Socket emit() failed to initialize:', e));
   },
-  // Optional: expose a method to access the underlying socket if someone wants async usage
+  // expose a method to access the underlying socket if someone wants async usage
   getRaw: () => getSocket(),
 };
 

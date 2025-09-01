@@ -36,22 +36,6 @@ const EditProfileScreen = ({ route, navigation }) => {
 
   const flatListRef = useRef(null);
 
-  {/*
-    const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [location, setLocation] = useState('');
-  
-  const [bio, setBio] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [fetching, setFetching] = useState(true);
-  const [selectedLocationObject, setSelectedLocationObject] = useState(null);
-  const [avatarUri, setAvatarUri] = useState(initialAvatarUri || '');
-  const [avatarFile, setAvatarFile] = useState(null); 
-  const [uploadingAvatar, setUploadingAvatar] = useState(false);
-  const [removeAvatar, setRemoveAvatar] = useState(false);
-  const [isPicking, setIsPicking] = useState(false);
-    */}
-
     useEffect(() => {
     nav.setOptions({
       headerStyle: { backgroundColor: '#00c7be' },
@@ -334,7 +318,6 @@ const EditProfileScreen = ({ route, navigation }) => {
     }
   };
 
-//names, location, trips, reviews, bio, years on travel?,  picture?
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"} 

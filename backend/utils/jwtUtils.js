@@ -1,4 +1,3 @@
-// utils/jwtUtils.js
 const jwt = require('jsonwebtoken');
 
 function verifyToken(token) {

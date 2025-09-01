@@ -1,7 +1,7 @@
 const User = require('../models/User');
 const Trip = require('../models/Trip');
 const Review = require('../models/Review');
-const Itinerary = require('../models/Itinerary'); // Add this import
+const Itinerary = require('../models/Itinerary'); 
 const bcrypt = require('bcryptjs');
 const sendNotification = require('../utils/notify');
 
@@ -170,7 +170,7 @@ exports.updateUserProfile = async (userId, updatedData) => {
       { new: true, runValidators: true, select: '-password' } // Return updated document, validate, exclude password
     );
 
-    // LOGGING: Show the updated user document
+    // Show the updated user document
     console.log('[updateUserProfile] updated user:', user);
 
     if (!user) {

@@ -1,5 +1,3 @@
-// frontend-app/screens/SearchScreen.js
-
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import {

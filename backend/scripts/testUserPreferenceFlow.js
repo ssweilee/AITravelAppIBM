@@ -1,7 +1,6 @@
-// testUserPreferenceFlow.js
 const fetch = require('node-fetch');
 
-const API_BASE_URL = 'http://localhost:3001/api'; // Adjust if your backend runs on a different port
+const API_BASE_URL = 'http://localhost:3001/api'; 
 const PYTHON_RECOMMENDER_URL = 'http://localhost:5001/recommend';
 
 async function signupAndLogin() {
@@ -135,6 +134,6 @@ async function getRecommendationsViaBackend(token) {
 
   const changedDirect = JSON.stringify(directBefore.topTenPicks) !== JSON.stringify(directAfter.topTenPicks);
   const changedBackend = JSON.stringify(backendBefore.topTenPicks) !== JSON.stringify(backendAfter.topTenPicks);
-  console.log(changedDirect ? '✅ Direct Python recommendations changed.' : '❌ Direct Python recommendations unchanged.');
-  console.log(changedBackend ? '✅ Backend recommendations changed.' : '❌ Backend recommendations unchanged.');
+  console.log(changedDirect ? 'Direct Python recommendations changed.' : 'Direct Python recommendations unchanged.');
+  console.log(changedBackend ? 'Backend recommendations changed.' : 'Backend recommendations unchanged.');
 })();

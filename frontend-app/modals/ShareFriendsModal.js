@@ -1,4 +1,3 @@
-// components/ShareFriendsModal.js
 import React, { useEffect, useState } from 'react';
 import {
   View,
@@ -100,7 +99,7 @@ const ShareFriendsModal = ({ visible, onClose, onShare, selectedItinerary, selec
         if (msgRes.ok) {
           socket.emit("sendMessage", {
             ...msgData,
-            chatId: chatId, // ✅ critical for updating the message list
+            chatId: chatId, // for updating the message list
           });
         }
       }

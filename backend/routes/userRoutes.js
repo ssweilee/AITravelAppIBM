@@ -39,7 +39,6 @@ router.get('/:id/followers', authenticateToken, async (req, res) => {
 });
 
 // Edit user profile route
-//names, location, trips, reviews, bio, years on travel?,  picture?
 router.put(
    '/edit/:id',
    authenticateToken,

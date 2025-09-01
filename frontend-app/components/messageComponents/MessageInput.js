@@ -35,7 +35,7 @@ const MessageInput = ({ text, setText, onSend }) => {
 const styles = StyleSheet.create({
   inputBarRow: {
     flexDirection: 'row',
-    alignItems: 'center', // changed from 'flex-end' to 'center' for perfect alignment
+    alignItems: 'center', 
     backgroundColor: '#fff',
     borderRadius: 28,
     paddingHorizontal: 10,

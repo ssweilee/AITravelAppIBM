@@ -6,7 +6,7 @@ require('../models/Trip');
 require('../models/User');
 require('../models/Post');
 
-const testUserId = '684ca2dda83eb2d0a9c2cd7c'; // your actual user._id here
+const testUserId = '684ca2dda83eb2d0a9c2cd7c'; // actual user._id here
 
 async function test() {
   try {

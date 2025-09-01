@@ -37,7 +37,7 @@ exports.createTrip = async (req, res) => {
       }
     }
 
-    // Create the trip - UPDATED TO INCLUDE ITINERARIES
+    // Create the trip
     const trip = await Trip.create({
       userId,
       title,
@@ -49,7 +49,7 @@ exports.createTrip = async (req, res) => {
       startDate: new Date(startDate),
       endDate: new Date(endDate),
       posts: selectedPosts || [],
-      itineraries: selectedItineraries || [], // ADD THIS LINE
+      itineraries: selectedItineraries || [], 
     });
 
     // Add trip to user's trips array
@@ -57,7 +57,7 @@ exports.createTrip = async (req, res) => {
       $push: { trips: trip._id }
     });
 
-    // Populate the response - UPDATED TO INCLUDE ITINERARIES
+    // Populate the response 
     const populatedTrip = await Trip.findById(trip._id)
       .populate('userId', 'firstName lastName profilePicture')
       .populate('taggedUsers', '_id firstName lastName profilePicture')
@@ -82,7 +82,7 @@ exports.getUserTrips = async (req, res) => {
       .populate('userId', 'firstName lastName profilePicture')
       .populate('taggedUsers', '_id firstName lastName profilePicture')
       .populate('posts')
-      .populate('itineraries') // ADD THIS LINE
+      .populate('itineraries')
       .populate('comments')
       .sort({ createdAt: -1 });
 
@@ -101,7 +101,7 @@ exports.getTripsByUserId = async (req, res) => {
       .populate('userId', 'firstName lastName profilePicture')
       .populate('taggedUsers', '_id firstName lastName profilePicture')
       .populate('posts')
-      .populate('itineraries') // ADD THIS LINE
+      .populate('itineraries') 
       .populate('comments')
       .sort({ createdAt: -1 });
 
@@ -118,7 +118,7 @@ exports.getAllTrips = async (req, res) => {
       .populate('userId', 'firstName lastName profilePicture')
       .populate('taggedUsers', '_id firstName lastName profilePicture')
       .populate('posts')
-      .populate('itineraries') // ADD THIS LINE
+      .populate('itineraries') 
       .populate('comments')
       .sort({ createdAt: -1 });
 
@@ -137,7 +137,7 @@ exports.getTripById = async (req, res) => {
       .populate('userId', 'firstName lastName profilePicture')
       .populate('taggedUsers', '_id firstName lastName profilePicture')
       .populate('posts')
-      .populate('itineraries') // ADD THIS LINE
+      .populate('itineraries') 
       .populate({
         path: 'comments',
         populate: {

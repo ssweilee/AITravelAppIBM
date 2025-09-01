@@ -1,4 +1,3 @@
-// components/CommentItem.js
 import React, { useState } from 'react';
 import {
   View,

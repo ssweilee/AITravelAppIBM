@@ -74,7 +74,7 @@ export const fetchUserProfile = async (navigation) => {
   }
 };
 
-// 👇 NEW: fetch any user by ID
+// fetch any user by ID
 export const fetchUserById = async (userId, navigation) => {
   try {
     const token = await AsyncStorage.getItem('token');

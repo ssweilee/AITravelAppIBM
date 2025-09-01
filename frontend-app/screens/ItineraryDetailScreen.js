@@ -1,4 +1,3 @@
-// ItineraryDetailScreen.js
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, StatusBar } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';

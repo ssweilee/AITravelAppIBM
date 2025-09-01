@@ -126,10 +126,10 @@ exports.getPostsByUserId = async (req, res) => {
       })
       .populate({
         path: 'bindTrip',
-        populate: { path: 'userId', select: 'firstName lastName profilePicture' } // Changed from 'createdBy' to 'userId'
+        populate: { path: 'userId', select: 'firstName lastName profilePicture' } 
       })
       .sort({ createdAt: -1 })
-      .setOptions({ strictPopulate: false }); // Add this to prevent errors
+      .setOptions({ strictPopulate: false }); 
 
     res.status(200).json(posts);
   } catch (err) {

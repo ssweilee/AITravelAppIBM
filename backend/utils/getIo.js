@@ -1,4 +1,3 @@
-// utils/getIo.js
 let ioInstance = null;
 
 function setIo(io) {

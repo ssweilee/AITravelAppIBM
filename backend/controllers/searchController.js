@@ -1,5 +1,3 @@
-// controllers/searchController.js
-
 const User = require('../models/User');
 const Post = require('../models/Post');
 const Itinerary = require('../models/Itinerary');

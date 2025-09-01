@@ -35,7 +35,7 @@ const TimePickerModal = ({ visible, onClose, onConfirm, initialTime }) => {
                 value={tempTime}
                 is24Hour={false}
                 display="spinner"
-                themeVariant="light" // 👈 ensures visible text on white modal
+                themeVariant="light" // ensures visible text on white modal
                 onChange={(event, selectedTime) => {
                   if (selectedTime) {
                     setTempTime(selectedTime);

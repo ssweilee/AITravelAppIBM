@@ -1,4 +1,3 @@
-// CreateItineraryScreen.js
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, TextInput, StyleSheet, ScrollView,

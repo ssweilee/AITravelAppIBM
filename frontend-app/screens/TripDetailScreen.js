@@ -1,4 +1,3 @@
-// screens/TripDetailScreen.js
 import React, { useEffect, useState, useCallback, useLayoutEffect } from 'react';
 import {
   View,
@@ -121,7 +120,7 @@ const TripDetailScreen = ({ route, navigation }) => {
       if (response.ok) {
         let commentsData = await response.json();
         if (Array.isArray(commentsData)) {
-          // Normalize shape
+          // Normalise shape
           commentsData = commentsData.map((c) => ({
             ...c,
             content: c.content ?? c.text ?? '',

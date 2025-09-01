@@ -2,7 +2,7 @@
 // allows only authenticated users to access certain routes
 // rejects requests without a valid token
 
-// backend/middleware/authMiddleware.js
+
 const jwt = require('jsonwebtoken');
 
 exports.authenticateToken = (req, res, next) => {

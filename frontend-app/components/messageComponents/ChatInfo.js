@@ -1,4 +1,3 @@
-// components/chatComponents/ChatInfo.js
 import React from "react";
 import { View, Text, StyleSheet, Image } from "react-native";
 
@@ -6,7 +5,7 @@ function ChatInfo({ chatName, chatImage }) {
   return (
     <View style={styles.container}>
       <View style={styles.imagePlaceholder}>
-        {/* Replace with actual image logic if you later add upload functionality */}
+        {/* Replace with actual image logic if later add upload functionality */}
         {chatImage ? (
           <Image source={{ uri: chatImage }} style={styles.image} />
         ) : (

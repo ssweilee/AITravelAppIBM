@@ -9,7 +9,7 @@ const { Server } = require('socket.io');
 const handleMessage = require('./socketHandlers/messageHandler.js');
 const { verifyToken } = require('./utils/jwtUtils');
 const User = require('./models/User');
-const { setIo } = require('./utils/getIo'); // <<-- import setter
+const { setIo } = require('./utils/getIo'); // import setter
 
 const PORT = process.env.PORT || 3001;
 const server = http.createServer(app);
@@ -38,7 +38,7 @@ mongoose.connect(process.env.MONGO_URI)
 io.on('connection', async (socket) => {
   console.log('New socket connected:', socket.id);
 
-  // --- Authenticate and join per-user room ---
+  // Authenticate and join per-user room 
   const token = socket.handshake.auth?.token;
   if (!token) {
     console.warn('Socket connected without token, disconnecting:', socket.id);
@@ -57,7 +57,7 @@ io.on('connection', async (socket) => {
   socket.join(userId.toString());
   console.log(`Socket ${socket.id} joined room for user ${userId}`);
 
-  // --- Bootstrap unread notification count ---
+  // Bootstrap unread notification count
   try {
     const user = await User.findById(userId).select('unreadNotificationCount').lean();
     const unreadCount = user?.unreadNotificationCount ?? 0;
@@ -74,5 +74,5 @@ io.on('connection', async (socket) => {
   });
 });
 
-module.exports = io; // you can keep this for backward compatibility, but other modules should switch to getIo()
+module.exports = io; //can keep this for backward compatibility, but other modules should switch to getIo()
 

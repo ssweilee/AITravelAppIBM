@@ -1,4 +1,3 @@
-// components/profileComponents/ItineraryList.js
 import React, { useEffect, useState } from 'react';
 import {
   View,
@@ -14,7 +13,7 @@ import { API_BASE_URL } from '../../config';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import ShareFriendsModal from '../../modals/ShareFriendsModal';
-import MoreMenu from '../MoreMenu'; // path from profileComponents to MoreMenu.js
+import MoreMenu from '../MoreMenu'; 
 import { Feather } from '@expo/vector-icons';
 
 const dummyImage = 'https://via.placeholder.com/300x180/1F2A37/FFFFFF?text=Trip+Cover';

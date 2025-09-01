@@ -93,7 +93,7 @@ exports.getPythonRecommendations = async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    // LOGGING: Show the user document being used for recommendations
+    // Show the user document being used for recommendations
     console.log('[getPythonRecommendations] user document:', JSON.stringify(user, null, 2));
 
     // Find all trips liked by the user and store trip IDs in 'likedTripsIds'
@@ -175,7 +175,7 @@ exports.getPythonRecommendations = async (req, res) => {
       preferenceProfile.recentDestinations = destinations;
     }
 
-    // LOGGING: Show the profile being sent to the recommender
+    // Show the profile being sent to the recommender
     console.log('[getPythonRecommendations] Sending user preference profile:', JSON.stringify(preferenceProfile, null, 2));
     console.log('[getPythonRecommendations] Timestamp(ms):', Date.now());
 
