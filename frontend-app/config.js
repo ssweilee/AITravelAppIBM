@@ -1,4 +1,3 @@
-// config.js
 // insert your ngrok address here 
 
 
