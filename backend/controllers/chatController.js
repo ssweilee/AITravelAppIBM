@@ -21,7 +21,7 @@ exports.getOrCreateChat = async (req, res) => {
       });
     }
 
-    await chat.populate('members', 'firstName lastName');
+    await chat.populate('members', 'firstName lastName profilePicture'); // Populate member details
     res.status(200).json({chat});
   } catch (err) {
     console.log('Failed to get/create chat:', err);
@@ -33,10 +33,36 @@ exports.getUserChats = async (req, res) => {
   const currentUserId = req.user.userId;
   try {
     const chats = await Chat.find({ members: currentUserId })
-      .populate('members', 'firstName lastName')
+      .populate('members', 'firstName lastName profilePicture') 
       .populate({
-        path: 'lastMessage',
-        populate: { path: 'senderId', select: 'firstName lastName' }
+        path: 'lastMessage', 
+        populate: [          
+          {
+            path: 'senderId', 
+            select: 'firstName lastName profilePicture'
+          },
+          {
+            path: 'sharedPost', 
+            populate: {
+              path: 'userId', 
+              select: 'firstName lastName profilePicture'
+            }
+          },
+          {
+            path: 'sharedTrip',
+            populate: {
+              path: 'userId',
+              select: 'firstName lastName profilePicture'
+            }
+          },
+          {
+            path: 'sharedItinerary',
+            populate: {
+              path: 'createdBy', 
+              select: 'firstName lastName profilePicture'
+            }
+          }
+        ]
       })
       .sort('-updatedAt');
 
@@ -69,7 +95,7 @@ exports.createGroupChat = async (req, res) => {
       chatName: chatName || 'New Group',
     });
 
-    await groupChat.populate('members', 'firstName lastName');
+    await groupChat.populate('members', 'firstName lastName profilePicture');
 
     res.status(201).json(groupChat);
   } catch (err) {
@@ -83,10 +109,10 @@ exports.getChatById = async (req, res) => {
 
   try {
     const chat = await Chat.findById(chatId)
-      .populate('members', 'firstName lastName')
+      .populate('members', 'firstName lastName profilePicture')
       .populate({
         path: 'lastMessage',
-        populate: { path: 'senderId', select: 'firstName lastName' }
+        populate: { path: 'senderId', select: 'firstName lastName profilePicture' }
       });
 
     if (!chat) {

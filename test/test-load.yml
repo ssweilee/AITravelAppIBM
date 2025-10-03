@@ -1,0 +1,48 @@
+config:
+  target: "http://localhost:3001"
+  phases:
+  - duration: 15
+    arrivalRate: 4
+    name: "Warm up"
+  - duration: 30
+    arrivalRate: 6
+    name: "Load test"
+  - duration: 15
+    arrivalRate: 0
+    rampTo: 8
+    name: "Ramp up"
+  defaults:
+    headers:
+      Content-Type: "application/json"
+
+scenarios:
+  - name: "User flow - login, search, notifications, recommend"
+    flow:
+      - post:
+          url: "/api/login"
+          json:
+            email: "Briantest4@gmail.com"
+            password: "1022"
+          capture:
+            - json: "$.token"
+              as: "authToken"
+
+      - get:
+          url: "/api/search/users?q=Gio"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+
+      - get:
+          url: "/api/notifications/unread-count"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+
+      - post:
+          url: "/api/recommend/python"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+
+
+
+
+

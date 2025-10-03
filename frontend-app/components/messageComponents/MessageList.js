@@ -1,23 +1,42 @@
 import React, { useEffect, useState } from "react";
-import { View, FlatList, Text, StyleSheet, TouchableOpacity, RefreshControl } from "react-native";
+import { View, FlatList, Text, StyleSheet, TouchableOpacity, RefreshControl, Image } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { API_BASE_URL } from "../../config";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import socket from "../../utils/socket";
 import moment from "moment";
+import { Ionicons } from '@expo/vector-icons';
+import { useAuth } from "../../contexts/AuthContext";
+import jwtDecode from 'jwt-decode';
+import { getAvatarUrl } from '../../utils/getAvatarUrl';
 
 const MessageList = ({ searchQuery }) => {
   const [chats, setChats] = useState([]);
-  const [currentUserId, setCurrentUserId] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const navigation = useNavigation();
+  const { user } = useAuth(); 
+  let currentUserId = user?._id;
+
+  // Fallback: decode from token immediately if not available
+  if (!currentUserId) {
+    AsyncStorage.getItem('token').then(token => {
+      if (token) {
+        try {
+          const decoded = jwtDecode(token);
+          console.log('Decoded JWT for currentUserId:', decoded);
+          currentUserId = decoded.userId || decoded._id || decoded.id;
+        } catch (e) {
+          console.log('JWT decode error:', e);
+        }
+      }
+    });
+  }
 
   // Fetch all chats once
   const fetchChats = async () => {
+    setRefreshing(true);
     try {
       const token = await AsyncStorage.getItem("token");
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      setCurrentUserId(payload.userId);
 
       const response = await fetch(`${API_BASE_URL}/api/chats`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -31,6 +50,8 @@ const MessageList = ({ searchQuery }) => {
       }
     } catch (err) {
       console.error("Error fetching chats:", err);
+    } finally {
+      setRefreshing(false); 
     }
   };
 
@@ -47,7 +68,7 @@ const MessageList = ({ searchQuery }) => {
   useFocusEffect(
     React.useCallback(() => {
       fetchChats();
-    }, [])
+    }, [currentUserId])
   );
 
   // Listen for real-time messages
@@ -91,41 +112,78 @@ const MessageList = ({ searchQuery }) => {
       otherUserName: chat.isGroup && chat.chatName
         ? chat.chatName
         : `${otherUser.firstName} ${otherUser.lastName}`,
+      isGroup: chat.isGroup, // Pass isGroup to ChatScreen
     });
   };
 
   const renderChatItem = ({ item }) => {
     const otherUser = item.members.find((m) => m._id !== currentUserId);
-    if (!otherUser) return null;
+    // Debug: Log currentUserId and members for diagnosis
+    // console.log('MessageList renderChatItem:', {
+    //   currentUserId,
+    //   members: item.members.map(m => ({ _id: m._id, firstName: m.firstName, lastName: m.lastName })),
+    //   chatId: item._id,
+    //   isGroup: item.isGroup,
+    //   chatName: item.chatName
+    // });
+    if (!otherUser && !item.isGroup) return null;
 
     const lastMessageTime = item.lastMessage?.createdAt
       ? moment(item.lastMessage.createdAt).fromNow()
       : null;
 
     const isUnread = item.lastMessage &&
-      item.lastMessage.senderId._id !== currentUserId && // updated after .populate()
+      item.lastMessage.senderId._id !== currentUserId &&
       !item.lastMessage.readBy.includes(currentUserId);
+
+    // Avatar logic: show profilePicture if available, else initials, else icon
+    const renderAvatar = (user, isGroup) => {
+      if (isGroup) {
+        // Show group icon for group chats
+        return (
+          <View style={styles.avatarCircle}>
+            <Ionicons name="people" size={24} color="#fff" />
+          </View>
+        );
+      }
+      if (user.profilePicture) {
+        return (
+          <Image
+          source={{ uri: getAvatarUrl(user.profilePicture) }}
+            style={styles.avatarImg}
+            key={user.profilePicture}
+          />
+        );
+      }
+      const initials = (user.firstName?.[0] || '') + (user.lastName?.[0] || '');
+      return (
+        <View style={styles.avatarCircle}>
+          <Text style={styles.avatarInitials}>{initials || <Ionicons name="person" size={20} color="#fff" />}</Text>
+        </View>
+      );
+    };
 
     return (
       <TouchableOpacity
         style={styles.chatItem}
         onPress={() => handleChatPress(item)}
+        activeOpacity={0.7}
       >
-        <Text style={styles.chatName}>
-          {item.isGroup && item.chatName
-            ? item.chatName
-            : `${otherUser.firstName} ${otherUser.lastName}`}
-        </Text>
-
-        <View style={styles.messageRow}>
-          <Text numberOfLines={1} style={[ styles.lastMessage, isUnread && styles.unreadMessage ]}>
-            {item.lastMessage?.text || "No messages yet"}
-          </Text>
-          <View style={styles.timestampWrapper}>
-            {lastMessageTime && (
-              <Text style={styles.timestamp}>{lastMessageTime}</Text>
-            )}
+        <View style={styles.rowTop}>
+          {renderAvatar(otherUser, item.isGroup)}
+          <View style={{ flex: 1, marginLeft: 12 }}>
+            <Text style={styles.chatName} numberOfLines={1}>
+              {item.isGroup && item.chatName
+                ? item.chatName
+                : `${otherUser.firstName} ${otherUser.lastName}`}
+            </Text>
+            <Text numberOfLines={1} style={[ styles.lastMessage, isUnread && styles.unreadMessage ]}>
+              {item.lastMessage?.text || "No messages yet"}
+            </Text>
+          </View>
+          <View style={styles.rightIcons}>
             {isUnread && <View style={styles.unreadDot} />}
+            <Text style={styles.timestamp}>{lastMessageTime}</Text>
           </View>
         </View>
       </TouchableOpacity>
@@ -169,7 +227,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "flex-end",
   },
-    chatName: {
+  chatName: {
     fontWeight: "bold",
     fontSize: 16,
     marginBottom: 5,
@@ -192,12 +250,42 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: "#007AFF",
+    backgroundColor: "#00c7be",
     marginLeft: 6,
   },
   unreadMessage: {
     fontWeight: "bold",
     color: "#000",
+  },
+  rowTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+  },
+  avatarImg: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#eee',
+  },
+  avatarCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#bbb',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarInitials: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 18,
+  },
+  rightIcons: {
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    height: 44,
+    marginLeft: 8,
   },
 });
 

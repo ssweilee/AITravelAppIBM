@@ -1,71 +1,122 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, FlatList, StyleSheet, RefreshControl } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { View, Text, FlatList, StyleSheet, RefreshControl, ActivityIndicator } from 'react-native';
+//import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_BASE_URL } from '../config';
 import PostCard from './PostCard'; 
-import { useNavigation } from '@react-navigation/native';
+import TripCard from './TripCard';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useAuth } from '../contexts/AuthContext';
 
 const FeedList = ({ refreshTrigger }) => {
-  const [ posts, setPosts ] = useState([]);
-  const [ refreshing, setRefreshing ] = useState(false);
+  const { token, isLoading: isAuthLoading } = useAuth();
+  const [feedItems, setFeedItems] = useState([]);
+  const [refreshing, setRefreshing] = useState(false);
+  const [isFeedLoading, setIsFeedLoading] = useState(true);
+  const navigation = useNavigation();
 
-  const fetchPosts = async () => {
-    try {
-      const token = await AsyncStorage.getItem('token');
-      if (!token) {
-        console.warn('User is not authenticated');
-        return;
-      }
+  useEffect(() => {
+    console.log('[FeedList] Auth State Update:', { 
+      isAuthLoading, 
+      token: token ? `Token exists (length: ${token.length})` : null 
+    });
+  }, [token, isAuthLoading]);
 
-      const response = await fetch(`${API_BASE_URL}/api/posts/feed`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
-
-      const data = await response.json();
-      if (response.ok) {
-        setPosts(data);
-      } else {
-        console.log('Failed to fetch posts: ', data);
-      }
-    } catch (err) {
-      console.log('Error fetching posts: ', err);
+  const fetchFeedContent = useCallback(async () => {
+    if (isAuthLoading || !token) {
+      console.log('Auth is loading or no token, skipping feed fetch.');
+      setIsFeedLoading(false); 
+      setFeedItems([]); 
+      return;
     }
-  };
+
+    setIsFeedLoading(true);
+
+    try {
+      const [postsResponse, tripsResponse] = await Promise.all([
+        fetch(`${API_BASE_URL}/api/posts/feed`, {
+          headers: { Authorization: `Bearer ${token}` }
+        }),
+        fetch(`${API_BASE_URL}/api/trips`, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+        // Add itineraries later when you want them in the feed
+      ]);
+
+      const [postsData, tripsData] = await Promise.all([
+        postsResponse.ok ? postsResponse.json() : [],
+        tripsResponse.ok ? tripsResponse.json() : []
+      ]);
+
+      // Combine and add type identifiers
+      const allContent = [
+        ...postsData.map(item => ({ ...item, contentType: 'post' })),
+        ...tripsData.map(item => ({ ...item, contentType: 'trip' }))
+      ];
+
+      // Sort by creation date (most recent first)
+      allContent.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+      setFeedItems(allContent);
+    } catch (err) {
+      console.log('Error fetching feed content:', err);
+    } finally {
+      setIsFeedLoading(false); 
+    }
+  }, [token, isAuthLoading]);
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
-    await fetchPosts();
+    await fetchFeedContent();
     setRefreshing(false);
-  }, []);
+  }, [fetchFeedContent]);
 
   useEffect(() => {
-    fetchPosts();
-  }, [refreshTrigger]);
+    fetchFeedContent();
+  }, [fetchFeedContent, refreshTrigger]);
 
-const navigation = useNavigation();
-const renderItem = ({item}) => (
-  <PostCard
-    post={item}
-    onPress={p => navigation.navigate('PostDetail', {post: p})}
-  />
-);
+  if (isFeedLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#00c7be" />
+      </View>
+    );
+  }
+  
+  const renderItem = ({ item }) => {
+    if (item.contentType === 'trip') {
+      return (
+        <TripCard
+          trip={item}
+          onPress={trip => navigation.navigate('TripDetail', { trip })}
+        />
+      );
+    } else {
+      // Default to PostCard for posts (and any other content)
+      return (
+        <PostCard
+          post={item}
+          onPress={p => navigation.navigate('PostDetail', { post: p })}
+        />
+      );
+    }
+  };
+
+  const keyExtractor = (item) => `${item.contentType}-${item._id}`;
   
   return (
     <FlatList
-      data={posts}
-      keyExtractor={(item) => item._id}
+      data={feedItems}
+      keyExtractor={keyExtractor}
       renderItem={renderItem}
       contentContainerStyle={{ marginTop: 10 }}
-      ListEmptyComponent={<Text>No Posts Yet</Text>}
+      ListEmptyComponent={<Text>No posts or trips yet</Text>}
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
       }
     />
   );
 };
-  
+
 const styles = StyleSheet.create({
   postItem: {
     borderWidth: 1,
@@ -77,6 +128,12 @@ const styles = StyleSheet.create({
   postAuthor: {
     fontWeight: 'bold',
     marginBottom: 5
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: 20,
   }
 });
 

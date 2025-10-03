@@ -1,6 +1,9 @@
 const User = require('../models/User');
 const Trip = require('../models/Trip');
 const Review = require('../models/Review');
+const Itinerary = require('../models/Itinerary'); // Add this import
+const bcrypt = require('bcryptjs');
+const sendNotification = require('../utils/notify');
 
 exports.followUser = async (req, res) => {
   try {
@@ -40,6 +43,17 @@ exports.followUser = async (req, res) => {
       }
       await currentUser.save();
       await targetUser.save();
+
+      // Send notification to the target user
+      await sendNotification({
+        recipient: targetUserId,
+        sender: currentUserId,
+        type: 'follow',
+        text: `${currentUser.firstName} ${currentUser.lastName} started following you.`,
+        entityType: 'Custom',
+        entityId: currentUserId,
+        link: `/users/${currentUserId}` // Link to the user's profile
+      });
       return res.status(200).json({ message: "User followed" });
     }
   } catch (err) {
@@ -50,27 +64,54 @@ exports.followUser = async (req, res) => {
 exports.getUserProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user.userId)
-      .populate('followers', 'firstName lastName')
+      .select('-password')
+      .populate('followers', 'firstName lastName profilePicture')
       .populate('trips')
       .populate('reviews');
-    res.json({ user });
+    
+    // Fetch itineraries for this user
+    const itineraries = await Itinerary.find({ createdBy: req.user.userId });
+    
+    // Convert user to plain object and add itineraries
+    const userObject = user.toObject();
+    userObject.itineraries = itineraries;
+      
+    console.log('[getUserProfile] returning user fields snapshot:', {
+      _id: userObject?._id,
+      travelStyle: userObject?.travelStyle,
+      avgBudget: userObject?.avgBudget,
+      tags: userObject?.tags,
+      recentDestinations: userObject?.recentDestinations,
+      itinerariesCount: itineraries.length, // Log the count for debugging
+      tripsCount: userObject?.trips?.length
+    });
+    
+    res.json({ user: userObject });
+
   } catch (err) {
-    res.status(500).json({ message: 'Failed to fecth profile', error: err.message });
+    res.status(500).json({ message: 'Failed to fetch profile', error: err.message });
   }
 }
 
 exports.getSingleUser = async (req, res) => {
   try {
     const user = await User.findById(req.params.id)
-      .populate('followers', 'firstName lastName')
+      .populate('followers', 'firstName lastName profilePicture')
       .populate('trips')
-      .populate('reviews');
-    
+      .populate('reviews')
+      .select('-password');
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    res.json({ success: true, user });
+    // Fetch itineraries for this user
+    const itineraries = await Itinerary.find({ createdBy: req.params.id });
+    
+    // Convert user to plain object and add itineraries
+    const userObject = user.toObject();
+    userObject.itineraries = itineraries;
+
+    res.json({ success: true, user: userObject });
   } catch (err) {
     res.status(500).json({ message: 'Failed to load user', error: err.message });
   }
@@ -78,34 +119,73 @@ exports.getSingleUser = async (req, res) => {
 
 exports.updateUserProfile = async (userId, updatedData) => {
   try {
-    const allowedFields = ['firstName', 'lastName', 'bio', 'profilePicture', 'isPublic', 'location', 'travelStyle', 'dob'];
+    // NORMALIZATION: convert object formats to arrays where schema expects arrays
+    if (updatedData && updatedData.tags && !Array.isArray(updatedData.tags) && typeof updatedData.tags === 'object') {
+      updatedData.tags = Object.keys(updatedData.tags);
+    }
+    if (updatedData && updatedData.recentDestinations && !Array.isArray(updatedData.recentDestinations) && typeof updatedData.recentDestinations === 'object') {
+      updatedData.recentDestinations = Object.keys(updatedData.recentDestinations);
+    }
+    if (updatedData && updatedData.favoriteDestinations && !Array.isArray(updatedData.favoriteDestinations) && typeof updatedData.favoriteDestinations === 'object') {
+      updatedData.favoriteDestinations = Object.keys(updatedData.favoriteDestinations);
+    }
+
+    const allowedFields = ['firstName', 'lastName', 'bio', 'isPublic', 'location', 'travelStyle', 'dob', 'profilePicture', 'tags', 'avgBudget', 'recentDestinations', 'favoriteDestinations'];
     const updates = {};
+    const unsets = {}; 
     for (const field of allowedFields) {
-      if (updatedData[field] !== undefined) {
+      if (updatedData[field] === null) {
+        unsets[field] = 1;
+      } else if (updatedData[field] !== undefined) {
         updates[field] = updatedData[field];
       }
     }
 
-    console.log('updateUserProfile - Updating user:', userId, 'with data:', updates);
-    console.log('User Controller: Received data to update:', updatedData);
-    console.log('User Controller: Filtered updates to be saved:', updates);
+    console.log('[updateUserProfile] userId:', userId);
+    console.log('[updateUserProfile] normalized incoming data:', updatedData);
+    console.log('[updateUserProfile] updates:', updates);
+    console.log('[updateUserProfile] unsets:', unsets);
+
+    const operations = {};
+    if (Object.keys(updates).length > 0) {
+      operations.$set = updates;
+    }
+    if (Object.keys(unsets).length > 0) {
+      operations.$unset = unsets;
+    }
+
+    if (Object.keys(operations).length === 0) {
+        const user = await User.findById(userId).select('-password');
+        // Fetch itineraries for this user
+        const itineraries = await Itinerary.find({ createdBy: userId });
+        const userObject = user.toObject();
+        userObject.itineraries = itineraries;
+        return userObject;
+    }
+
     // Update user in MongoDB using Mongoose
     const user = await User.findByIdAndUpdate(
       userId,
-      { $set: updates },
+      operations,
       { new: true, runValidators: true, select: '-password' } // Return updated document, validate, exclude password
     );
 
+    // LOGGING: Show the updated user document
+    console.log('[updateUserProfile] updated user:', user);
+
     if (!user) {
-      console.log('updateUserProfile - User not found:', userId);
+      console.error('[ERROR] userController - User not found during update:', userId);
       return null;
     }
 
-    console.log('updateUserProfile - Updated user:', user);
-    return user;
+    // Fetch itineraries for this user
+    const itineraries = await Itinerary.find({ createdBy: userId });
+    const userObject = user.toObject();
+    userObject.itineraries = itineraries;
+
+    return userObject;
   } catch (error) {
-    console.error('updateUserProfile - Database error:', error.message);
-    throw new Error(error.message);
+    console.error('[ERROR] userController - Database update error:', error.message, error.stack);
   }
 };
 
@@ -117,5 +197,73 @@ exports.getUserFollowings = async (req, res) => {
   } catch (error) {
     console.error('Error fetching followings:', error);
     res.status(500).json({ message: 'Failed to fetch followings' });
+  }
+};
+
+exports.changeEmail = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { newEmail } = req.body;
+    if (!newEmail) {
+      return res.status(400).json({ message: 'New email is required.' });
+    }
+    // Check if email is already taken
+    const existing = await User.findOne({ email: newEmail });
+    if (existing) {
+      return res.status(409).json({ message: 'Email already in use.' });
+    }
+    const user = await User.findByIdAndUpdate(userId, { email: newEmail }, { new: true });
+    res.json({ message: 'Email updated successfully.', user });
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to update email', error: err.message });
+  }
+};
+
+exports.changePassword = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { password, newPassword } = req.body;
+    if (!password || !newPassword) {
+      return res.status(400).json({ message: 'Current and new password are required.' });
+    }
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(401).json({ message: 'Current password is incorrect.' });
+    }
+    const hashed = await bcrypt.hash(newPassword, 10);
+    user.password = hashed;
+    await user.save();
+    res.json({ message: 'Password updated successfully.' });
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to update password', error: err.message });
+  }
+};
+
+exports.getFollowersAndFollowing = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    
+    const user = await User.findById(userId)
+      .populate('followers', 'firstName lastName profilePicture')
+      .populate('followings', 'firstName lastName profilePicture');
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Combine and remove duplicates
+    const combined = [...user.followers, ...user.followings];
+    const unique = combined.filter((user, index, self) => 
+      index === self.findIndex(u => u._id.toString() === user._id.toString())
+    );
+
+    res.status(200).json(unique);
+  } catch (error) {
+    console.error('Error fetching followers/following:', error);
+    res.status(500).json({ message: 'Failed to fetch followers and following', error: error.message });
   }
 };

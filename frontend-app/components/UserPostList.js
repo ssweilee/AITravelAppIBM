@@ -1,18 +1,20 @@
 // components/UserPostList.js
-import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, StyleSheet } from 'react-native';
+import React, { useEffect, useState, useCallback } from 'react';
+import { View, Text, FlatList, StyleSheet, RefreshControl } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_BASE_URL } from '../config';
 import PostCard from './PostCard';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 
 const UserPostList = ({ userId }) => {
   const [posts, setPosts] = useState([]);
+  const [refreshing, setRefreshing] = useState(false);
+  const navigation = useNavigation();
 
-  const fetchPosts = async () => {
+  const fetchPosts = useCallback(async () => {
     try {
       const token = await AsyncStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/api/posts/${userId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/posts/user/${userId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -20,26 +22,45 @@ const UserPostList = ({ userId }) => {
       if (response.ok) {
         setPosts(data);
       } else {
-        console.log('Failed to fetch posts:', data);
+        console.warn('Failed to fetch posts:', data);
       }
     } catch (err) {
-      console.log('Error fetching posts:', err);
+      console.warn('Error fetching posts:', err);
     }
-  };
+  }, [userId]);
 
   useEffect(() => {
     if (userId) {
       fetchPosts();
     }
-  }, [userId]);
+  }, [userId, fetchPosts]);
 
-  const navigation = useNavigation();
-const renderItem = ({item}) => (
-  <PostCard
-    post={item}
-    onPress={p => navigation.navigate('PostDetail', {post: p})}
-  />
-);
+  // Refetch when screen regains focus
+  useFocusEffect(
+    useCallback(() => {
+      if (userId) {
+        fetchPosts();
+      }
+    }, [userId, fetchPosts])
+  );
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchPosts();
+    setRefreshing(false);
+  };
+
+  const handlePostDeleted = (deletedId) => {
+    setPosts((prev) => prev.filter((p) => p._id !== deletedId));
+  };
+
+  const renderItem = ({ item }) => (
+    <PostCard
+      post={item}
+      onPress={(p) => navigation.navigate('PostDetail', { post: p })}
+      onDeleted={handlePostDeleted}
+    />
+  );
 
   return (
     <FlatList
@@ -47,23 +68,20 @@ const renderItem = ({item}) => (
       keyExtractor={(item) => item._id}
       renderItem={renderItem}
       contentContainerStyle={{ marginTop: 10 }}
-      ListEmptyComponent={<Text>No Posts Yet</Text>}
+      ListEmptyComponent={<Text style={styles.emptyText}>No Posts Yet</Text>}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+      }
     />
   );
 };
 
 const styles = StyleSheet.create({
-  postItem: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    padding: 10,
-    marginBottom: 10,
-    borderRadius: 5
+  emptyText: {
+    textAlign: 'center',
+    marginTop: 20,
+    color: '#666',
   },
-  postAuthor: {
-    fontWeight: 'bold',
-    marginBottom: 5
-  }
 });
 
 export default UserPostList;

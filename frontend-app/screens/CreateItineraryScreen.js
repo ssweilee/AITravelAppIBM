@@ -1,96 +1,178 @@
+// CreateItineraryScreen.js
 import React, { useState, useEffect } from 'react';
 import {
-  View, Text, TextInput, Button, StyleSheet, ScrollView,
+  View, Text, TextInput, StyleSheet, ScrollView,
   TouchableOpacity, Platform, StatusBar as RNStatusBar,
-  Modal, FlatList
+  Alert, KeyboardAvoidingView
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_BASE_URL } from '../config';
 import TripDateModal from '../components/ItineraryComponents/TripDateModal';
 import ShareModal from '../components/ItineraryComponents/ShareModal';
 import DaySection from '../components/ItineraryComponents/DaySection';
 
-const CreateItineraryScreen = ({ navigation }) => {
-  const [title, setTitle] = useState('');
-  const [destination, setDestination] = useState('');
-  const [description, setDescription] = useState('');
-  const [days, setDays] = useState([
-    {
-      date: '',
-      notes: '',
-      activities: [
-        { time: '', description: '', location: '' }
-      ]
+const CreateItineraryScreen = ({ navigation, route }) => {
+
+  const cloneItinerary = route?.params?.cloneItinerary;
+  const aiItinerary = route?.params?.aiItinerary;
+
+  // helper to parse date string to Date object
+  const parseDate = (d) => {
+    if (!d) return new Date();
+    if (typeof d === 'string' && /^\d{4}-\d{2}-\d{2}/.test(d)) {
+      return new Date(d);
     }
-  ]);
+    return new Date(d);
+  };
+
+  // For AI itinerary dates 
+  let aiStart = new Date();
+  let aiEnd = new Date();
+  if (aiItinerary && Array.isArray(aiItinerary.days) && aiItinerary.days.length > 0) {
+    aiStart = parseDate(aiItinerary.days[0].date);
+    aiEnd = parseDate(aiItinerary.days[aiItinerary.days.length - 1].date);
+  }
+
+
+  const [title, setTitle] = useState(
+    cloneItinerary?.title || aiItinerary?.title || ''
+  );
+  const [destination, setDestination] = useState(
+    cloneItinerary?.destination || aiItinerary?.destination || ''
+  );
+  const [description, setDescription] = useState(
+    cloneItinerary?.description || aiItinerary?.description || route?.params?.aiSuggestion || ''
+  );
+
+  // Days
+  const initialDaysFromClone = cloneItinerary?.days && Array.isArray(cloneItinerary.days) && cloneItinerary.days.length > 0
+    ? cloneItinerary.days.map((day) => ({
+        date: '',
+        notes: day.notes || '',
+        activities: Array.isArray(day.activities) && day.activities.length > 0
+          ? day.activities.map((a) => ({
+              // preserve time/location/description from the cloned itinerary
+              time: a.time || '',
+              description: a.description || '',
+              location: a.location || '',
+            }))
+          : [{ time: '', description: '', location: '' }],
+      }))
+    : null;
+
+  const initialDaysFromAI = aiItinerary?.days && Array.isArray(aiItinerary.days) && aiItinerary.days.length > 0
+    ? aiItinerary.days.map((day) => ({
+        date: '',
+        notes: day.notes || '',
+        activities: Array.isArray(day.activities) && day.activities.length > 0
+          ? day.activities.map((a) => ({
+              time: '', 
+              description: a.description || '',
+              location: a.location || ''
+            }))
+          : [{ time: '', description: '', location: '' }]
+      }))
+    : null;
+
+  const [days, setDays] = useState(
+    initialDaysFromClone ||
+    initialDaysFromAI ||
+    [
+      {
+        date: '',
+        notes: '',
+        activities: [{ time: '', description: '', location: '' }],
+      },
+    ]
+  );
+
+  const [startDate, setStartDate] = useState(
+    cloneItinerary?.startDate ? new Date(cloneItinerary.startDate)
+      : aiItinerary ? new Date() 
+      : new Date()
+  );
+  const [endDate, setEndDate] = useState(
+    cloneItinerary?.endDate ? new Date(cloneItinerary.endDate)
+      : (aiItinerary && aiItinerary.days && aiItinerary.days.length > 0) ? aiEnd
+      : new Date()
+  );
+
   const [shareModalVisible, setShareModalVisible] = useState(false);
   const [selectedFollowers, setSelectedFollowers] = useState([]);
   const [followers, setFollowers] = useState([]);
   const [followings, setFollowings] = useState([]);
-  const [startDate, setStartDate] = useState(new Date());
-  const [endDate, setEndDate] = useState(new Date());
   const [showDateModal, setShowDateModal] = useState(false);
   const [expandedDayIndex, setExpandedDayIndex] = useState(0);
 
   const handleAddDay = () => {
-    setDays([...days, {
-      date: '',
-      notes: '',
-      activities: [{ time: '', description: '', location: '' }]
-    }]);
+    const updated = [
+      ...days,
+      { date: '', notes: '', activities: [{ time: '', description: '', location: '' }] },
+    ];
+    setDays(updated);
+    setExpandedDayIndex(updated.length - 1);
+    const newEndDate = new Date(startDate);
+    newEndDate.setDate(newEndDate.getDate() + updated.length - 1);
+    setEndDate(newEndDate);
   };
 
   const handleRemoveDay = (idx) => {
     if (days.length === 1) return;
-    setDays(prev => {
-      const updated = prev.filter((_, i) => i !== idx);
-      return updated;
-    });
+    const updated = days.filter((_, i) => i !== idx);
+    setDays(updated);
     if (expandedDayIndex === idx || idx === days.length - 1) {
       setExpandedDayIndex(Math.max(0, idx - 1));
     }
+    const newEndDate = new Date(startDate);
+    newEndDate.setDate(newEndDate.getDate() + updated.length - 1);
+    setEndDate(newEndDate);
   };
 
   const handleDayChange = (idx, field, value) => {
-    setDays(days.map((d, i) => (i === idx ? { ...d, [field]: value } : d)));
+    setDays((prev) => prev.map((d, i) => (i === idx ? { ...d, [field]: value } : d)));
   };
 
   const handleAddActivity = (dayIdx) => {
-    setDays(days.map((d, i) =>
-      i === dayIdx
-        ? { ...d, activities: [...d.activities, { time: '', description: '', location: '' }] }
-        : d
-    ));
+    setDays((prev) =>
+      prev.map((d, i) =>
+        i === dayIdx
+          ? { ...d, activities: [...d.activities, { time: '', description: '', location: '' }] }
+          : d
+      )
+    );
   };
 
   const handleRemoveActivity = (dayIdx, actIdx) => {
-    setDays(days.map((d, i) =>
-      i === dayIdx
-        ? { ...d, activities: d.activities.filter((_, j) => j !== actIdx) }
-        : d
-    ));
+    setDays((prev) =>
+      prev.map((d, i) =>
+        i === dayIdx
+          ? { ...d, activities: d.activities.filter((_, j) => j !== actIdx) }
+          : d
+      )
+    );
   };
 
   const handleActivityChange = (dayIdx, actIdx, field, value) => {
-    setDays(days.map((d, i) =>
-      i === dayIdx
-        ? {
-            ...d,
-            activities: d.activities.map((a, j) =>
-              j === actIdx ? { ...a, [field]: value } : a
-            )
-          }
-        : d
-    ));
+    setDays((prev) =>
+      prev.map((d, i) =>
+        i === dayIdx
+          ? {
+              ...d,
+              activities: d.activities.map((a, j) =>
+                j === actIdx ? { ...a, [field]: value } : a
+              ),
+            }
+          : d
+      )
+    );
   };
 
   const handleCreate = async () => {
     try {
       const token = await AsyncStorage.getItem('token');
       if (!token) {
-        alert('You must be logged in.');
+        Alert.alert('You must be logged in.');
         return;
       }
 
@@ -100,37 +182,38 @@ const CreateItineraryScreen = ({ navigation }) => {
         destination,
         startDate: startDate.toISOString(),
         endDate: endDate.toISOString(),
-        days: days.map((d) => ({
-          day: d.date,
+        days: days.map((d, i) => ({
+          // Use provided label if user typed one, else default "Day i"
+          day: d.date || `Day ${i + 1}`,
           notes: d.notes,
-          activities: d.activities
+          activities: d.activities,
         })),
         isPublic: true,
         tags: [],
-        coverImage: ''
+        coverImage: '',
       };
 
       const response = await fetch(`${API_BASE_URL}/api/itineraries/create`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
+          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
         console.error('Create failed:', data);
-        alert('Failed to create itinerary: ' + (data.message || 'Server error'));
+        Alert.alert('Failed to create itinerary: ' + (data.message || 'Server error'));
       } else {
-        alert('Itinerary created successfully!');
+        Alert.alert('Itinerary created successfully!');
         navigation.goBack?.();
       }
     } catch (err) {
       console.error('Error submitting itinerary:', err);
-      alert('Something went wrong.');
+      Alert.alert('Something went wrong.');
     }
   };
 
@@ -140,7 +223,7 @@ const CreateItineraryScreen = ({ navigation }) => {
         const token = await AsyncStorage.getItem('token');
         if (token) {
           const res = await fetch(`${API_BASE_URL}/api/users/profile`, {
-            headers: { Authorization: `Bearer ${token}` }
+            headers: { Authorization: `Bearer ${token}` },
           });
           const data = await res.json();
           if (res.ok && data.user) {
@@ -155,9 +238,7 @@ const CreateItineraryScreen = ({ navigation }) => {
 
   const toggleSelectFollower = (userId) => {
     setSelectedFollowers((prev) =>
-      prev.includes(userId)
-        ? prev.filter((id) => id !== userId)
-        : [...prev, userId]
+      prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]
     );
   };
 
@@ -165,21 +246,23 @@ const CreateItineraryScreen = ({ navigation }) => {
 
   const handleShareConfirm = () => {
     setShareModalVisible(false);
-    alert('Itinerary shared with: ' +
-      followers
-        .filter(f => selectedFollowers.includes(f._id))
-        .map(f => `${f.firstName} ${f.lastName}`)
-        .join(', ')
+    Alert.alert(
+      'Shared',
+      'Itinerary shared with: ' +
+        followers
+          .filter((f) => selectedFollowers.includes(f._id))
+          .map((f) => `${f.firstName} ${f.lastName}`)
+          .join(', ')
     );
     navigation.goBack?.();
   };
 
   const allShareableUsers = [
     ...followers,
-    ...followings.filter(fw => !followers.some(f => f._id === fw._id))
+    ...followings.filter((fw) => !followers.some((f) => f._id === fw._id)),
   ];
 
-    const formatDateByOffset = (baseDate, offset) => {
+  const formatDateByOffset = (baseDate, offset) => {
     const date = new Date(baseDate);
     date.setDate(date.getDate() + offset);
 
@@ -202,29 +285,32 @@ const CreateItineraryScreen = ({ navigation }) => {
   };
 
   useEffect(() => {
-    const numDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
-
-    if (numDays > 0) {
-      const newDays = Array.from({ length: numDays }, (_, i) => {
-        const date = new Date(startDate);
-        date.setDate(date.getDate() + i);
-
-        return {
-          date: date.toISOString().split('T')[0],
-          notes: '',
-          activities: [{ time: '', description: '', location: '' }]
-        };
-      });
-
-      setDays(newDays);
+    if (
+      days.length === 1 &&
+      !days[0].activities[0].description &&
+      !days[0].activities[0].location
+    ) {
+      if (startDate > endDate) {
+        setEndDate(new Date(startDate));
+        return;
+      }
+      const msPerDay = 1000 * 60 * 60 * 24;
+      const numDays = Math.ceil((endDate - startDate) / msPerDay) + 1;
+      if (numDays > 0) {
+        const newDays = Array.from({ length: numDays }, (_, i) => {
+          const date = new Date(startDate);
+          date.setDate(date.getDate() + i);
+          return {
+            date: date.toISOString().split('T')[0],
+            notes: '',
+            activities: [{ time: '', description: '', location: '' }],
+          };
+        });
+        setDays(newDays);
+        setExpandedDayIndex(0);
+      }
     }
   }, [startDate, endDate]);
-
-  useEffect(() => {
-    const newEndDate = new Date(startDate);
-    newEndDate.setDate(startDate.getDate() + days.length - 1);
-    setEndDate(newEndDate);
-  }, [startDate, days.length]);
 
   const formatTripDates = (start, end) => {
     const sameYear = start.getFullYear() === end.getFullYear();
@@ -232,19 +318,30 @@ const CreateItineraryScreen = ({ navigation }) => {
       weekday: 'short',
       day: 'numeric',
       month: 'short',
-      ...(sameYear ? {} : { year: 'numeric' })
+      ...(sameYear ? {} : { year: 'numeric' }),
     };
     return `${start.toLocaleDateString('en-UK', options)} – ${end.toLocaleDateString('en-UK', options)}`;
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#fff' }}>
-      <ScrollView contentContainerStyle={[styles.container, { paddingTop: Platform.OS === 'android' ? RNStatusBar.currentHeight : 40 }]}>
+    <KeyboardAvoidingView 
+      style={{ flex: 1, backgroundColor: '#fff' }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
+    >
+      <ScrollView
+        contentContainerStyle={[
+          styles.container,
+          { paddingTop: Platform.OS === 'android' ? RNStatusBar.currentHeight : 40 },
+        ]}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.headerRow}>
-          <TouchableOpacity onPress={() => navigation.goBack?.()}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={{ zIndex: 2, elevation: 2 }}>
             <Ionicons name="arrow-back" size={26} color="#222" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Create Itinerary</Text>
+          <Text style={styles.headerTitle} pointerEvents="none">Create Itinerary</Text>
           <TouchableOpacity style={styles.saveButton} onPress={handleShare}>
             <Text style={styles.saveButtonText}>Share</Text>
           </TouchableOpacity>
@@ -258,10 +355,11 @@ const CreateItineraryScreen = ({ navigation }) => {
           value={description}
           onChangeText={setDescription}
           multiline
+          textAlignVertical="top"
         />
 
         <TouchableOpacity onPress={() => setShowDateModal(true)} style={styles.input}>
-         <Text style={{ fontSize: 16 }}>
+          <Text style={{ fontSize: 16 }}>
             Trip Dates: {formatTripDates(startDate, endDate)}
           </Text>
         </TouchableOpacity>
@@ -290,40 +388,73 @@ const CreateItineraryScreen = ({ navigation }) => {
         })}
 
         <TouchableOpacity style={styles.addDayBtn} onPress={handleAddDay}>
-          <Ionicons name="add-circle" size={22} color="#007bff" />
+          <Ionicons name="add-circle" size={22} color="#00c7be" />
           <Text style={styles.addDayText}>Add Day</Text>
         </TouchableOpacity>
 
-        
-        <Button title="Create Itinerary" onPress={handleCreate} color="#007bff" />
+        <TouchableOpacity style={styles.submitButton} onPress={handleCreate}>
+          <Text style={styles.submitButtonText}>Create Itinerary</Text>
+        </TouchableOpacity>
       </ScrollView>
 
       <TripDateModal
         visible={showDateModal}
         startDate={startDate}
+        endDate={endDate}
         setStartDate={setStartDate}
+        setEndDate={setEndDate}
         onClose={() => setShowDateModal(false)}
         styles={styles}
       />
 
-    </View>
+      <ShareModal
+        visible={shareModalVisible}
+        onClose={() => setShareModalVisible(false)}
+        onConfirm={handleShareConfirm}
+        users={allShareableUsers}
+        selectedFollowers={selectedFollowers}
+        toggleSelectFollower={toggleSelectFollower}
+        contentType="itinerary"
+        styles={shareModalStyles}
+      />
+    </KeyboardAvoidingView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { padding: 10, backgroundColor: '#fff', flexGrow: 1 },
-  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 },
-  headerTitle: { fontSize: 20, fontWeight: 'bold', textAlign: 'center', flex: 1 },
+  container: { padding: 10, backgroundColor: '#fff', flexGrow: 1, paddingBottom: 50 },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 12,
+    marginBottom: 20,
+    position: 'relative',
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    textAlign: 'center',
+    zIndex: 1,
+  },
   input: {
-    borderWidth: 1, borderColor: '#ccc', borderRadius: 8, padding: 12,
-    marginBottom: 14, fontSize: 16, backgroundColor: '#fafbfc',
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 14,
+    fontSize: 16,
+    backgroundColor: '#fafbfc',
   },
   sectionLabel: { fontWeight: 'bold', fontSize: 16, marginBottom: 8, marginTop: 8 },
   dayTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 6,
-    color: '#333'
+    color: '#333',
   },
   dayHeader: {
     padding: 10,
@@ -337,14 +468,14 @@ const styles = StyleSheet.create({
     padding: 12,
     backgroundColor: '#eee',
     borderRadius: 8,
-    marginBottom: 14
+    marginBottom: 14,
   },
   addDayBtn: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
-  addDayText: { color: '#007bff', fontWeight: 'bold', marginLeft: 6, fontSize: 16 },
+  addDayText: { color: '#00c7be', fontWeight: 'bold', marginLeft: 6, fontSize: 16 },
   activitiesLabel: { fontWeight: 'bold', fontSize: 15, marginBottom: 4, marginTop: 2 },
   addActivityBtn: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
-  addActivityText: { color: '#007bff', fontWeight: 'bold', marginLeft: 6, fontSize: 15 },
-  saveButton: { backgroundColor: '#007bff', borderRadius: 8, paddingHorizontal: 16, paddingVertical: 6 },
+  addActivityText: { color: '#00c7be', fontWeight: 'bold', marginLeft: 6, fontSize: 15 },
+  saveButton: { backgroundColor: '#00c7be', borderRadius: 8, paddingHorizontal: 16, paddingVertical: 6 },
   saveButtonText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.3)', justifyContent: 'center', alignItems: 'center' },
   modalContent: { backgroundColor: '#fff', borderRadius: 16, padding: 20, width: '85%', maxHeight: '70%' },
@@ -354,10 +485,101 @@ const styles = StyleSheet.create({
   avatarInitials: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
   checkboxBox: { marginLeft: 8 },
   checkbox: { width: 22, height: 22, borderRadius: 6, borderWidth: 2, borderColor: '#bbb', backgroundColor: '#fff', justifyContent: 'center', alignItems: 'center' },
-  checkboxChecked: { backgroundColor: '#007bff', borderColor: '#007bff' },
-  modalCloseButton: { backgroundColor: '#007bff', borderRadius: 8, padding: 10, marginTop: 16, alignItems: 'center' },
+  checkboxChecked: { backgroundColor: '#00c7be', borderColor: '#00c7be' },
+  modalCloseButton: { backgroundColor: '#00c7be', borderRadius: 8, padding: 10, marginTop: 16, alignItems: 'center' },
   modalCloseButtonText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
   modalUserName: { fontSize: 16, marginLeft: 10 },
+  submitButton: {
+    backgroundColor: '#00c7be',
+    paddingVertical: 12,
+    borderRadius: 20,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  submitButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+});
+
+const shareModalStyles = StyleSheet.create({
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 20,
+    width: '85%',
+    maxHeight: '70%',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 4,
+    textAlign: 'center',
+  },
+  modalSubtitle: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  modalUserRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+  },
+  avatarCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#007AFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarInitials: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  modalUserName: {
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  checkboxBox: {
+    marginLeft: 'auto',
+  },
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#007AFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkboxChecked: {
+    backgroundColor: '#007AFF',
+  },
+  modalCloseButton: {
+    backgroundColor: '#007AFF',
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 16,
+  },
+  modalCloseButtonDisabled: {
+    backgroundColor: '#ccc',
+  },
+  modalCloseButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
 });
 
 export default CreateItineraryScreen;

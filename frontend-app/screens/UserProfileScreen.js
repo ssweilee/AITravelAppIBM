@@ -1,18 +1,35 @@
-import React, { useEffect, useState, useLayoutEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Button } from 'react-native';
+import React, { useEffect, useState, useLayoutEffect, useCallback } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Image, Platform, StatusBar as RNStatusBar } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fetchUserById } from '../utils/ProfileInfo';
 import UserPostList from '../components/UserPostList';
 import FollowButton from '../components/FollowButton';
 import { API_BASE_URL } from '../config';
 import ItineraryList from '../components/profileComponents/ItineraryList';
+import TripList from '../components/profileComponents/TripList';
+import FollowersModal from '../modals/FollowersModal';
+import { StatusBar } from 'expo-status-bar';
+import Feather from 'react-native-vector-icons/Feather';
+import { useNavigation } from '@react-navigation/native';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { getAvatarUrl } from '../utils/getAvatarUrl';
 
-const UserProfileScreen = ({ route, navigation }) => {
+const UserProfileScreen = ({ route }) => {
   const { userId } = route.params;
   const [selectedTab, setSelectedTab] = useState('Post');
   const [user, setUser] = useState(null);
   const [currentUserId, setCurrentUserId] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [followersModalVisible, setFollowersModalVisible] = useState(false);
+  const navigation = useNavigation();
+
+  const formatLocation = (locationString) => {
+    if (!locationString || !locationString.includes('|')) {
+      return locationString || ''; 
+    }
+    const [country, city] = locationString.split('|');
+    return `${city}, ${country}`;
+  };
 
   const decodeUserIdFromToken = async () => {
     const token = await AsyncStorage.getItem('token');
@@ -28,12 +45,20 @@ const UserProfileScreen = ({ route, navigation }) => {
   };
 
   useEffect(() => {
+    let didRetry = false;
     const loadProfileData = async () => {
       setLoading(true);
       const decodedUserId = await decodeUserIdFromToken();
       setCurrentUserId(decodedUserId);
 
-      const result = await fetchUserById(userId);
+      let result = await fetchUserById(userId);
+      if (!result.success && result.error?.toLowerCase().includes('token')) {
+        if (!didRetry) {
+          didRetry = true;
+          setTimeout(loadProfileData, 300);
+          return;
+        }
+      }
       if (result.success) {
         setUser(result.user);
       } else {
@@ -45,16 +70,20 @@ const UserProfileScreen = ({ route, navigation }) => {
     loadProfileData();
   }, [userId]);
 
-  // 🧠 SET UP CHAT BUTTON
   useLayoutEffect(() => {
     if (user && currentUserId && currentUserId !== user._id) {
       navigation.setOptions({
+        headerTitle: `${user.firstName} ${user.lastName}`,
+        headerTitleStyle: { color: 'white' },
+        headerTintColor: 'white',
+        headerLeft: () => null,
         headerRight: () => (
-          <Button
-            title="Chat"
+          <TouchableOpacity
+            style={{ marginRight: 16 }}
             onPress={async () => {
               try {
                 const token = await AsyncStorage.getItem('token');
+                if (!token) return;
                 const response = await fetch(`${API_BASE_URL}/api/chats`, {
                   method: 'POST',
                   headers: {
@@ -77,41 +106,98 @@ const UserProfileScreen = ({ route, navigation }) => {
                 console.error('Error creating chat:', err);
               }
             }}
-          />
+          >
+            <Feather name="send" size={24} color="white" />
+          </TouchableOpacity>
         ),
+        headerStyle: {
+          backgroundColor: '#00c7be',
+          elevation: 0,
+          shadowOpacity: 0,
+          borderBottomWidth: 0,
+        },
       });
     }
   }, [navigation, user, currentUserId]);
 
-  if (loading || !user || !currentUserId) return <Text>Loading...</Text>;
+  if (loading || !user || !currentUserId) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Text>Loading...</Text>
+      </View>
+    );
+  }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.name}>
-        {user.firstName} {user.lastName}
-      </Text>
-      <Text style={styles.info}>
-        Followers: {user?.followers?.length || 0} | Trips: {user?.trips?.length || 0} | Reviews: {user?.reviews?.length || 0}
-      </Text>
+    <View style={[styles.container, { paddingTop: Platform.OS === 'android' ? RNStatusBar.currentHeight : 15 }]}>
+      <StatusBar style="dark" />
 
-      {currentUserId && currentUserId !== user._id && (
-        <FollowButton
-          userId={user._id}
-          isFollowingInitially={user.followers?.some(f => f._id?.toString() === currentUserId)}
-          onFollowToggle={() => {
-            setUser((prev) => {
-              const alreadyFollowing = prev.followers?.some(f => f._id?.toString() === currentUserId);
-              const updatedFollowers = alreadyFollowing
-                ? prev.followers.filter(f => f._id?.toString() !== currentUserId)
-                : [...prev.followers, { _id: currentUserId }];
-              return { ...prev, followers: updatedFollowers };
-            });
-          }}
-        />
-      )}
+      <View style={styles.profileSection}>
+        <TouchableOpacity style={styles.profilePictureWrapper}>
+          {user.profilePicture ? (
+            <Image
+              source={{ uri: getAvatarUrl(user.profilePicture) }}
+              style={styles.profilePicture}
+          />
+          ) : (
+            <View style={styles.avatarFallback}>
+              <Text style={styles.avatarFallbackText}>{user.firstName?.[0]?.toUpperCase() || '?'}</Text>
+            </View>
+          )}
+        </TouchableOpacity>
+
+        <View style={styles.profileStatsColumn}>
+          <TouchableOpacity
+            style={styles.statRow}
+            onPress={() => setFollowersModalVisible(true)}
+            activeOpacity={0.7}
+          >
+            <Text>
+              <Text style={styles.statNumber}>{user?.followers?.length || 0}</Text>
+              <Text style={styles.statLabel}> Followers</Text>
+            </Text>
+          </TouchableOpacity>
+
+          <View style={styles.statRow}>
+            <Text>
+              <Text style={styles.statNumber}>{user?.trips?.length || 0}</Text>
+              <Text style={styles.statLabel}> Trips</Text>
+            </Text>
+          </View>
+
+          <View style={styles.statRow}>
+            <Text>
+              <Text style={styles.statNumber}>{user?.itineraries?.length || 0}</Text>
+              <Text style={styles.statLabel}> Itineraries</Text>
+            </Text>
+          </View>
+        </View>
+      </View>
+
+      <View style={styles.profileInfoRow}>
+        <View style={styles.profileTextBlock}>
+          <Text style={styles.locationText}>{formatLocation(user.location)}</Text>
+          {user?.bio && <Text style={styles.bioText}>{user.bio}</Text>}
+        </View>
+        {currentUserId !== user._id && (
+          <FollowButton
+            userId={user._id}
+            isFollowingInitially={user.followers?.some(f => f._id?.toString() === currentUserId)}
+            onFollowToggle={() => {
+              setUser((prev) => {
+                const alreadyFollowing = prev.followers?.some(f => f._id?.toString() === currentUserId);
+                const updatedFollowers = alreadyFollowing
+                  ? prev.followers.filter(f => f._id?.toString() !== currentUserId)
+                  : [...prev.followers, { _id: currentUserId }];
+                return { ...prev, followers: updatedFollowers };
+              });
+            }}
+          />
+        )}
+      </View>
 
       <View style={styles.tabRow}>
-        {['Post', 'Itinerary', 'Trip', 'Review'].map(tab => (
+        {['Post', 'Itinerary', 'Trip'].map(tab => (
           <TouchableOpacity
             key={tab}
             onPress={() => setSelectedTab(tab)}
@@ -122,41 +208,102 @@ const UserProfileScreen = ({ route, navigation }) => {
         ))}
       </View>
 
-      {selectedTab === 'Post' && (
-        <>
-          <Text style={styles.subHeader}>Recent Posts:</Text>
-          <UserPostList userId={user._id} />
-        </>
-      )}
-
-      {selectedTab === 'Itinerary' && (
-        <>
-          <Text style={styles.subHeader}>Your Itineraries:</Text>
-          <ItineraryList 
-            userId={user._id} 
-            onPress={() => navigation.navigate('ItineraryDetail', { itinerary: item })}
+      <View style={{ flex: 1 }}>
+        {selectedTab === 'Post' && <UserPostList userId={user._id} />}
+        {selectedTab === 'Itinerary' && (
+          <ItineraryList
+            userId={currentUserId !== user._id ? user._id : undefined}
+            onPress={(itinerary) => navigation.navigate('ItineraryDetail', { itinerary })}
           />
-        </>
-      )}
+        )}
+        {selectedTab === 'Trip' && (
+          <TripList
+            userId={user._id}
+            onPress={(trip) => navigation.navigate('TripDetail', { trip })}
+          />
+        )}
+      </View>
 
-      
+      <FollowersModal
+        visible={followersModalVisible}
+        onClose={() => setFollowersModalVisible(false)}
+        userId={user?._id}
+        title="Followers"
+        type="followers"
+      />
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { padding: 20, flex: 1 },
-  name: { fontSize: 24, fontWeight: 'bold', marginBottom: 10 },
-  info: { fontSize: 18, marginBottom: 5 },
-  tabRow: {
-    flexDirection: 'row', justifyContent: 'space-around',
-    marginTop: 20, borderBottomWidth: 1, borderColor: '#eee'
+  container: { padding: 20, flex: 1, backgroundColor: '#fff' },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  profileSection: { flexDirection: 'row', alignItems: 'center', marginTop: 15 },
+  profilePictureWrapper: {
+    width: 100,
+    height: 100,
+    borderRadius: 60,
+    backgroundColor: '#eee',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12
   },
-  tabItem: { paddingVertical: 10, paddingHorizontal: 12, borderBottomWidth: 2, borderColor: 'transparent' },
-  tabItemActive: { borderBottomColor: '#007bff' },
+  profilePicture: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 50
+  },
+  avatarFallback: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: '#ccc',
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  avatarFallbackText: {
+    color: '#fff',
+    fontSize: 36,
+    fontWeight: 'bold'
+  },
+  profileStatsColumn: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexDirection: 'column',
+    marginLeft: 12
+  },
+  statRow: { flexDirection: 'row', marginBottom: 6, width: 120 },
+  statNumber: { fontSize: 16, fontWeight: 'bold', width: 30, textAlign: 'right' },
+  statLabel: { fontSize: 14, textAlign: 'left' },
+  profileInfoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginTop: 16,
+    paddingHorizontal: 5
+  },
+  profileTextBlock: { flex: 1, paddingRight: 10 },
+  locationText: { fontSize: 16, color: '#000', marginBottom: 6 },
+  bioText: { fontSize: 14, color: '#444' },
+  tabRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginTop: 20,
+    borderBottomWidth: 1,
+    borderColor: '#eee'
+  },
+  tabItem: {
+    flex: 1, // This makes each tab take equal width (1/3 each instead of 1/4)
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderBottomWidth: 2,
+    borderColor: 'transparent'
+  },
+  tabItemActive: { borderBottomColor: '#00c7be' },
   tabText: { color: '#777', fontSize: 16 },
-  tabTextActive: { color: '#007bff', fontWeight: 'bold' },
-  subHeader: { fontSize: 20, marginTop: 20, marginBottom: 10 },
+  tabTextActive: { color: '#00c7be', fontWeight: 'bold' }
 });
 
 export default UserProfileScreen;

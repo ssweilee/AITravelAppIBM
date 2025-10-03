@@ -3,12 +3,17 @@ import { useState } from 'react';
 import { Alert, Button, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { API_BASE_URL } from '../config';
+import { useAuth } from '../contexts/AuthContext';
+import { useNotifications } from '../contexts/NotificationsContext';
 
 function LoginForm() {
   const navigation = useNavigation();
+  const { login } = useAuth();
 
   const [ email, setEmail ] = useState('');
   const [ password, setPassword ] = useState('');
+
+  const { fetchUnreadCount } = useNotifications();
 
   const handleLogin = async () => {
     try {
@@ -22,7 +27,32 @@ function LoginForm() {
 
       const data = await reponse.json();
       if (reponse.ok) {
+        // Persist tokens first
         await AsyncStorage.setItem('token', data.token);
+        if (data.refreshToken) {
+          await AsyncStorage.setItem('refreshToken', data.refreshToken);
+        }
+        // Clear any cached user to avoid stale cross-account residue
+        await AsyncStorage.removeItem('userInfoCache');
+
+        await fetchUnreadCount();
+
+        // If backend did not send user object, fetch profile explicitly
+        let userObj = data.user || null;
+        if (!userObj) {
+          try {
+            const profRes = await fetch(`${API_BASE_URL}/api/users/profile`, { headers: { Authorization: `Bearer ${data.token}` } });
+            const profData = await profRes.json();
+            if (profRes.ok && profData?.user) {
+              userObj = profData.user;
+            }
+          } catch (e) {
+            console.log('[LoginForm] profile fetch fallback failed:', e.message);
+          }
+        }
+
+        // Delegate caching & state update to AuthContext.login (it will fetch profile again if userObj null)
+        await login(data.token, userObj);
 
         const alreadySelected = await AsyncStorage.getItem('hasSelectedInterests');
         if (alreadySelected === 'true') {
@@ -31,7 +61,7 @@ function LoginForm() {
           navigation.navigate('Interest');
         }
       } else {
-        Alert.alert('Login failed: ' + data.message);
+        Alert.alert('Login failed: ' + (data.message || 'Unknown error'));
       }
     } catch (error) {
       Alert.alert('Error', error.message);

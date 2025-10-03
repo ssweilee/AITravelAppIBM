@@ -1,70 +1,88 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, Button, StyleSheet, Alert, ActivityIndicator, TouchableOpacity, KeyboardAvoidingView, ScrollView, Platform, Keyboard } from 'react-native';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { View, Text, TextInput, Button, StyleSheet, Alert, ActivityIndicator, TouchableOpacity, KeyboardAvoidingView, ScrollView, Platform, Keyboard, Linking, FlatList } from 'react-native';
+import { useIsFocused, useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_BASE_URL } from '../config';
 import Autocomplete from 'react-native-autocomplete-input';
 import debounce from 'lodash.debounce';
-import Constants from 'expo-constants';
+import { Image } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
+import { useAuth } from '../contexts/AuthContext';
+import { updateUserProfile } from '../services/userService';
+import { getAvatarUrl } from '../utils/getAvatarUrl';
 
 
 const EditProfileScreen = ({ route, navigation }) => {
-  const { userId } = route.params;
-  const [firstName, setFirstName] = useState('');
+  const { userId, currentUserInfo } = route.params;
+  const { refreshUser } = useAuth();
+  const nav = useNavigation();
+  const [firstName, setFirstName] = useState(currentUserInfo?.firstName || '');
+  const [lastName, setLastName] = useState(currentUserInfo?.lastName || '');
+  const [location, setLocation] = useState(''); 
+  const [bio, setBio] = useState(currentUserInfo?.bio || '');
+  const [avatarUri, setAvatarUri] = useState(currentUserInfo?.profilePicture || null);
+  
+  const [selectedLocationObject, setSelectedLocationObject] = useState(null);
+  const [avatarFile, setAvatarFile] = useState(null);
+  const [removeAvatar, setRemoveAvatar] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [isPicking, setIsPicking] = useState(false);
+
+  const [filteredLocations, setFilteredLocations] = useState([]);
+  const isPickingRef = useRef(false);
+  const [hasPermission, setHasPermission] = useState(null);
+  const [hasShownLimitedAlert, setHasShownLimitedAlert] = useState(false);
+
+  const flatListRef = useRef(null);
+
+  {/*
+    const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [location, setLocation] = useState('');
-  const [filteredLocations, setFilteredLocations] = useState([]);
+  
   const [bio, setBio] = useState('');
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
-
   const [selectedLocationObject, setSelectedLocationObject] = useState(null);
+  const [avatarUri, setAvatarUri] = useState(initialAvatarUri || '');
+  const [avatarFile, setAvatarFile] = useState(null); 
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [removeAvatar, setRemoveAvatar] = useState(false);
+  const [isPicking, setIsPicking] = useState(false);
+    */}
+
+    useEffect(() => {
+    nav.setOptions({
+      headerStyle: { backgroundColor: '#00c7be' },
+      headerTintColor: '#fff',
+      headerTitleStyle: {
+        fontWeight: 'bold',
+      },
+    });
+  }, [nav]);
+    
+    useEffect(() => {
+      const checkLimitedAlert = async () => {
+        try {
+          const value = await AsyncStorage.getItem('hasShownLimitedAccessAlert');
+          setHasShownLimitedAlert(value === 'true');
+        } catch (e) {
+          console.error('Error reading hasShownLimitedAccessAlert from AsyncStorage', e);
+        }
+      };
+      checkLimitedAlert();
+    }, []);
+  
+  
 
   useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const token = await AsyncStorage.getItem('token');
-        console.log('EditProfileScreen - Token:', token);
-        if (!token) {
-          Alert.alert('Error', 'Authentication token not found');
-          setFetching(false);
-          return;
-        }
-
-        const response = await fetch(`${API_BASE_URL}/api/users/${userId}`, {
-          method: 'GET',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        });
-
-        const data = await response.json();
-        console.log('EditProfileScreen - Fetch user response:', JSON.stringify(data, null, 2));
-        if (data.success && data.user) {
-          setFirstName(data.user.firstName || '');
-          setLastName(data.user.lastName || '');
-          setBio(data.user.bio || '');
-          if (data.user.location && data.user.location.includes('|')) {
-            const [country, city] = data.user.location.split('|');
-            const displayLocation = `${city}, ${country}`;
-            setLocation(displayLocation);
-            setSelectedLocationObject({ display: displayLocation, value: data.user.location });
-          } else {
-            setLocation('');
-          }
-        } else {
-          Alert.alert('Error', 'Failed to load user data: ' + (data.message || JSON.stringify(data)));
-        }
-      } catch (error) {
-        console.error('EditProfileScreen - Error fetching user data:', error.message);
-        Alert.alert('Error', 'An unexpected error occurred: ' + error.message);
-      } finally {
-        setFetching(false);
-      }
-    };
-
-    fetchUserData();
-  }, [userId]);
+    if (currentUserInfo?.location && currentUserInfo.location.includes('|')) {
+      const [country, city] = currentUserInfo.location.split('|');
+      setLocation(`${city}, ${country}`);
+      setSelectedLocationObject({ display: `${city}, ${country}`, value: currentUserInfo.location });
+    }
+  }, [currentUserInfo]);
 
   const fetchLocations = debounce(async (query) => {
     console.log(`[Step 1] fetchLocations called with query: "${query}"`);
@@ -89,85 +107,18 @@ const EditProfileScreen = ({ route, navigation }) => {
     }));
 
 
-      {/*
-        const GOOGLE_API_KEY = Constants.manifest?.extra?.googlePlacesApiKey || Constants.expoConfig?.extra?.googlePlacesApiKey;
 
-    if (!GOOGLE_API_KEY) {
-      console.error('Google Places API Key is missing. Check your config.');
-      return;
-    }
-
-    const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(query)}&types=(cities)&components=country:gb&key=${GOOGLE_API_KEY}`;
-
-    const response = await fetch(url);
-
-    if (!response.ok) {
-      throw new Error(`Google Places API Error: Status ${response.status}`);
-    }
-
-    const data = await response.json();
-
-    if (data.status !== 'OK') {
-      console.error('Google Places API returned error:', data.status, data.error_message);
-      setFilteredLocations([]);
-      return;
-    }
-
-    const locations = data.predictions.map(prediction => ({
-      display: prediction.description,
-      value: prediction.description, 
-    }));
-        
-        */}
-      
-
-{/*
-      //1. Safely access the API key from Constants
-      
-        const GEOAPIFY_API_KEY =
-        Constants.manifest?.extra?.geoapifyApiKey || // for older versions
-        Constants.expoConfig?.extra?.geoapifyApiKey || // for SDK 49+
-        null;
-        
-
-
-      //2. Check if the API key is available
-      if (!GEOAPIFY_API_KEY) {
-        console.error('Geoapify API Key is missing. Check your .env and app.config.js setup.');
-        return;
-      }
-        
-    //3. Construct the API URL with the query
-    const url = `https://api.geoapify.com/v1/geocode/autocomplete?text=${encodeURIComponent(query)}&apiKey=${GEOAPIFY_API_KEY}`;
-    //4. Send the request to Geoapify API
-    const response = await fetch(url);
-
-    if (!response.ok) {
-      throw new Error(`Geoapify API Error: Status ${response.status}`);
-    }
-    //5. Parse the response data
-    const data = await response.json();
-    //6. handle the response data structure
-    let locations = [];
-    if (data.features && data.features.length > 0) {
-      locations = data.features.map((feature) => {
-        const props = feature.properties;
-        return {
-          display: `${props.city || props.name || ''}, ${props.country || ''}`,
-          value: `${props.country_code?.toUpperCase() || ''}|${props.city || props.name || ''}`,       
-         };
-      });
-    } 
-      */}
-
-
-    //7. Update the state with the filtered locations
+    //Update the state with the filtered locations
     setFilteredLocations(locations);
     } catch (error) {
-      console.error('EditProfileScreen - Error fetching locations:', error.message);
+      if (error.message && error.message.includes('Status 429')) {
+        console.log(`[API Rate Limit] LocationIQ rate limit exceeded for query: "${query}". This error is hidden from the user.`);
+      } else {
+        console.log('[Location Fetch Error] An unexpected error occurred:', error.message);
+      }
       setFilteredLocations([]);
     }
-  }, 500);
+  }, 750);
 
   const handleLocationChange = (query) => {
     setLocation(query);
@@ -181,6 +132,128 @@ const EditProfileScreen = ({ route, navigation }) => {
     setLocation(item.display);
     setSelectedLocationObject(item);
     setFilteredLocations([]);
+  };
+  
+  
+
+  const pickImage = useCallback(async () => {
+     if (isPickingRef.current) {
+      console.log("Picking process is already active. Ignoring.");
+      return;
+    }
+    isPickingRef.current = true;
+    setIsPicking(true);
+
+    try {
+      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+      if (permissionResult.granted === false) {
+        Alert.alert(
+          "Access Required",
+          "To select photos, please allow photo access in your device Settings.",
+          [
+            { text: "Cancel", style: "cancel" },
+            { text: "Open Settings", onPress: () => Linking.openSettings() }
+          ]
+        );
+        isPickingRef.current = false;
+        setIsPicking(false);
+        return;
+      }
+      
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: 'Images',
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.7,
+      });
+
+      console.log("[DEBUG] pickImage: Image picker result:", JSON.stringify(result, null, 2));
+
+      if (!result.canceled && result.assets?.length > 0) {
+        const asset = result.assets[0];
+        setAvatarUri(asset.uri);
+        setAvatarFile({
+          uri: asset.uri,
+          name: asset.fileName || asset.uri.split('/').pop(),
+          type: asset.type || 'image/jpeg',
+        });
+        setRemoveAvatar(false);
+      }
+    } catch (error) {
+      console.error("[DEBUG] pickImage: An unexpected error occurred.", error);
+      Alert.alert('Error', 'An unexpected error occurred while trying to open the image library.');
+    } finally {
+      isPickingRef.current = false;
+      setIsPicking(false);
+    }
+  }, []); 
+
+
+ const uploadAvatar = async (token) => {
+  setUploadingAvatar(true);
+  try {
+    console.log('[DEBUG] About to upload:', {
+      uri: avatarFile.uri,
+      name: avatarFile.name,
+      type: avatarFile.type,
+      platform: Platform.OS
+    });
+
+    const formData = new FormData();
+    
+    // Create the file object for Android
+    const fileToUpload = {
+      uri: avatarFile.uri,
+      type: avatarFile.type || 'image/jpeg',
+      name: avatarFile.name || 'avatar.jpg',
+    };
+    
+    // For Android, sometimes we need to ensure the type is set correctly
+    if (Platform.OS === 'android') {
+      fileToUpload.type = 'image/jpeg'; // Force JPEG type for Android
+    }
+    
+    formData.append('avatar', fileToUpload);
+    
+    console.log('[DEBUG] FormData file object:', fileToUpload);
+
+    const uploadResponse = await fetch(`${API_BASE_URL}/api/users/upload-avatar`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        // No Content-Type header for multipart
+      },
+      body: formData,
+    });
+
+    console.log('[DEBUG] Upload response status:', uploadResponse.status);
+    
+    const uploadResult = await uploadResponse.json();
+    console.log('[DEBUG] uploadAvatar response:', uploadResult);
+    
+    if (!uploadResponse.ok) {
+      throw new Error(uploadResult.message || 'Failed to upload avatar');
+    }
+    if (uploadResponse.ok && uploadResult.profilePicture) {
+      return uploadResult.profilePicture;
+    } else {
+      throw new Error(uploadResult.message || 'Failed to upload avatar or server returned invalid data.');
+    }
+  } catch (err) {
+    console.error('[DEBUG] uploadAvatar: Error:', err.message);
+    console.error('[DEBUG] uploadAvatar: Full error:', err);
+    Alert.alert('Upload Error', err.message);
+    return null;
+  } finally {
+    setUploadingAvatar(false);
+  }
+};
+
+  const handleBioFocus = () => {
+    setTimeout(() => {
+      flatListRef.current?.scrollToEnd({ animated: true });
+    }, 200); 
   };
 
   const handleSave = async () => {
@@ -196,14 +269,20 @@ const EditProfileScreen = ({ route, navigation }) => {
 
     setLoading(true);
     try {
-      const token = await AsyncStorage.getItem('token');
-      console.log('EditProfileScreen - Save Token:', token);
+      //preparing basic payload
+      const payload = {
+        firstName,
+        lastName,
+        bio,
+      };
+  
+      //handle location field
       let locationField = '';
       if (selectedLocationObject) {
         locationField = selectedLocationObject.value;
       } else if (location.trim() !== '') {
         const parts = location.split(',').map(p => p.trim());
-        if (parts.length === 2) {
+        if (parts.length >= 2) {
             locationField = `${parts[1]}|${parts[0]}`; 
         } else {
             Alert.alert('Invalid Location', 'Please select a location from the list or use the "City, Country" format.');
@@ -211,51 +290,108 @@ const EditProfileScreen = ({ route, navigation }) => {
             return;
         }
       }
-      const payload = { firstName, lastName, location: locationField, bio };
-      console.log('EditProfileScreen - Save Payload:', JSON.stringify(payload));
-      console.log('EditProfileScreen - Save Payload:', JSON.stringify(payload));
-      const url = `${API_BASE_URL}/api/users/edit/${userId}`;
-      console.log('EditProfileScreen - Save URL:', url);
 
-      const response = await fetch(url, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(payload),
-      });
+      payload.location = locationField;
 
-      const result = await response.json();
-      console.log('EditProfileScreen - Save response:', JSON.stringify(result, null, 2));
-      if (response.ok) {
-        Alert.alert('Success', 'Profile updated successfully');
-        navigation.goBack();
-      } else {
-        Alert.alert('Error', result.message || 'Failed to update profile');
-      }
+        if (avatarFile) {
+          console.log('handleSave: Uploading new avatar...');
+          const token = await AsyncStorage.getItem('token'); 
+          const newProfilePicturePath = await uploadAvatar(token); 
+  
+          if (!newProfilePicturePath) {
+            setLoading(false);
+            return;
+          }
+          payload.profilePicture = newProfilePicturePath;
+          const fullAvatarUrl = getAvatarUrl(newProfilePicturePath);
+          setAvatarUri(fullAvatarUrl); 
+          await Image.prefetch(fullAvatarUrl);
+        } else if (removeAvatar) {
+          console.log('handleSave: Removing avatar...');
+          payload.profilePicture = null;
+        }
+
+    console.log('EditProfileScreen - Save Payload:', JSON.stringify(payload));
+      
+    await updateUserProfile(payload, { navigation });
+    Alert.alert('Success', 'Profile updated successfully');
+    await refreshUser(); 
+    navigation.navigate('Main', { 
+      screen: 'Profile',
+      params: { profileUpdated: true }, 
+    });
+
     } catch (error) {
-      console.error('EditProfileScreen - Error updating profile:', error.message);
-      Alert.alert('Error', 'An unexpected error occurred: ' + error.message);
+      if (error.message) {
+        console.error('EditProfileScreen - Update failed:', error.message);
+        Alert.alert('Update Failed', error.message);
+      } else {
+        console.error('EditProfileScreen - An unknown update error occurred:', error);
+        Alert.alert('Update Failed', 'An unexpected error occurred.');
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  if (fetching) {
-    return (
-      <View style={styles.container}>
-        <ActivityIndicator size="large" color="#0000ff" />
-      </View>
-    );
-  }
 //names, location, trips, reviews, bio, years on travel?,  picture?
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"} 
-      style={{ flex: 1 }}
+      style={styles.flexContainer} 
     >
-      <View style={styles.container}>
+      <View style={styles.avatarSection}>
+      {uploadingAvatar && (
+        <ActivityIndicator
+          style={styles.avatarSpinner}
+          size="small"
+          color="#fff"
+        />
+      )}
+      <TouchableOpacity onPress={(event) => {
+    event.stopPropagation(); // Prevent event bubbling
+    console.log('[DEBUG] TouchableOpacity pressed');
+    pickImage();
+  }} activeOpacity={0.7} disabled={isPicking || uploadingAvatar} >
+      {isPicking ? (
+    <ActivityIndicator size="small" color="#0000ff" />
+  ) : avatarUri ? (
+    <View style={{ position: 'relative' }}>
+      <Image
+        source={{ uri: avatarUri }}
+        style={styles.avatar}
+        cachePolicy="memory-disk"
+      />
+      <TouchableOpacity
+        onPress={() => {
+          setAvatarUri('');
+          setAvatarFile(null);
+          setRemoveAvatar(true);
+        }}
+        style={styles.removeAvatarButton}
+      >
+        <Text style={styles.removeAvatarText}>✕</Text>
+      </TouchableOpacity>
+    </View>
+  ) : (
+    <View style={styles.avatarPlaceholder}>
+      <Text>Select Avatar</Text>
+    </View>
+  )}
+</TouchableOpacity>
+</View>
+
+    <FlatList 
+      ref={flatListRef}
+      style={styles.formContainer} 
+      contentContainerStyle={styles.scrollContentContainer} 
+      keyboardShouldPersistTaps="handled" 
+      data={[]} 
+      renderItem={null} 
+      keyExtractor={(item, index) => index.toString()}
+    
+      ListHeaderComponent={
+        <>
       <Text style={styles.label}>First Name:</Text>
       <TextInput
         style={styles.input}
@@ -290,7 +426,7 @@ const EditProfileScreen = ({ route, navigation }) => {
         </TouchableOpacity>
       ),
     }}
-    inputContainerStyle={{ borderWidth: 0, padding: 0, margin: 0 }}
+    inputContainerStyle={styles.autocompleteInputContainer}
     listContainerStyle={styles.listContainer}
   />
 </View>
@@ -303,22 +439,60 @@ const EditProfileScreen = ({ route, navigation }) => {
         multiline
         returnKeyType="done" 
         onSubmitEditing={() => { Keyboard.dismiss() }} 
+        onFocus={handleBioFocus}
       />
-      <Button title="Save" onPress={handleSave} disabled={loading} />
-      {loading && <ActivityIndicator size="small" color="#0000ff" />}
-      </View>
+      <TouchableOpacity
+          style={[styles.saveButton, loading && styles.saveButtonDisabled]}
+          onPress={handleSave}
+          disabled={loading}
+        >
+          {loading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.saveButtonText}>Save</Text>
+          )}
+        </TouchableOpacity>
+        {loading && <ActivityIndicator size="small" color="#0000ff" />}
+          </>
+        }
+      />
       </KeyboardAvoidingView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { padding: 20, paddingBottom: 50 },
+  flexContainer: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  avatarSection: {
+    alignItems: 'center',
+    paddingTop: 20,
+    paddingBottom: 10,
+  },
+  formContainer: {
+    flex: 1,
+  },
+  scrollContentContainer: {
+    paddingHorizontal: 20,
+    paddingBottom: 50,
+  },
+  avatarContainer: { alignItems: 'center', marginBottom: 20, },
+  avatar: { width: 120, height: 120, borderRadius: 60, },
+  avatarPlaceholder: { width: 120, height: 120, borderRadius: 60, backgroundColor: '#ccc', justifyContent: 'center', alignItems: 'center', },
+  removeAvatarButton: { position: 'absolute', top: -5, right: -5 ,backgroundColor: 'red', borderRadius: 12, width: 24, height: 24, justifyContent: 'center', alignItems: 'center', zIndex: 2, },
+  removeAvatarText: { color: '#fff', fontWeight: 'bold', },
+  avatarSpinner: { position: 'absolute', left: '50%', top: '50%', marginLeft: -10, marginTop: -10, zIndex: 1 },  
   label: { fontSize: 16, marginBottom: 8 },
-  input: { borderWidth: 1, borderColor: '#ccc', padding: 8, marginBottom: 16 },
+  input: { borderWidth: 1, borderColor: '#00c7be', borderRadius: 20, padding: 8, marginBottom: 16 },
   multilineInput: { height: 100, textAlignVertical: 'top' },
   autocompleteContainer: { zIndex: 1, marginBottom: 16 },
-  listContainer: { maxHeight: 150, borderWidth: 1, borderColor: '#ccc' },
+  autocompleteInputContainer: { borderWidth: 1, borderColor: '#00c7be', borderRadius: 20, paddingHorizontal: 8, paddingVertical: 4 },
+  listContainer: { maxHeight: 150, borderWidth: 0, borderColor: '#00c7be' },
   item: { padding: 10, borderBottomWidth: 1, borderBottomColor: '#eee' },
+  saveButton: { backgroundColor: '#00c7be', paddingVertical: 12, borderRadius: 20, alignItems: 'center', marginTop: 10,},
+  saveButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold'},
 });
 
 export default EditProfileScreen;
+

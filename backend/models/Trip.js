@@ -41,6 +41,11 @@ const tripSchema = new mongoose.Schema({
     trim: true,
     maxlength: 500
   },
+  tags: [{
+    type: String, 
+    trim: true,
+    required: true,
+  }],
   budget: {
     type: Number,
     required: true,
@@ -50,6 +55,12 @@ const tripSchema = new mongoose.Schema({
     {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Post'
+    }
+  ],
+  itineraries: [ 
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Itinerary'
     }
   ],
   reviews: [
@@ -86,6 +97,10 @@ const tripSchema = new mongoose.Schema({
       ref: 'Comment'
     }
   ],
+  repostCount: [{  
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }],
 },
 {
   timestamps: true // Automatically adds createdAt and updatedAt fields

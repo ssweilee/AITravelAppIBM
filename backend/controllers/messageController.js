@@ -1,5 +1,6 @@
 const Message = require('../models/Message');
 const Chat = require('../models/Chat');
+const sendNotification = require('../utils/notify');
 
 // Get messages and mark messages from other users as read
 exports.getMessagesForChat = async (req, res) => {
@@ -9,10 +10,33 @@ exports.getMessagesForChat = async (req, res) => {
   try {
     // Fetch all messages in the chat
     const messages = await Message.find({ chatId })
-      .populate('senderId', 'firstName lastName')
+      .populate('senderId', 'firstName lastName profilePicture')
       .populate('sharedItinerary')
+      .populate('sharedTrip')
+      .populate({
+        path: 'sharedPost',
+        populate: [
+          {
+            path: 'userId',
+            select: 'firstName lastName profilePicture'
+          },
+          {
+            path: 'bindItinerary',
+            populate: {
+              path: 'createdBy',
+              select: 'firstName lastName profilePicture'
+            }
+          },
+          {
+            path: 'bindTrip',
+            populate: {
+              path: 'userId',
+              select: 'firstName lastName profilePicture'
+            }
+          }
+        ]
+      })
       .sort('createdAt');
-
 
     // Filter messages that are unread and sent by someone else
     const unreadMessages = messages.filter(
@@ -39,7 +63,7 @@ exports.getMessagesForChat = async (req, res) => {
 // Send a new message and update chat's lastMessage
 exports.sendMessage = async (req, res) => {
   const { chatId } = req.params;
-  const { text, sharedItinerary} = req.body;
+  const { text, sharedItinerary, sharedPost, sharedTrip } = req.body;
   const senderId = req.user.userId;
 
   if (!text || !chatId || !senderId) {
@@ -54,15 +78,59 @@ exports.sendMessage = async (req, res) => {
       senderId,
       text,
       sharedItinerary,
+      sharedPost,
+      sharedTrip,
       readBy: [senderId], // sender has read their own message
     });
 
     const message = await Message.findById(createdMessage._id)
-      .populate('senderId', 'firstName lastName')
-      .populate('sharedItinerary');
+
+      .populate('senderId', 'firstName lastName profilePicture')
+      .populate('sharedItinerary')
+      .populate({
+        path: 'sharedPost',
+        populate: [
+          {
+            path: 'userId',
+            select: 'firstName lastName profilePicture'
+          },
+          {
+            path: 'bindItinerary',
+            populate: {
+              path: 'createdBy',
+              select: 'firstName lastName profilePicture'
+            }
+          },
+          {
+            path: 'bindTrip',
+            populate: {
+              path: 'userId',
+              select: 'firstName lastName profilePicture'
+            }
+          }
+        ]
+      })
+      .populate('sharedTrip');
+
 
     // Update the chat's last message reference
     await Chat.findByIdAndUpdate(chatId, { lastMessage: message._id });
+
+    const chat = await Chat.findById(chatId).select('members');
+    await Promise.all(chat.members.map(async memberId => {
+      if (memberId.toString() !== senderId) {
+        // Notify other participants about the new message
+        await sendNotification({
+          recipient: memberId,
+          sender: senderId,
+          type: 'custom',
+          text: `${message.senderId.firstName} sent you a message.`,
+          entityType: 'Custom',
+          entityId: chatId, // Use chatId for custom notifications
+          link: `/chat/${chatId}` // Link to the chat
+        });
+      }
+    }));
 
     res.status(201).json(message);
   } catch (err) {

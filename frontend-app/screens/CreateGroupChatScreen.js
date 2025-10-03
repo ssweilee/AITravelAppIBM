@@ -1,13 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import {
-  View,
-  Text,
-  FlatList,
-  TouchableOpacity,
-  StyleSheet,
-  Alert,
-  TextInput,
-} from 'react-native';
+import React, { useEffect, useState, useLayoutEffect } from 'react';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, Alert, TextInput,} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation, CommonActions } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -33,35 +25,71 @@ const CreateGroupChatScreen = () => {
     getUserId();
   }, []);
 
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerStyle: {
+        backgroundColor: '#00c7be',
+        elevation: 0,
+        shadowOpacity: 0,
+        borderBottomWidth: 0,
+      },
+      headerTintColor: '#fff',
+      headerTitleStyle: {
+        fontWeight: 'bold',
+        color: '#fff',
+      },
+      headerLeft: () => (
+      <TouchableOpacity
+        onPress={() => navigation.goBack()}
+        style={{ paddingHorizontal: 0, paddingVertical: 6 }}
+        activeOpacity={0.7}
+      >
+        <Ionicons name="arrow-back" size={24} color="#fff" />
+      </TouchableOpacity>
+      ),
+      headerBackTitleVisible: false,
+      headerBackTitle: '',
+    });
+  }, [navigation]);
+
+  const [followings, setFollowings] = useState([]);
+
+useEffect(() => {
+  const fetchFollowings = async () => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/api/users/followings`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await response.json();
+      if (response.ok && Array.isArray(data)) {
+        setFollowings(data);
+      } else {
+        console.error("Unexpected followings response:", data);
+      }
+    } catch (err) {
+      console.error("Error fetching followings:", err);
+    }
+  };
+
+  fetchFollowings();
+}, []);
+
   useEffect(() => {
-    const fetchMatchingUsers = async () => {
-      if (!searchQuery.trim()) {
-        setMatchedUsers([]);
-        return;
-      }
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) {
+      setMatchedUsers([]);
+      return;
+    }
 
-      try {
-        const token = await AsyncStorage.getItem('token');
-        const response = await fetch(`${API_BASE_URL}/api/search?q=${encodeURIComponent(searchQuery)}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+    const filtered = followings.filter(
+      (user) =>
+        user.firstName?.toLowerCase().includes(query) ||
+        user.lastName?.toLowerCase().includes(query)
+    );
 
-        const data = await response.json();
-
-        if (response.ok && Array.isArray(data.users)) {
-          const payload = JSON.parse(atob(token.split('.')[1]));
-          const filtered = data.users.filter((u) => u._id !== payload.userId);
-          setMatchedUsers(filtered);
-        } else {
-          console.error("Unexpected search response:", data);
-        }
-      } catch (err) {
-        console.error("Error fetching search results:", err);
-      }
-    };
-
-    fetchMatchingUsers();
-  }, [searchQuery]);
+    setMatchedUsers(filtered);
+  }, [searchQuery, followings]);
 
   const toggleUserSelection = (user) => {
     setSelectedUsers((prev) => {
@@ -187,11 +215,12 @@ const styles = StyleSheet.create({
   container: { flex: 1, padding: 15, backgroundColor: '#fff' },
   groupNameInput: {
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: '#00c7be',
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
     marginBottom: 10,
+    borderRadius: 20,
   },
   userItem: {
     padding: 12,
@@ -206,10 +235,12 @@ const styles = StyleSheet.create({
   },
   createButton: {
     marginTop: 15,
-    backgroundColor: '#007AFF',
+    marginBottom: 30,
+    backgroundColor: '#00c7be',
     paddingVertical: 14,
     borderRadius: 8,
     alignItems: 'center',
+    borderRadius: 20,
   },
   createButtonText: {
     color: '#fff',

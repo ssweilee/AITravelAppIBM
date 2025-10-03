@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 const { authenticateToken } = require('./middleware/authMiddleware.js');
 const authRoutes = require('./routes/authRoutes.js');
 const postRoutes = require('./routes/postRoutes.js');
@@ -9,12 +10,20 @@ const messageRoutes = require('./routes/messageRoutes.js');
 const chatRoutes = require('./routes/chatRoutes.js');
 const locationRouter = require('./routes/locationRoutes.js');
 const userInteractionRoutes = require('./routes/userInteractionRoutes.js');
+const uploadRoutes = require('./routes/uploadRoutes');
+const avatarUploadRouter = require('./routes/avatarUploadRoutes.js'); 
 const itineraryRoutes = require('./routes/itineraryRoutes.js');
+const notificationRoutes = require('./routes/notificationRoutes.js');
+const tripRoutes = require('./routes/tripRoutes.js');
+const aiRoutes = require('./routes/aiRoutes');
+require('dotenv').config();
+const recommendationRoutes = require('./routes/recommendationRoutes.js');
+
 
 const app = express();
 
 app.use((req, res, next) => {
-  console.log(`➡️ Incoming ${req.method} request to ${req.url}`);
+  console.log(`Incoming ${req.method} request to ${req.url}`);
   next();
 });
 
@@ -34,7 +43,14 @@ app.use('/api/messages', authenticateToken, messageRoutes);
 app.use('/api/chats', authenticateToken, chatRoutes);
 app.use('/api/location', locationRouter);
 app.use('/api/interactions',authenticateToken,userInteractionRoutes);
+app.use('/upload', uploadRoutes);
+app.use('/api/users', avatarUploadRouter); 
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/api/itineraries', authenticateToken, itineraryRoutes);
+app.use('/api/notifications', authenticateToken, notificationRoutes);
+app.use('/api/trips', authenticateToken, tripRoutes);
+app.use('/api/ai', aiRoutes);
+app.use('/api/recommend', recommendationRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ message: 'Route not found' });
@@ -44,5 +60,8 @@ app.use((err, req, res, next) => {
   console.error('Unhandled server error:', err);
   res.status(500).json({ message: 'Internal server error' });
 });
+
+
+
 
 module.exports = app;

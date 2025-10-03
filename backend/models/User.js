@@ -56,7 +56,25 @@ const userSchema = new mongoose.Schema({
     default: 0
   },
   savedPosts: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Post' }],
+  likedTrips: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Trip' }],
   savedTrips: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Trip' }],
+  savedItineraries: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Itinerary' }],
+  unreadNotificationCount: { type: Number, default: 0 },
+  refreshToken: {
+    type: String,
+    default: ''
+  },
+  tags: {
+    type: [String],
+    default: []
+  },
+  avgBudget: {
+    type: Number
+  },
+  recentDestinations: {
+    type: [String],
+    default: []
+  }
 });
 
 module.exports = mongoose.model('User', userSchema);
